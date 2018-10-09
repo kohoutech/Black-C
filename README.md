@@ -1,2 +1,2 @@
-# TomSwift
-a dialect of Swift for Windows
+# Black C
+a C front end for the Dynamo code generator
