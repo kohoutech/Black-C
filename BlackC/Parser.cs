@@ -51,6 +51,7 @@ namespace BlackC
             while (!(token is tEOF))
             {
                 token = scanner.getToken();
+                Console.WriteLine(token.ToString());
             }
 
             Console.WriteLine("done parsing");

@@ -36,6 +36,282 @@ namespace BlackC
         }
     }
 
+    //- keywords -----------------------------------------------------------
+
+    class tAuto : Token 
+    {
+        public override string ToString()
+        {
+            return "AUTO";
+        }
+    }
+
+    class tBreak : Token
+    {
+        public override string ToString()
+        {
+            return "BREAK";
+        }
+    }
+
+    class tCase : Token
+    {
+        public override string ToString()
+        {
+            return "CASE";
+        }
+    }
+
+    class tChar : Token
+    {
+        public override string ToString()
+        {
+            return "CHAR";
+        }
+    }
+
+    class tConst : Token
+    {
+        public override string ToString()
+        {
+            return "CONST";
+        }
+    }
+
+    class tContinue : Token
+    {
+        public override string ToString()
+        {
+            return "CONTINUE";
+        }
+    }
+
+    class tDefault : Token
+    {
+        public override string ToString()
+        {
+            return "DEFAULT";
+        }
+    }
+
+    class tDo : Token
+    {
+        public override string ToString()
+        {
+            return "DO";
+        }
+    }
+
+    class tDouble : Token
+    {
+        public override string ToString()
+        {
+            return "DOUBLE";
+        }
+    }
+
+    class tElse : Token
+    {
+        public override string ToString()
+        {
+            return "ELSE";
+        }
+    }
+
+    class tEnum : Token
+    {
+        public override string ToString()
+        {
+            return "ENUM";
+        }
+    }
+
+    class tExtern : Token
+    {
+        public override string ToString()
+        {
+            return "EXTERN";
+        }
+    }
+
+    class tFloat : Token
+    {
+        public override string ToString()
+        {
+            return "FLOAT";
+        }
+    }
+
+    class tFor : Token
+    {
+        public override string ToString()
+        {
+            return "FOR";
+        }
+    }
+
+    class tGoto : Token
+    {
+        public override string ToString()
+        {
+            return "GOTO";
+        }
+    }
+
+    class tIf : Token
+    {
+        public override string ToString()
+        {
+            return "IF";
+        }
+    }
+
+    class tInline : Token
+    {
+        public override string ToString()
+        {
+            return "INLINE";
+        }
+    }
+    
+    class tInt : Token
+    {
+        public override string ToString()
+        {
+            return "INT";
+        }
+    }
+
+    class tLong : Token
+    {
+        public override string ToString()
+        {
+            return "LONG";
+        }
+    }
+
+    class tRegister : Token
+    {
+        public override string ToString()
+        {
+            return "REGISTER";
+        }
+    }
+
+    class tRestrict : Token
+    {
+        public override string ToString()
+        {
+            return "RESTRICT";
+        }
+    }
+
+    class tReturn : Token
+    {
+        public override string ToString()
+        {
+            return "RETURN";
+        }
+    }
+
+    class tShort : Token
+    {
+        public override string ToString()
+        {
+            return "SHORT";
+        }
+    }
+
+    class tSigned : Token
+    {
+        public override string ToString()
+        {
+            return "SIGNED";
+        }
+    }
+
+    class tSizeof : Token
+    {
+        public override string ToString()
+        {
+            return "SIZEOF";
+        }
+    }
+
+    class tStatic : Token
+    {
+        public override string ToString()
+        {
+            return "STATIC";
+        }
+    }
+
+    class tStruct : Token
+    {
+        public override string ToString()
+        {
+            return "STRUCT";
+        }
+    }
+
+    class tSwitch : Token
+    {
+        public override string ToString()
+        {
+            return "SWITCH";
+        }
+    }
+
+    class tTypedef : Token
+    {
+        public override string ToString()
+        {
+            return "TYPEDEF";
+        }
+    }
+
+    class tUnion : Token
+    {
+        public override string ToString()
+        {
+            return "UNION";
+        }
+    }
+
+    class tUnsigned : Token
+    {
+        public override string ToString()
+        {
+            return "UNSIGNED";
+        }
+    }
+
+    class tVoid : Token
+    {
+        public override string ToString()
+        {
+            return "VOID";
+        }
+    }
+
+    class tVolatile : Token
+    {
+        public override string ToString()
+        {
+            return "VOLATILE";
+        }
+    }
+
+    class tWhile : Token
+    {
+        public override string ToString()
+        {
+            return "WHILE";
+        }
+    }
+
+    //- identifier -----------------------------------------------------------
+
     class tIdentifier : Token
     {
         String ident;
@@ -45,12 +321,14 @@ namespace BlackC
         {
             ident = _ident;
         }
-    
+
         public override string ToString()
         {
-            return "IDENTIFIER";
+            return "IDENTIFIER (" + ident + ")";
         }
     }
+
+    //- constants -----------------------------------------------------------
 
     class tIntegerConstant : Token
     {
@@ -64,7 +342,7 @@ namespace BlackC
 
         public override string ToString()
         {
-            return "INTEGER CONSTANT";
+            return "INTEGER CONSTANT (" + val.ToString() + ")";
         }
     }
 
@@ -77,7 +355,7 @@ namespace BlackC
         {
             val = _val;
         }
-    
+
         public override string ToString()
         {
             return "FLOAT CONSTANT";
@@ -96,7 +374,7 @@ namespace BlackC
 
         public override string ToString()
         {
-            return "STRING CONSTANT";
+            return "STRING CONSTANT (" + val + ")";
         }
     }
 
@@ -106,7 +384,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "LEFT BRACKET";
         }
     }
 
@@ -114,7 +392,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "RIGHT BRACKET";
         }
     }
 
@@ -122,7 +400,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "LEFT PAREN";
         }
     }
 
@@ -130,19 +408,23 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "RIGHT PAREN";
         }
     }
 
     class tLBrace : Token
     {
+        public override string ToString()
+        {
+            return "LEFT BRACE";
+        }
     }
 
     class tRBrace : Token
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "RIGHT BRACE";
         }
     }
 
@@ -150,7 +432,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "PERIOD";
         }
     }
 
@@ -158,7 +440,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "ARROW";
         }
     }
 
@@ -166,7 +448,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "PLUS PLUS";
         }
     }
 
@@ -174,7 +456,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "MINUS MINUS";
         }
     }
 
@@ -182,7 +464,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "AMPERSAND";
         }
     }
 
@@ -190,7 +472,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "ASTERISK";
         }
     }
 
@@ -198,7 +480,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "PLUS";
         }
     }
 
@@ -206,7 +488,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "MINUS";
         }
     }
 
@@ -214,7 +496,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "TILDE";
         }
     }
 
@@ -222,7 +504,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "EXCLAMATION POINT";
         }
     }
 
@@ -230,7 +512,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "SLASH";
         }
     }
 
@@ -238,7 +520,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "PERCENT";
         }
     }
 
@@ -246,7 +528,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "LEFT SHIFT";
         }
     }
 
@@ -254,7 +536,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "RIGHT SHIFT";
         }
     }
 
@@ -262,7 +544,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "LESS THAN";
         }
     }
 
@@ -270,7 +552,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "GREATER THAN";
         }
     }
 
@@ -278,7 +560,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "LESS EQUAL";
         }
     }
 
@@ -286,7 +568,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "GREATER EQUAL";
         }
     }
 
@@ -294,7 +576,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "EQUAL EQUAL";
         }
     }
 
@@ -302,7 +584,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "NOT EQUAL";
         }
     }
 
@@ -310,7 +592,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "CARET";
         }
     }
 
@@ -318,7 +600,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "BAR";
         }
     }
 
@@ -326,7 +608,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "AMP AMP";
         }
     }
 
@@ -334,7 +616,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "BAR BAR";
         }
     }
 
@@ -342,7 +624,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "QUESTION";
         }
     }
 
@@ -350,7 +632,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "COLON";
         }
     }
 
@@ -358,7 +640,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "SEMICOLON";
         }
     }
 
@@ -366,7 +648,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "ELLIPSIS";
         }
     }
 
@@ -374,7 +656,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "EQUAL";
         }
     }
 
@@ -382,7 +664,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "MULT EQUAL";
         }
     }
 
@@ -390,7 +672,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "SLASH EQUAL";
         }
     }
 
@@ -398,7 +680,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "PERCENT EQUAL";
         }
     }
 
@@ -406,7 +688,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "PLUS EQUAL";
         }
     }
 
@@ -414,7 +696,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "MINUS EQUAL";
         }
     }
 
@@ -422,7 +704,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "LEFT SHIFT EQUAL";
         }
     }
 
@@ -430,7 +712,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "RIGHT SHIFT EQUAL";
         }
     }
 
@@ -438,7 +720,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "AMP EQUAL";
         }
     }
 
@@ -446,7 +728,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "CARET EQUAL";
         }
     }
 
@@ -454,7 +736,7 @@ namespace BlackC
     {
         public override string ToString()
         {
-            return "COMMA";
+            return "BAR EQUAL";
         }
     }
 
@@ -465,6 +747,4 @@ namespace BlackC
             return "COMMA";
         }
     }
-
-
 }
