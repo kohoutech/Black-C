@@ -332,12 +332,18 @@ namespace BlackC
 
     class tIntegerConstant : Token
     {
-        int val;
+        enum WIDTH { NONE, LONG, LONGLONG };
 
-        public tIntegerConstant(int _val)
+        int val;
+        bool  isSigned;
+        WIDTH width;        
+
+        public tIntegerConstant(int _val, bool _signed, bool _long, bool _longlong)
             : base()
         {
             val = _val;
+            isSigned = _signed;
+            width = (_longlong) ? WIDTH.LONGLONG : (_long) ? WIDTH.LONG : WIDTH.NONE;
         }
 
         public override string ToString()
@@ -348,12 +354,16 @@ namespace BlackC
 
     class tFloatConstant : Token
     {
-        double val;
+        enum WIDTH { NONE, FLOAT, LONG };
 
-        public tFloatConstant(double _val)
+        double val;
+        WIDTH width;
+
+        public tFloatConstant(double _val, bool _float, bool _long)
             : base()
         {
             val = _val;
+            width = (_float) ? WIDTH.FLOAT : (_long) ? WIDTH.LONG : WIDTH.NONE;
         }
 
         public override string ToString()

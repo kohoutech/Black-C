@@ -238,42 +238,163 @@ namespace BlackC
 
         }
 
-        public Token scanNumber(char c)
+        public Token scanFloatConst(String num)
         {
-            String num = "" + c;
-            int bass = 10;
-            if (c == '0') 
+            bool atend;
+            if (num.EndsWith("."))      //get optional decimal part
             {
-                if ((pos < curline.Length) && (curline[pos] == 'X' || curline[pos] == 'x'))
+                atend = !(pos < curline.Length);
+                while (!atend)
                 {
-                    bass = 16;
+                    char c1 = curline[pos++];
+                    if (c1 >= '0' && c1 <= '9')
+                    {
+                        num = num + c1;
+                        atend = !(pos < curline.Length);
+                    }
+                    else
+                    {
+                        pos--;
+                        atend = true;
+                    }
+                }
+                if ((pos < curline.Length) && !((curline[pos] == 'e') && (curline[pos] <= 'E')))
+                {
+                    num = num + 'E';
                     pos++;
                 }
-                else
-                {
-                    bass = 8;
-                }
             }
-            bool atend = !(pos < curline.Length);
-            while (!atend)
+            if (num.EndsWith("E"))      //get optional decimal part
             {
-                char c1 = curline[pos++];
-                if (((bass == 10) && (c1 >= '0' && c1 <= '9')) ||
-                    ((bass == 8) && (c1 >= '0' && c1 <= '7')) ||
-                    ((bass == 16) && ((c1 >= '0' && c1 <= '9') || (c1 >= 'A' && c1 <= 'F') || (c1 >= 'a' && c1 <= 'f'))))
+                if ((pos < curline.Length) && ((curline[pos] == '+') || (curline[pos] == '-')))
                 {
-                    num = num + c1;
-                    atend = !(pos < curline.Length);
+                    char s1 = curline[pos++];
+                    num = num + s1;
                 }
-                else
+                atend = !(pos < curline.Length);
+                while (!atend)
                 {
-                    pos--;
-                    atend = true;
+                    char c1 = curline[pos++];
+                    if (c1 >= '0' && c1 <= '9')
+                    {
+                        num = num + c1;
+                        atend = !(pos < curline.Length);
+                    }
+                    else
+                    {
+                        pos--;
+                        atend = true;
+                    }
                 }
             }
-            int value = Convert.ToInt32(num, bass);
-            Token intconst = new tIntegerConstant(value);
-            return intconst;
+            bool fsuffix = false;
+            bool lsuffix = false;
+            if ((pos < curline.Length) && ((curline[pos] == 'f') || (curline[pos] == 'F')))
+            {
+                fsuffix = true;
+                pos++;
+            }
+            if ((pos < curline.Length) && ((curline[pos] == 'l') || (curline[pos] == 'L')))
+            {
+                lsuffix = true;
+                pos++;
+            }
+
+            double val = Convert.ToDouble(num);
+            return new tFloatConstant(val, fsuffix, lsuffix);
+        }
+
+        public Token scanNumber(char c)
+        {
+            String num = "0";
+            int bass = 10;
+            bool floatpt = false;
+
+            //float const can start with '.' followed by digits, check this first
+            //handle '...' and '.' tokens here
+            if (c == '.')
+            {
+                if ((pos < curline.Length - 1) && (curline[pos] == '.') && (curline[pos + 1] == '.'))
+                {
+                    pos += 2;
+                    return new tEllipsis();
+                }
+                else if ((pos < curline.Length) && !((curline[pos] >= '0') && (curline[pos] <= '9')))
+                {
+                    return new tPeriod();
+                }
+                else floatpt = true;
+            }
+
+            if (!floatpt)       //get mantissa
+            {
+                num = "" + c;
+                if (c == '0')             //set base
+                {
+                    if ((pos < curline.Length) && (curline[pos] == 'X' || curline[pos] == 'x'))
+                    {
+                        bass = 16;
+                        pos++;
+                    }
+                    else
+                    {
+                        bass = 8;
+                    }
+                }
+                bool atend = !(pos < curline.Length);
+                while (!atend)
+                {
+                    char c1 = curline[pos++];
+                    if (((bass == 10) && (c1 >= '0' && c1 <= '9')) ||
+                        ((bass == 8) && (c1 >= '0' && c1 <= '7')) ||
+                        ((bass == 16) && ((c1 >= '0' && c1 <= '9') || (c1 >= 'A' && c1 <= 'F') || (c1 >= 'a' && c1 <= 'f'))))
+                    {
+                        num = num + c1;
+                        atend = !(pos < curline.Length);
+                    }
+                    else
+                    {
+                        pos--;
+                        atend = true;
+                    }
+                }
+            }
+
+            //got the mantissa, if the next char is decimal point or exponent, then it's a float const
+            if ((pos < curline.Length) && ((curline[pos] == '.') || (curline[pos] == 'E') || (curline[pos] == 'e')))
+            {
+                floatpt = true;
+                char c2 = curline[pos++];
+                num = num + Char.ToUpper(c2);
+                return scanFloatConst(num);
+            }
+            else
+            {
+                bool usuffix = false;
+                bool lsuffix = false;
+                bool llsuffix = false;
+                for (int i = 0; i < 2; i++)     //check for int const suffixes
+                {
+                    if ((pos < curline.Length) && (!usuffix) && ((curline[pos] == 'u') || (curline[pos] == 'U')))
+                    {
+                        usuffix = true;
+                        pos++;
+                    }
+
+                    if ((pos < curline.Length) && (!lsuffix) && ((curline[pos] == 'l') || (curline[pos] == 'L')))
+                    {
+                        lsuffix = true;
+                        pos++;
+                        if ((pos < curline.Length) && ((curline[pos] == 'l') || (curline[pos] == 'L')))
+                        {
+                            llsuffix = true;
+                            pos++;
+                        }
+                    }
+                }
+                int value = Convert.ToInt32(num, bass);
+                return new tIntegerConstant(value, usuffix, lsuffix, llsuffix);
+            }
         }
 
         public Token scanString(char c)
@@ -312,11 +433,8 @@ namespace BlackC
                 char c = curline[pos++];
                 switch (c)
                 {
-                    case ' ':
-                    case '\t':
-                        
-                        break;
 
+//identifier
                     case '_':
                     case 'A':
                     case 'B':
@@ -373,6 +491,7 @@ namespace BlackC
                         token = scanIdentifier(c);
                         break;
 
+//numeric constant
                     case '0':
                     case '1':
                     case '2':
@@ -383,6 +502,7 @@ namespace BlackC
                     case '7':
                     case '8':
                     case '9':
+                    case '.':
                         token = scanNumber(c);
                         break;
 
@@ -414,18 +534,6 @@ namespace BlackC
 
                     case '}':
                         token = new tRBrace();
-                        break;
-
-                    case '.':
-                        if ((pos < curline.Length - 1) && (curline[pos] == '.') && (curline[pos + 1] == '.'))
-                        {
-                            token = new tEllipsis();
-                            pos += 2;
-                        }
-                        else
-                        {
-                            token = new tPeriod();
-                        }
                         break;
 
                     case '+':
