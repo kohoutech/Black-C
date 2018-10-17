@@ -34,6 +34,116 @@ namespace BlackC
         {
         }
 
+
+        /* (6.7) 
+         declaration-specifiers:
+            storage-class-specifier declaration-specifiersopt
+            type-specifier declaration-specifiersopt
+            type-qualifier declaration-specifiersopt
+            function-specifier declaration-specifiersopt
+         */
+        public void parseDeclarSpecs(List<Token> specs)
+        {
+            bool done = false;
+            while (!done)
+            {
+                Token token = scanner.getToken();
+
+                //storage class specifer
+                if ((token is tTypedef) || (token is tExtern) || (token is tStatic) || (token is tAuto) || (token is tRegister))
+                {
+                    specs.Add(token);
+                }
+
+                //type specifier
+                else if ((token is tVoid) || (token is tChar) || (token is tShort) || (token is tInt) || (token is tLong)
+                    || (token is tFloat) || (token is tDouble) || (token is tSigned) || (token is tUnsigned))
+                {
+                    specs.Add(token);
+                }
+                else if ((token is tStruct) || (token is tUnion))
+                {
+                    parseStuctOrUnionSpec();
+                }
+                else if (token is tEnum)
+                {
+                    parseEnumSpec();
+                }
+                else if ((token is tIdentifier) && (((tIdentifier)token).isTypeDef))
+                {
+                    //handle typedef
+                }
+
+                //type qualifier
+                else if ((token is tConst) || (token is tRestrict) || (token is tVolatile))
+                {
+                    specs.Add(token);
+                }
+
+                //func specifier
+                else if (token is tInline)
+                {
+                    specs.Add(token);
+                }
+
+                //none of the above
+                else
+                {
+                    done = true;
+                }
+            }
+        }
+
+        private void parseEnumSpec()
+        {
+            throw new NotImplementedException();
+        }
+
+        private void parseStuctOrUnionSpec()
+        {
+            throw new NotImplementedException();
+        }
+
+        /* (6.7) 
+         declaration:
+            declaration-specifiers init-declarator-listopt ;
+         */
+        public void parseDeclaration()
+        {
+            
+        }
+
+        /* (6.9.1) 
+        function-definition:
+            declaration-specifiers declarator declaration-list[opt] compound-statement
+         */
+        public bool parseFunctionDef()
+        {
+            bool isFunc = true;
+            List<Token> specs = new List<Token>();
+            parseDeclarSpecs(specs);
+            return isFunc;
+        }
+
+        /* (6.9) 
+        external-declaration:
+            function-definition
+            declaration
+        */
+        public void parseExternalDeclaration()
+        {
+            if (!parseFunctionDef())
+            {
+                parseDeclaration();
+            }
+            //Console.WriteLine(first.ToString());
+        }
+
+        /*(6.9) 
+        translation-unit:
+            external-declaration
+            translation-unit external-declaration 
+        */
         public void parseFile(string filename)
         {
             string[] lines = File.ReadAllLines(filename);
@@ -50,8 +160,9 @@ namespace BlackC
             Token token = scanner.getToken();
             while (!(token is tEOF))
             {
+                scanner.putBack(token);
+                parseExternalDeclaration();
                 token = scanner.getToken();
-                Console.WriteLine(token.ToString());
             }
 
             Console.WriteLine("done parsing");

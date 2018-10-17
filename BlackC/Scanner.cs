@@ -32,6 +32,11 @@ namespace BlackC
         int pos;
         bool atEOF;
 
+        Token lookahead;
+        bool isRecording;
+        List<Token> recorder;
+        List<int> cuepoints;
+
         public Scanner(string[] _lines)
         {
             lines = _lines;
@@ -39,6 +44,27 @@ namespace BlackC
             curline = lines[linenum];
             pos = 0;
             atEOF = false;
+            lookahead = null;
+            recorder = new List<Token>();
+            cuepoints = new List<int>();
+        }
+
+        public void putBack(Token look)
+        {
+            lookahead = look;
+        }
+
+        public void startRecording()
+        {
+            isRecording = true;
+            int pos = recorder.Count;
+            cuepoints.Add(pos);
+        }
+
+        public void rewind()
+        {
+            isRecording = false;
+            int pos = cuepoints[cuepoints.Count];
         }
 
         public void gotoNextLine()
@@ -258,7 +284,11 @@ namespace BlackC
                         atend = true;
                     }
                 }
-                if ((pos < curline.Length) && !((curline[pos] == 'e') && (curline[pos] <= 'E')))
+                if (num.EndsWith("."))      //if no decimal part, we add one anywat
+                {
+                    num = num + '0';
+                }
+                if ((pos < curline.Length) && ((curline[pos] == 'e') || (curline[pos] == 'E')))
                 {
                     num = num + 'E';
                     pos++;
@@ -423,6 +453,13 @@ namespace BlackC
         public Token getToken()
         {
             Token token = null;
+
+            if (lookahead != null)
+            {
+                token = lookahead;
+                lookahead = null;
+                return token;
+            }
 
             //goto start of next token in source file
             skipWhitespace();
