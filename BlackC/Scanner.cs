@@ -32,10 +32,8 @@ namespace BlackC
         int pos;
         bool atEOF;
 
-        Token lookahead;
-        bool isRecording;
-        List<Token> recorder;
-        List<int> cuepoints;
+        List<Token> lookahead;
+        int recpos;
 
         public Scanner(string[] _lines)
         {
@@ -44,28 +42,27 @@ namespace BlackC
             curline = lines[linenum];
             pos = 0;
             atEOF = false;
-            lookahead = null;
-            recorder = new List<Token>();
-            cuepoints = new List<int>();
+            lookahead = new List<Token>();
+            recpos = 0;
         }
 
-        public void putBack(Token look)
+        //- token lookahead ---------------------------------------------------
+
+        public int record()
         {
-            lookahead = look;
+            return pos = lookahead.Count;
         }
 
-        public void startRecording()
+        public void rewind(int cuepoint, bool removeTokens)
         {
-            isRecording = true;
-            int pos = recorder.Count;
-            cuepoints.Add(pos);
+            if (removeTokens)
+            {
+                lookahead.RemoveRange(cuepoint, (recpos - cuepoint));
+            }
+            recpos = cuepoint;
         }
 
-        public void rewind()
-        {
-            isRecording = false;
-            int pos = cuepoints[cuepoints.Count];
-        }
+        //---------------------------------------------------------------------
 
         public void gotoNextLine()
         {
@@ -454,10 +451,9 @@ namespace BlackC
         {
             Token token = null;
 
-            if (lookahead != null)
+            if (recpos < lookahead.Count)
             {
-                token = lookahead;
-                lookahead = null;
+                token = lookahead[recpos++];
                 return token;
             }
 
@@ -802,6 +798,9 @@ namespace BlackC
             {
                 token = new tEOF();
             }
+
+            lookahead.Add(token);
+            recpos++;
 
             return token;
         }
