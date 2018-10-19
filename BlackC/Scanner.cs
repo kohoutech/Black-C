@@ -32,7 +32,7 @@ namespace BlackC
         int pos;
         bool atEOF;
 
-        List<Token> lookahead;
+        List<Token> replay;
         int recpos;
 
         public Scanner(string[] _lines)
@@ -42,7 +42,7 @@ namespace BlackC
             curline = lines[linenum];
             pos = 0;
             atEOF = false;
-            lookahead = new List<Token>();
+            replay = new List<Token>();
             recpos = 0;
         }
 
@@ -50,16 +50,17 @@ namespace BlackC
 
         public int record()
         {
-            return pos = lookahead.Count;
+            return recpos;
         }
 
-        public void rewind(int cuepoint, bool removeTokens)
+        public void rewind(int cuepoint)
         {
-            if (removeTokens)
-            {
-                lookahead.RemoveRange(cuepoint, (recpos - cuepoint));
-            }
             recpos = cuepoint;
+        }
+
+        public void reset()
+        {
+            recpos = 0;
         }
 
         //---------------------------------------------------------------------
@@ -451,9 +452,9 @@ namespace BlackC
         {
             Token token = null;
 
-            if (recpos < lookahead.Count)
+            if (recpos < replay.Count)
             {
-                token = lookahead[recpos++];
+                token = replay[recpos++];
                 return token;
             }
 
@@ -799,8 +800,11 @@ namespace BlackC
                 token = new tEOF();
             }
 
-            lookahead.Add(token);
-            recpos++;
+            if (recpos == replay.Count)
+            {
+                replay.Add(token);
+                recpos++;
+            }
 
             return token;
         }
