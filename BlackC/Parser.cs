@@ -45,25 +45,110 @@ namespace BlackC
          */
         public bool parsePrimaryExpression()
         {
-            bool result = true;
+            int cuepoint = scanner.record();
+            Token token = scanner.getToken();
+            bool result = (token is tIdentifier);
+            if (!result)
+            {
+                result = (token is tIntegerConstant);
+            }
+            if (!result)
+            {
+                result = (token is tFloatConstant);
+            }
+            if (!result)
+            {
+                result = (token is tCharacterConstant);
+            }
+            if (!result)
+            {
+                result = (token is tStringConstant);
+            }
+            if (!result)
+            {
+                scanner.rewind(cuepoint);
+                result = parseEnumerationConstant();
+            }
+            if (!result)
+            {
+                scanner.rewind(cuepoint);                   //( expression )
+                token = scanner.getToken();
+                result = (token is tLParen);
+                if (result)
+                {
+                    result = parseExpression();
+                    if (result)
+                    {
+                        token = scanner.getToken();
+                        result = (token is tRParen);
+                    }
+                }
+            }
+            if (!result)
+            {
+                scanner.rewind(cuepoint);
+            }            
             return result;
         }
 
         /*(6.5.2) 
          postfix-expression:
             primary-expression
+            ( type-name ) { initializer-list }
+            ( type-name ) { initializer-list , }
             postfix-expression [ expression ]
             postfix-expression ( argument-expression-list[opt] )
             postfix-expression . identifier
             postfix-expression -> identifier
             postfix-expression ++
             postfix-expression --
-            ( type-name ) { initializer-list }
-            ( type-name ) { initializer-list , }
          */
         public bool parsePostfixExpression()
         {
-            bool result = true;
+            int cuepoint = scanner.record();
+            bool result = parsePrimaryExpression();         //primary-expression
+            if (!result)
+            {
+                int cuepoint2 = scanner.record();
+                Token token = scanner.getToken();           //( type-name ) { initializer-list }
+                result = (token is tLParen);
+                if (result)
+                {
+                    result = parseTypeName();
+                    if (result)
+                    {
+                        token = scanner.getToken();
+                        result = (token is tRParen);
+                        if (result)
+                        {
+                            token = scanner.getToken();
+                            result = (token is tLBrace);
+                            if (result)
+                            {
+                                result = parseInitializerList();
+                                if (result)
+                                {
+                                    token = scanner.getToken();
+                                    result = (token is tRBrace);
+                                    if (!result)
+                                    {
+                                        result = (token is tComma);
+                                        if (result)
+                                        {
+                                            token = scanner.getToken();
+                                            result = (token is tRBrace);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                }
+            }
             return result;
         }
 
@@ -74,7 +159,6 @@ namespace BlackC
          */
         public bool parseArgExpressionList()
         {
-            int cuepoint = scanner.record();
             bool result = parseAssignExpression();
             bool empty = result;
             while (result)
@@ -91,10 +175,6 @@ namespace BlackC
                     scanner.rewind(cuepoint2);
                 }
             }
-            if (!result)
-            {
-                scanner.rewind(cuepoint);
-            }
             return empty;
         }
 
@@ -109,7 +189,70 @@ namespace BlackC
          */
         public bool parseUnaryExpression()
         {
-            bool result = true;
+            int cuepoint = scanner.record();
+            bool result = parsePostfixExpression();         //postfix-expression
+            if (!result)
+            {
+                Token token = scanner.getToken();           //++ unary-expression
+                result = (token is tPlusPlus);
+                if (result)
+                {
+                    result = parseUnaryExpression();
+                }
+            }
+            if (!result)
+            {
+                scanner.rewind(cuepoint);
+                Token token = scanner.getToken();           //-- unary-expression
+                result = (token is tMinusMinus);
+                if (result)
+                {
+                    result = parseUnaryExpression();
+                }
+            }
+            if (!result)
+            {
+                scanner.rewind(cuepoint);                   //unary-operator cast-expression
+                result = parseUnaryOperator();
+                if (result)
+                {
+                    result = parseCastExpression();
+                }
+            }
+            if (!result)
+            {
+                scanner.rewind(cuepoint);
+                Token token = scanner.getToken();           //sizeof unary-expression
+                result = (token is tSizeof);
+                if (result)
+                {
+                    result = parseUnaryExpression();
+                }
+            }
+            if (!result)
+            {
+                scanner.rewind(cuepoint);
+                Token token = scanner.getToken();           //sizeof ( type-name )
+                result = (token is tSizeof);
+                if (result)
+                {
+                    token = scanner.getToken();
+                    result = (token is tLParen);
+                    if (result)
+                    {
+                        result = parseTypeName();
+                        if (result)
+                        {
+                            token = scanner.getToken();
+                            result = (token is tRParen);
+                        }
+                    }
+                }
+            }
+            if (!result)
+            {
+                scanner.rewind(cuepoint);
+            }
             return result;
         }
 
@@ -137,7 +280,30 @@ namespace BlackC
          */
         public bool parseCastExpression()
         {
-            bool result = true;
+            bool result = parseUnaryExpression();
+            if (!result)
+            {
+                int cuepoint2 = scanner.record();
+                Token token = scanner.getToken();
+                result = (token is tLParen);
+                if (result)
+                {
+                    result = parseTypeName();
+                    if (result)
+                    {
+                        token = scanner.getToken();
+                        result = (token is tRParen);
+                        if (result)
+                        {
+                            result = parseCastExpression();
+                        }
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                }
+            }
             return result;
         }
 
@@ -150,8 +316,43 @@ namespace BlackC
          */
         public bool parseMultExpression()
         {
-            bool result = true;
-            return result;
+            bool result = parseCastExpression();
+            bool empty = result;
+            while (result)
+            {
+                int cuepoint2 = scanner.record();
+                Token token = scanner.getToken();
+                result = (token is tAsterisk);
+                if (result)
+                {
+                    result = parseCastExpression();
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                    token = scanner.getToken();
+                    result = (token is tSlash);
+                    if (result)
+                    {
+                        result = parseCastExpression();
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                    token = scanner.getToken();
+                    result = (token is tPercent);
+                    if (result)
+                    {
+                        result = parseCastExpression();
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                }
+            }
+            return empty;
         }
 
         /*(6.5.6) 
@@ -162,8 +363,33 @@ namespace BlackC
          */
         public bool parseAddExpression()
         {
-            bool result = true;
-            return result;
+            bool result = parseMultExpression();
+            bool empty = result;
+            while (result)
+            {
+                int cuepoint2 = scanner.record();
+                Token token = scanner.getToken();
+                result = (token is tPlus);
+                if (result)
+                {
+                    result = parseMultExpression();
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                    token = scanner.getToken();
+                    result = (token is tMinus);
+                    if (result)
+                    {
+                        result = parseMultExpression();
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                }
+            }
+            return empty;
         }
 
         /*(6.5.7) 
@@ -174,8 +400,33 @@ namespace BlackC
          */
         public bool parseShiftExpression()
         {
-            bool result = true;
-            return result;
+            bool result = parseAddExpression();
+            bool empty = result;
+            while (result)
+            {
+                int cuepoint2 = scanner.record();
+                Token token = scanner.getToken();
+                result = (token is tLeftShift);
+                if (result)
+                {
+                    result = parseAddExpression();
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                    token = scanner.getToken();
+                    result = (token is tRightShift);
+                    if (result)
+                    {
+                        result = parseAddExpression();
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                }
+            }
+            return empty;
         }
 
         /*(6.5.8) 
@@ -188,8 +439,53 @@ namespace BlackC
          */
         public bool parseRelationalExpression()
         {
-            bool result = true;
-            return result;
+            bool result = parseShiftExpression();
+            bool empty = result;
+            while (result)
+            {
+                int cuepoint2 = scanner.record();
+                Token token = scanner.getToken();
+                result = (token is tLessThan);
+                if (result)
+                {
+                    result = parseShiftExpression();
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                    token = scanner.getToken();
+                    result = (token is tGtrThan);
+                    if (result)
+                    {
+                        result = parseShiftExpression();
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                    token = scanner.getToken();
+                    result = (token is tLessEqual);
+                    if (result)
+                    {
+                        result = parseShiftExpression();
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                    token = scanner.getToken();
+                    result = (token is tGtrEqual);
+                    if (result)
+                    {
+                        result = parseShiftExpression();
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                }
+            }
+            return empty;
         }
 
         /*(6.5.9) 
@@ -200,8 +496,33 @@ namespace BlackC
          */
         public bool parseEqualExpression()
         {
-            bool result = true;
-            return result;
+            bool result = parseRelationalExpression();
+            bool empty = result;
+            while (result)
+            {
+                int cuepoint2 = scanner.record();
+                Token token = scanner.getToken();
+                result = (token is tEqualEqual);
+                if (result)
+                {
+                    result = parseRelationalExpression();
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                    token = scanner.getToken();
+                    result = (token is tNotEqual);
+                    if (result)
+                    {
+                        result = parseRelationalExpression();
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                }
+            }
+            return empty;
         }
 
         /*(6.5.10) 
@@ -211,8 +532,23 @@ namespace BlackC
          */
         public bool parseANDExpression()
         {
-            bool result = true;
-            return result;
+            bool result = parseEqualExpression();
+            bool empty = result;
+            while (result)
+            {
+                int cuepoint2 = scanner.record();
+                Token token = scanner.getToken();
+                result = (token is tAmpersand);
+                if (result)
+                {
+                    result = parseEqualExpression();
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                }
+            }
+            return empty;
         }
 
         /*(6.5.11) 
@@ -222,8 +558,23 @@ namespace BlackC
          */
         public bool parseXORExpression()
         {
-            bool result = true;
-            return result;
+            bool result = parseANDExpression();
+            bool empty = result;
+            while (result)
+            {
+                int cuepoint2 = scanner.record();
+                Token token = scanner.getToken();
+                result = (token is tCaret);
+                if (result)
+                {
+                    result = parseANDExpression();
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                }
+            }
+            return empty;
         }
 
         /*(6.5.12) 
@@ -233,8 +584,23 @@ namespace BlackC
          */
         public bool parseORExpression()
         {
-            bool result = true;
-            return result;
+            bool result = parseXORExpression();
+            bool empty = result;
+            while (result)
+            {
+                int cuepoint2 = scanner.record();
+                Token token = scanner.getToken();
+                result = (token is tBar);
+                if (result)
+                {
+                    result = parseXORExpression();
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                }
+            }
+            return empty;
         }
 
         /*(6.5.13) 
@@ -244,8 +610,23 @@ namespace BlackC
          */
         public bool parseLogicalANDExpression()
         {
-            bool result = true;
-            return result;
+            bool result = parseORExpression();
+            bool empty = result;
+            while (result)
+            {
+                int cuepoint2 = scanner.record();
+                Token token = scanner.getToken();
+                result = (token is tDoubleAmp);
+                if (result)
+                {
+                    result = parseORExpression();
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                }
+            }
+            return empty;
         }
 
         /*(6.5.14) 
@@ -255,8 +636,23 @@ namespace BlackC
          */
         public bool parseLogicalORExpression()
         {
-            bool result = true;
-            return result;
+            bool result = parseLogicalANDExpression();
+            bool empty = result;
+            while (result)
+            {
+                int cuepoint2 = scanner.record();
+                Token token = scanner.getToken();
+                result = (token is tDoubleBar);
+                if (result)
+                {
+                    result = parseLogicalANDExpression();
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                }
+            }
+            return empty;
         }
 
         /*(6.5.15) 
@@ -266,7 +662,30 @@ namespace BlackC
          */
         public bool parseConditionalExpression()
         {
-            bool result = true;
+            bool result = parseLogicalORExpression();
+            if (result)
+            {
+                int cuepoint2 = scanner.record();
+                Token token = scanner.getToken();
+                bool result2 = (token is tQuestion);
+                if (result2)
+                {
+                    result2 = parseExpression();
+                    if (result2)
+                    {
+                        token = scanner.getToken();
+                        result2 = (token is tColon);
+                        if (result2)
+                        {
+                            result = parseConditionalExpression();
+                        }                        
+                    }
+                }
+                if (!result2)
+                {
+                    scanner.rewind(cuepoint2);
+                }
+            }
             return result;
         }
 
@@ -277,7 +696,19 @@ namespace BlackC
          */
         public bool parseAssignExpression()
         {
-            bool result = true;
+            bool result = parseConditionalExpression();
+            if (!result)
+            {
+                result = parseUnaryExpression();
+                if (result)
+                {
+                    result = parseAssignOperator();
+                    if (result)
+                    {
+                        result = parseAssignExpression();
+                    }
+                }
+            }
             return result;
         }
 
@@ -306,8 +737,23 @@ namespace BlackC
          */
         public bool parseExpression()
         {
-            bool result = true;
-            return result;
+            bool result = parseAssignExpression();
+            bool empty = result;
+            while (result)
+            {
+                int cuepoint2 = scanner.record();
+                Token token = scanner.getToken();
+                result = (token is tComma);
+                if (!result)
+                {
+                    result = parseAssignExpression();
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                }
+            }
+            return empty;
         }
 
         /*(6.6) 
@@ -316,7 +762,7 @@ namespace BlackC
          */
         public bool parseConstantExpression()
         {
-            bool result = true;
+            bool result = parseConditionalExpression();
             return result;
         }
 
@@ -396,7 +842,6 @@ namespace BlackC
          */
         public bool parseInitDeclaratorList()
         {
-            int cuepoint = scanner.record();
             bool result = parseInitDeclarator();
             bool empty = result;
             while (result)
@@ -412,10 +857,6 @@ namespace BlackC
                 {
                     scanner.rewind(cuepoint2);
                 }
-            }
-            if (!result)
-            {
-                scanner.rewind(cuepoint);
             }
             return empty;
         }
@@ -639,7 +1080,6 @@ namespace BlackC
          */
         public bool parseStructDeclaratorList()
         {
-            int cuepoint = scanner.record();
             bool result = parseStructDeclarator();
             bool empty = result;
             while (result)
@@ -655,10 +1095,6 @@ namespace BlackC
                 {
                     scanner.rewind(cuepoint2);
                 }
-            }
-            if (!result)
-            {
-                scanner.rewind(cuepoint);
             }
             return empty;
         }
@@ -783,7 +1219,6 @@ namespace BlackC
          */
         public bool parseEnumeratorList()
         {
-            int cuepoint = scanner.record();
             bool result = parseEnumerator();
             bool empty = result;
             while (result)
@@ -799,10 +1234,6 @@ namespace BlackC
                 {
                     scanner.rewind(cuepoint2);
                 }
-            }
-            if (!result)
-            {
-                scanner.rewind(cuepoint);
             }
             return empty;
         }
@@ -931,9 +1362,10 @@ namespace BlackC
                     }
                 }
             }
-            if (!result)
+            bool empty = result;
+            while (result)
             {
-                scanner.rewind(cuepoint);
+                int cuepoint2 = scanner.record();
                 result = parseDirectDeclarator();           //direct-declarator [ type-qualifier-list[opt] assignment-expression[opt] ]
                 if (result)
                 {
@@ -947,50 +1379,22 @@ namespace BlackC
                         result = (token is tRBracket);
                     }
                 }
-            }
-            if (!result)
-            {
-                scanner.rewind(cuepoint);
-                result = parseDirectDeclarator();           //direct-declarator [ static type-qualifier-list[opt] assignment-expression ]
-                if (result)
+                if (!result)
                 {
-                    scanner.rewind(cuepoint);
-                    token = scanner.getToken();
-                    result = (token is tLBracket);
+                    scanner.rewind(cuepoint2);
+                    result = parseDirectDeclarator();           //direct-declarator [ static type-qualifier-list[opt] assignment-expression ]
                     if (result)
                     {
+                        scanner.rewind(cuepoint);
                         token = scanner.getToken();
-                        result = (token is tStatic);
-                        if (result)
-                        {
-                            parseTypeQualList();
-                            result = parseAssignExpression();
-                            if (result)
-                            {
-                                token = scanner.getToken();
-                                result = (token is tRBracket);
-                            }
-                        }
-                    }
-                }
-            }
-            if (!result)
-            {
-                scanner.rewind(cuepoint);
-                result = parseDirectDeclarator();           //direct-declarator [ type-qualifier-list static assignment-expression ]
-                if (result)
-                {
-                    token = scanner.getToken();
-                    result = (token is tLBracket);
-                    if (result)
-                    {
-                        result = parseTypeQualList();
+                        result = (token is tLBracket);
                         if (result)
                         {
                             token = scanner.getToken();
                             result = (token is tStatic);
                             if (result)
                             {
+                                parseTypeQualList();
                                 result = parseAssignExpression();
                                 if (result)
                                 {
@@ -1001,71 +1405,99 @@ namespace BlackC
                         }
                     }
                 }
-            }
-            if (!result)
-            {
-                scanner.rewind(cuepoint);
-                result = parseDirectDeclarator();           //direct-declarator [ type-qualifier-list[opt] * ]
-                if (result)
+                if (!result)
                 {
-                    token = scanner.getToken();
-                    result = (token is tLBracket);
+                    scanner.rewind(cuepoint2);
+                    result = parseDirectDeclarator();           //direct-declarator [ type-qualifier-list static assignment-expression ]
                     if (result)
                     {
-                        parseTypeQualList();
                         token = scanner.getToken();
-                        result = (token is tAsterisk);
+                        result = (token is tLBracket);
                         if (result)
                         {
-                            token = scanner.getToken();
-                            result = (token is tRBrace);
+                            result = parseTypeQualList();
+                            if (result)
+                            {
+                                token = scanner.getToken();
+                                result = (token is tStatic);
+                                if (result)
+                                {
+                                    result = parseAssignExpression();
+                                    if (result)
+                                    {
+                                        token = scanner.getToken();
+                                        result = (token is tRBracket);
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-            }
-            if (!result)
-            {
-                scanner.rewind(cuepoint);
-                result = parseDirectDeclarator();           //direct-declarator ( parameter-type-list )
-                if (result)
+                if (!result)
                 {
-                    token = scanner.getToken();
-                    result = (token is tLParen);
+                    scanner.rewind(cuepoint2);
+                    result = parseDirectDeclarator();           //direct-declarator [ type-qualifier-list[opt] * ]
                     if (result)
                     {
-                        result = parseParameterTypeList();
+                        token = scanner.getToken();
+                        result = (token is tLBracket);
                         if (result)
                         {
+                            parseTypeQualList();
                             token = scanner.getToken();
-                            result = (token is tRParen);
+                            result = (token is tAsterisk);
+                            if (result)
+                            {
+                                token = scanner.getToken();
+                                result = (token is tRBrace);
+                            }
                         }
                     }
                 }
-            }
-            if (!result)
-            {
-                scanner.rewind(cuepoint);
-                result = parseDirectDeclarator();           //direct-declarator ( identifier-list[opt] )
-                if (result)
+                if (!result)
                 {
-                    token = scanner.getToken();
-                    result = (token is tLParen);
+                    scanner.rewind(cuepoint2);
+                    result = parseDirectDeclarator();           //direct-declarator ( parameter-type-list )
                     if (result)
                     {
-                        parseIdentifierList();
+                        token = scanner.getToken();
+                        result = (token is tLParen);
                         if (result)
                         {
-                            token = scanner.getToken();
-                            result = (token is tRParen);
+                            result = parseParameterTypeList();
+                            if (result)
+                            {
+                                token = scanner.getToken();
+                                result = (token is tRParen);
+                            }
+                        }
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                    result = parseDirectDeclarator();           //direct-declarator ( identifier-list[opt] )
+                    if (result)
+                    {
+                        token = scanner.getToken();
+                        result = (token is tLParen);
+                        if (result)
+                        {
+                            parseIdentifierList();
+                            if (result)
+                            {
+                                token = scanner.getToken();
+                                result = (token is tRParen);
+                            }
                         }
                     }
                 }
             }
-            if (!result)
+            if (!empty)
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return empty;
         }
 
         /*(6.7.5) 
@@ -1139,7 +1571,6 @@ namespace BlackC
          */
         public bool parseParameterList()
         {
-            int cuepoint = scanner.record();
             bool result = parseParameterDeclar();
             bool empty = result;
             while (result)
@@ -1155,10 +1586,6 @@ namespace BlackC
                 {
                     scanner.rewind(cuepoint2);
                 }
-            }
-            if (!result)
-            {
-                scanner.rewind(cuepoint);
             }
             return empty;
         }
@@ -1271,10 +1698,11 @@ namespace BlackC
                     result = (token is tRParen);
                 }
             }
-            if (!result)
+            bool empty = result;
+            while (result)
             {
-                scanner.rewind(cuepoint);        //direct-abstract-declarator[opt] [ type-qualifier-list[opt] assignment-expression[opt] ]
-                parseDirectAbstractDeclarator();
+                int cuepoint2 = scanner.record();
+                parseDirectAbstractDeclarator();    //direct-abstract-declarator[opt] [ type-qualifier-list[opt] assignment-expression[opt] ]
                 token = scanner.getToken();
                 result = (token is tLBracket);
                 if (result)
@@ -1284,21 +1712,64 @@ namespace BlackC
                     token = scanner.getToken();
                     result = (token is tRBracket);
                 }
-            }
-            if (!result)
-            {
-                scanner.rewind(cuepoint);        //direct-abstract-declarator[opt] [ static type-qualifier-list[opt] assignment-expression ]
-                parseDirectAbstractDeclarator();
-                token = scanner.getToken();
-                result = (token is tLBracket);
-                if (result)
+                
+                if (!result)
                 {
+                    scanner.rewind(cuepoint2);        //direct-abstract-declarator[opt] [ static type-qualifier-list[opt] assignment-expression ]
+                    parseDirectAbstractDeclarator();
                     token = scanner.getToken();
-                    result = (token is tStatic);
+                    result = (token is tLBracket);
                     if (result)
                     {
-                        parseTypeQualList();
-                        result = parseAssignExpression();
+                        token = scanner.getToken();
+                        result = (token is tStatic);
+                        if (result)
+                        {
+                            parseTypeQualList();
+                            result = parseAssignExpression();
+                            if (result)
+                            {
+                                token = scanner.getToken();
+                                result = (token is tRBracket);
+                            }
+                        }
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);        //direct-abstract-declarator[opt] [ type-qualifier-list static assignment-expression ]
+                    parseDirectAbstractDeclarator();
+                    token = scanner.getToken();
+                    result = (token is tLBracket);
+                    if (result)
+                    {
+                        result = parseTypeQualList();
+                        if (result)
+                        {
+                            token = scanner.getToken();
+                            result = (token is tStatic);
+                            if (result)
+                            {
+                                result = parseAssignExpression();
+                                if (result)
+                                {
+                                    token = scanner.getToken();
+                                    result = (token is tRBracket);
+                                }
+                            }
+                        }
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);        //direct-abstract-declarator[opt] [ * ]
+                    parseDirectAbstractDeclarator();
+                    token = scanner.getToken();
+                    result = (token is tLBracket);
+                    if (result)
+                    {
+                        token = scanner.getToken();
+                        result = (token is tAsterisk);
                         if (result)
                         {
                             token = scanner.getToken();
@@ -1306,70 +1777,28 @@ namespace BlackC
                         }
                     }
                 }
-            }
-            if (!result)
-            {
-                scanner.rewind(cuepoint);        //direct-abstract-declarator[opt] [ type-qualifier-list static assignment-expression ]
-                parseDirectAbstractDeclarator();
-                token = scanner.getToken();
-                result = (token is tLBracket);
-                if (result)
+                if (!result)
                 {
-                    result = parseTypeQualList();
+                    scanner.rewind(cuepoint2);               //direct-abstract-declarator[opt] ( parameter-type-list[opt] )
+                    parseDirectAbstractDeclarator();
+                    token = scanner.getToken();
+                    result = (token is tLParen);
                     if (result)
                     {
-                        token = scanner.getToken();
-                        result = (token is tStatic);
+                        result = parseParameterTypeList();
                         if (result)
                         {
-                            result = parseAssignExpression();
-                            if (result)
-                            {
-                                token = scanner.getToken();
-                                result = (token is tRBracket);
-                            }                            
+                            token = scanner.getToken();
+                            result = (token is tRParen);
                         }
                     }
                 }
             }
-            if (!result)
-            {
-                scanner.rewind(cuepoint);        //direct-abstract-declarator[opt] [ * ]
-                parseDirectAbstractDeclarator();
-                token = scanner.getToken();
-                result = (token is tLBracket);
-                if (result)
-                {
-                    token = scanner.getToken();
-                    result = (token is tAsterisk);
-                    if (result)
-                    {
-                        token = scanner.getToken();
-                        result = (token is tRBracket);
-                    }
-                }
-            }
-            if (!result)
-            {
-                scanner.rewind(cuepoint);               //direct-abstract-declarator[opt] ( parameter-type-list[opt] )
-                parseDirectAbstractDeclarator();
-                token = scanner.getToken();
-                result = (token is tLParen);
-                if (result)
-                {
-                    result = parseParameterTypeList();
-                    if (result)
-                    {
-                        token = scanner.getToken();
-                        result = (token is tRParen);
-                    }
-                }
-            }
-            if (!result)
+            if (!empty)
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return empty;
         }
 
         /*(6.7.7) 
@@ -1435,35 +1864,25 @@ namespace BlackC
          */
         public bool parseInitializerList()
         {
-            bool result = parseDesignation();
-            if (result)
-            {
-                result = parseInitializer();
-            }
-            if (!result)
-            {
-                result = parseInitializer();
-            }
-            if (!result)
+            parseDesignation();
+            bool result = parseInitializer();
+            bool empty = result;
+            while (result)
             {
                 int cuepoint = scanner.record();
-                result = parseInitializerList();
+                Token token = scanner.getToken();
+                result = (token is tComma);
                 if (result)
                 {
-                    Token token = scanner.getToken();
-                    result = (token is tComma);
-                    if (result)
-                    {
-                        parseDesignation();
-                        result = parseInitializer();
-                    }
+                    parseDesignation();
+                    result = parseInitializer();
                 }
                 if (!result)
                 {
                     scanner.rewind(cuepoint);
                 }
             }
-            return result;
+            return empty;
         }
 
         /*(6.7.8) 

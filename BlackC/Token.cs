@@ -314,12 +314,14 @@ namespace BlackC
 
     class tIdentifier : Token
     {
-        String ident;
+        public String ident;
+        public bool isTypeDef;
 
         public tIdentifier(String _ident)
             : base()
         {
             ident = _ident;
+            isTypeDef = false;
         }
 
         public override string ToString()
@@ -372,6 +374,22 @@ namespace BlackC
         }
     }
 
+    class tCharacterConstant : Token
+    {
+        Char val;
+
+        public tCharacterConstant(Char _val)
+            : base()
+        {
+            val = _val;
+        }
+
+        public override string ToString()
+        {
+            return "CHAR CONSTANT (" + val + ")";
+        }
+    }
+
     class tStringConstant : Token
     {
         String val;
@@ -390,7 +408,7 @@ namespace BlackC
 
     //- punctuation -----------------------------------------------------------
 
-    class tLBracket : Token
+    class tLBracket : Token                 //[
     {
         public override string ToString()
         {
@@ -398,7 +416,7 @@ namespace BlackC
         }
     }
 
-    class tRBracket : Token
+    class tRBracket : Token                 //]
     {
         public override string ToString()
         {
@@ -406,7 +424,7 @@ namespace BlackC
         }
     }
 
-    class tLParen : Token
+    class tLParen : Token                   //(
     {
         public override string ToString()
         {
@@ -414,7 +432,7 @@ namespace BlackC
         }
     }
 
-    class tRParen : Token
+    class tRParen : Token                   //)
     {
         public override string ToString()
         {
@@ -422,7 +440,7 @@ namespace BlackC
         }
     }
 
-    class tLBrace : Token
+    class tLBrace : Token                   //{
     {
         public override string ToString()
         {
@@ -430,7 +448,7 @@ namespace BlackC
         }
     }
 
-    class tRBrace : Token
+    class tRBrace : Token                   //}
     {
         public override string ToString()
         {
