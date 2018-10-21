@@ -315,13 +315,11 @@ namespace BlackC
     class tIdentifier : Token
     {
         public String ident;
-        public bool isTypeDef;
 
         public tIdentifier(String _ident)
             : base()
         {
             ident = _ident;
-            isTypeDef = false;
         }
 
         public override string ToString()
@@ -408,22 +406,6 @@ namespace BlackC
 
     //- punctuation -----------------------------------------------------------
 
-    class tLBracket : Token                 //[
-    {
-        public override string ToString()
-        {
-            return "LEFT BRACKET";
-        }
-    }
-
-    class tRBracket : Token                 //]
-    {
-        public override string ToString()
-        {
-            return "RIGHT BRACKET";
-        }
-    }
-
     class tLParen : Token                   //(
     {
         public override string ToString()
@@ -456,6 +438,22 @@ namespace BlackC
         }
     }
 
+    class tLBracket : Token                 //[
+    {
+        public override string ToString()
+        {
+            return "LEFT BRACKET";
+        }
+    }
+
+    class tRBracket : Token                 //]
+    {
+        public override string ToString()
+        {
+            return "RIGHT BRACKET";
+        }
+    }
+
     class tPeriod : Token
     {
         public override string ToString()
@@ -464,35 +462,27 @@ namespace BlackC
         }
     }
 
-    class tArrow : Token
+    class tComma : Token
     {
         public override string ToString()
         {
-            return "ARROW";
+            return "COMMA";
         }
     }
 
-    class tPlusPlus : Token
+    class tColon : Token
     {
         public override string ToString()
         {
-            return "PLUS PLUS";
+            return "COLON";
         }
     }
 
-    class tMinusMinus : Token
+    class tSemicolon : Token
     {
         public override string ToString()
         {
-            return "MINUS MINUS";
-        }
-    }
-
-    class tAmpersand : Token
-    {
-        public override string ToString()
-        {
-            return "AMPERSAND";
+            return "SEMICOLON";
         }
     }
 
@@ -504,19 +494,27 @@ namespace BlackC
         }
     }
 
-    class tPlus : Token
+    class tEllipsis : Token                     //...
     {
         public override string ToString()
         {
-            return "PLUS";
+            return "ELLIPSIS";
         }
     }
 
-    class tMinus : Token
+    class tArrow : Token                //->
     {
         public override string ToString()
         {
-            return "MINUS";
+            return "ARROW";
+        }
+    }
+
+    class tAmpersand : Token
+    {
+        public override string ToString()
+        {
+            return "AMPERSAND";
         }
     }
 
@@ -536,6 +534,46 @@ namespace BlackC
         }
     }
 
+    class tQuestion : Token
+    {
+        public override string ToString()
+        {
+            return "QUESTION";
+        }
+    }
+
+    class tPlus : Token
+    {
+        public override string ToString()
+        {
+            return "PLUS";
+        }
+    }
+
+    class tMinus : Token
+    {
+        public override string ToString()
+        {
+            return "MINUS";
+        }
+    }
+
+    class tPlusPlus : Token
+    {
+        public override string ToString()
+        {
+            return "PLUS PLUS";
+        }
+    }
+
+    class tMinusMinus : Token
+    {
+        public override string ToString()
+        {
+            return "MINUS MINUS";
+        }
+    }
+
     class tSlash : Token
     {
         public override string ToString()
@@ -552,7 +590,7 @@ namespace BlackC
         }
     }
 
-    class tLeftShift : Token
+    class tLeftShift : Token                //<<
     {
         public override string ToString()
         {
@@ -560,7 +598,7 @@ namespace BlackC
         }
     }
 
-    class tRightShift : Token
+    class tRightShift : Token               //>>
     {
         public override string ToString()
         {
@@ -632,7 +670,7 @@ namespace BlackC
         }
     }
 
-    class tDoubleAmp : Token
+    class tDoubleAmp : Token                    //&&
     {
         public override string ToString()
         {
@@ -640,43 +678,11 @@ namespace BlackC
         }
     }
 
-    class tDoubleBar : Token
+    class tDoubleBar : Token                    //||
     {
         public override string ToString()
         {
             return "BAR BAR";
-        }
-    }
-
-    class tQuestion : Token
-    {
-        public override string ToString()
-        {
-            return "QUESTION";
-        }
-    }
-
-    class tColon : Token
-    {
-        public override string ToString()
-        {
-            return "COLON";
-        }
-    }
-
-    class tSemicolon : Token
-    {
-        public override string ToString()
-        {
-            return "SEMICOLON";
-        }
-    }
-
-    class tEllipsis : Token
-    {
-        public override string ToString()
-        {
-            return "ELLIPSIS";
         }
     }
 
@@ -765,14 +771,6 @@ namespace BlackC
         public override string ToString()
         {
             return "BAR EQUAL";
-        }
-    }
-
-    class tComma : Token
-    {
-        public override string ToString()
-        {
-            return "COMMA";
         }
     }
 }

@@ -46,6 +46,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Arbor.cs" />
     <Compile Include="AST\Node.cs" />
     <Compile Include="BlackC.cs" />
     <Compile Include="Parser.cs" />

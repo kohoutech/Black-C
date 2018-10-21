@@ -29,6 +29,7 @@ namespace BlackC
     {
         Preprocessor preprocessor;
         Scanner scanner;
+        Arbor arbor;
 
         public Parser()
         {
@@ -148,6 +149,76 @@ namespace BlackC
                 {
                     scanner.rewind(cuepoint2);
                 }
+            }
+            bool empty = result;
+            while (result)
+            {
+                int cuepoint2 = scanner.record();           //postfix-expression [ expression ]
+                Token token = scanner.getToken();
+                result = (token is tLBracket);
+                if (result)
+                {
+                    result = parseExpression();
+                    if (result)
+                    {
+                        token = scanner.getToken();
+                        result = (token is tRBracket);
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);                  //postfix-expression ( argument-expression-list[opt] )
+                    token = scanner.getToken();
+                    result = (token is tLParen);
+                    if (result)
+                    {
+                        parseArgExpressionList();
+                        token = scanner.getToken();
+                        result = (token is tRParen);
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);                  //postfix-expression . identifier
+                    token = scanner.getToken();
+                    result = (token is tPeriod);
+                    if (result)
+                    {
+                        token = scanner.getToken();
+                        result = (token is tIdentifier);
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);                  //postfix-expression -> identifier
+                    token = scanner.getToken();
+                    result = (token is tArrow);
+                    if (result)
+                    {
+                        token = scanner.getToken();
+                        result = (token is tIdentifier);
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);                  //postfix-expression ++
+                    token = scanner.getToken();
+                    result = (token is tPlusPlus);
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);                  //postfix-expression --
+                    token = scanner.getToken();
+                    result = (token is tMinusMinus);
+                    if (!result)
+                    {
+                        scanner.rewind(cuepoint2);
+                    }
+                }
+            }
+            if (!empty)
+            {
+                scanner.rewind(cuepoint);
             }
             return result;
         }
@@ -1365,36 +1436,51 @@ namespace BlackC
             bool empty = result;
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                result = parseDirectDeclarator();           //direct-declarator [ type-qualifier-list[opt] assignment-expression[opt] ]
+                int cuepoint2 = scanner.record();           //direct-declarator [ type-qualifier-list[opt] assignment-expression[opt] ]
+                token = scanner.getToken();
+                result = (token is tLBracket);
                 if (result)
                 {
+                    parseTypeQualList();
+                    parseAssignExpression();
+                    token = scanner.getToken();
+                    result = (token is tRBracket);
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);              //direct-declarator [ static type-qualifier-list[opt] assignment-expression ]
                     token = scanner.getToken();
                     result = (token is tLBracket);
                     if (result)
                     {
-                        parseTypeQualList();
-                        parseAssignExpression();
                         token = scanner.getToken();
-                        result = (token is tRBracket);
+                        result = (token is tStatic);
+                        if (result)
+                        {
+                            parseTypeQualList();
+                            result = parseAssignExpression();
+                            if (result)
+                            {
+                                token = scanner.getToken();
+                                result = (token is tRBracket);
+                            }
+                        }
                     }
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
-                    result = parseDirectDeclarator();           //direct-declarator [ static type-qualifier-list[opt] assignment-expression ]
+                    scanner.rewind(cuepoint2);                  //direct-declarator [ type-qualifier-list static assignment-expression ]
+                    token = scanner.getToken();
+                    result = (token is tLBracket);
                     if (result)
                     {
-                        scanner.rewind(cuepoint);
-                        token = scanner.getToken();
-                        result = (token is tLBracket);
+                        result = parseTypeQualList();
                         if (result)
                         {
                             token = scanner.getToken();
                             result = (token is tStatic);
                             if (result)
                             {
-                                parseTypeQualList();
                                 result = parseAssignExpression();
                                 if (result)
                                 {
@@ -1407,89 +1493,53 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
-                    result = parseDirectDeclarator();           //direct-declarator [ type-qualifier-list static assignment-expression ]
+                    scanner.rewind(cuepoint2);                      //direct-declarator [ type-qualifier-list[opt] * ]
+                    token = scanner.getToken();
+                    result = (token is tLBracket);
                     if (result)
                     {
+                        parseTypeQualList();
                         token = scanner.getToken();
-                        result = (token is tLBracket);
+                        result = (token is tAsterisk);
                         if (result)
                         {
-                            result = parseTypeQualList();
-                            if (result)
-                            {
-                                token = scanner.getToken();
-                                result = (token is tStatic);
-                                if (result)
-                                {
-                                    result = parseAssignExpression();
-                                    if (result)
-                                    {
-                                        token = scanner.getToken();
-                                        result = (token is tRBracket);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                if (!result)
-                {
-                    scanner.rewind(cuepoint2);
-                    result = parseDirectDeclarator();           //direct-declarator [ type-qualifier-list[opt] * ]
-                    if (result)
-                    {
-                        token = scanner.getToken();
-                        result = (token is tLBracket);
-                        if (result)
-                        {
-                            parseTypeQualList();
                             token = scanner.getToken();
-                            result = (token is tAsterisk);
-                            if (result)
-                            {
-                                token = scanner.getToken();
-                                result = (token is tRBrace);
-                            }
+                            result = (token is tRBrace);
                         }
                     }
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
-                    result = parseDirectDeclarator();           //direct-declarator ( parameter-type-list )
+                    scanner.rewind(cuepoint2);                      //direct-declarator ( parameter-type-list )
+                    token = scanner.getToken();
+                    result = (token is tLParen);
                     if (result)
                     {
-                        token = scanner.getToken();
-                        result = (token is tLParen);
+                        result = parseParameterTypeList();
                         if (result)
                         {
-                            result = parseParameterTypeList();
-                            if (result)
-                            {
-                                token = scanner.getToken();
-                                result = (token is tRParen);
-                            }
+                            token = scanner.getToken();
+                            result = (token is tRParen);
                         }
                     }
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
-                    result = parseDirectDeclarator();           //direct-declarator ( identifier-list[opt] )
+                    scanner.rewind(cuepoint2);                  //direct-declarator ( identifier-list[opt] )
+                    token = scanner.getToken();
+                    result = (token is tLParen);
                     if (result)
                     {
-                        token = scanner.getToken();
-                        result = (token is tLParen);
+                        parseIdentifierList();
                         if (result)
                         {
-                            parseIdentifierList();
-                            if (result)
-                            {
-                                token = scanner.getToken();
-                                result = (token is tRParen);
-                            }
+                            token = scanner.getToken();
+                            result = (token is tRParen);
                         }
+                    }
+                    if (!result)
+                    {
+                        scanner.rewind(cuepoint2);
                     }
                 }
             }
@@ -1699,10 +1749,10 @@ namespace BlackC
                 }
             }
             bool empty = result;
+            result = true;                  //the base is optional, so we parse for the clauses, even if we didn't match the base
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                parseDirectAbstractDeclarator();    //direct-abstract-declarator[opt] [ type-qualifier-list[opt] assignment-expression[opt] ]
+                int cuepoint2 = scanner.record();     //direct-abstract-declarator[opt] [ type-qualifier-list[opt] assignment-expression[opt] ]
                 token = scanner.getToken();
                 result = (token is tLBracket);
                 if (result)
@@ -1712,11 +1762,10 @@ namespace BlackC
                     token = scanner.getToken();
                     result = (token is tRBracket);
                 }
-                
+
                 if (!result)
                 {
                     scanner.rewind(cuepoint2);        //direct-abstract-declarator[opt] [ static type-qualifier-list[opt] assignment-expression ]
-                    parseDirectAbstractDeclarator();
                     token = scanner.getToken();
                     result = (token is tLBracket);
                     if (result)
@@ -1738,7 +1787,6 @@ namespace BlackC
                 if (!result)
                 {
                     scanner.rewind(cuepoint2);        //direct-abstract-declarator[opt] [ type-qualifier-list static assignment-expression ]
-                    parseDirectAbstractDeclarator();
                     token = scanner.getToken();
                     result = (token is tLBracket);
                     if (result)
@@ -1763,7 +1811,6 @@ namespace BlackC
                 if (!result)
                 {
                     scanner.rewind(cuepoint2);        //direct-abstract-declarator[opt] [ * ]
-                    parseDirectAbstractDeclarator();
                     token = scanner.getToken();
                     result = (token is tLBracket);
                     if (result)
@@ -1780,7 +1827,6 @@ namespace BlackC
                 if (!result)
                 {
                     scanner.rewind(cuepoint2);               //direct-abstract-declarator[opt] ( parameter-type-list[opt] )
-                    parseDirectAbstractDeclarator();
                     token = scanner.getToken();
                     result = (token is tLParen);
                     if (result)
@@ -1791,6 +1837,10 @@ namespace BlackC
                             token = scanner.getToken();
                             result = (token is tRParen);
                         }
+                    }
+                    if (!result)
+                    {
+                        scanner.rewind(cuepoint2);
                     }
                 }
             }
@@ -1809,7 +1859,7 @@ namespace BlackC
         {
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            bool result = (token is tIdentifier);
+            bool result = ((token is tIdentifier) && arbor.isTypedef(((tIdentifier)token).ident));
             if (!result)
             {
                 scanner.rewind(cuepoint);
@@ -2424,16 +2474,10 @@ namespace BlackC
         */
         public bool parseExternalDeclaration()
         {
-            int cuepoint = scanner.record();
             bool result = parseFunctionDef();
             if (!result)
             {
-                scanner.rewind(cuepoint);
                 result = parseDeclaration();
-            }
-            if (!result)
-            {
-                scanner.rewind(cuepoint);
             }
             return result;
         }
@@ -2469,8 +2513,13 @@ namespace BlackC
         */
         public bool parseDeclarationList()
         {
-            bool result = true;
-            return result;
+            bool result = parseDeclaration();
+            bool empty = result;
+            while (result)
+            {
+                result = parseDeclaration();
+            }
+            return empty;
         }
 
         //-----------------------------------------------------------------------------
@@ -2488,6 +2537,8 @@ namespace BlackC
             //}
 
             scanner = new Scanner(lines);
+            arbor = new Arbor();
+
             parseTranslationUnit();
 
             Console.WriteLine("done parsing");
