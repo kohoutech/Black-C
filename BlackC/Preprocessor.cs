@@ -37,7 +37,12 @@ namespace BlackC
         {
             handleDirectives();
             removeBlockComments();
-            removeLineComments();            
+            removeLineComments();
+
+            //for (int i = 0; i < lines.Length; i++)
+            //{
+            //    Console.WriteLine(lines[i]);
+            //}
         }
 
         public void handleDirectives()
