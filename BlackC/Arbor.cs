@@ -23,6 +23,8 @@ using System.Linq;
 using System.Text;
 using System.IO;
 
+using Origami.AST;
+
 //arbor - a place where trees are grown
 
 namespace BlackC
@@ -34,15 +36,6 @@ namespace BlackC
         public Arbor()
         {
             typepdefids = new Dictionary<string, int>();
-
-            string[] lines = File.ReadAllLines("typedefs.txt");
-            foreach (String line in lines)
-            {
-                string[] parts = line.Split(' ');
-                String id = parts[0];
-                int count = Convert.ToInt32(parts[1]);
-                typepdefids.Add(id, count);
-            }
         }
 
         //temproary kludge to get around ambiguity in C99's grammar between typedef and identifier 
@@ -50,22 +43,29 @@ namespace BlackC
         //this will be removed once the rest of the semantic analysis is up & running and this is not needed anymore
         //crazy eh?
 
-        //returns false the first/second time we see a name in a type defintion, then true once its been defined
         public bool isTypedef(String id)
         {
             bool result = false;
             if (typepdefids.ContainsKey(id))
             {
-                if (typepdefids[id] > 0)
-                {
-                    typepdefids[id]--;
-                }
-                else
-                {
-                    result = true;
-                }
+                result = true;
             }
             return result;
+        }
+
+        internal void buildFunctionDef()
+        {
+            throw new NotImplementedException();
+        }
+
+        internal void setTypeDef(string typeid)
+        {
+            typepdefids[typeid] = 0;
+        }
+
+        internal void unsetTypeDef(string typeid)
+        {
+            typepdefids.Remove(typeid);
         }
     }
 }

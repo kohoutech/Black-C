@@ -45,6 +45,17 @@ namespace BlackC
             funcCount = 0;
         }
 
+        public bool isIdentifier(Token token)
+        {
+            bool result = (token is tIdentifier);
+            if (result)
+            {
+                tIdentifier id = (tIdentifier)token;
+                result = !arbor.isTypedef(id.ident);
+            }
+            return result;
+        }
+
         //- expressions ------------------------------------------------------
 
         /*(6.5.1) 
@@ -58,7 +69,7 @@ namespace BlackC
         {
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            bool result = (token is tIdentifier);
+            bool result = isIdentifier(token);
             if (!result)
             {
                 result = (token is tIntegerConstant);
@@ -143,7 +154,7 @@ namespace BlackC
                                     result = (token is tRBrace);
                                     if (!result)
                                     {
-                                        result = (token is tComma);
+                                        result = (token is tComma);             //the comma is optional
                                         if (result)
                                         {
                                             token = scanner.getToken();
@@ -195,7 +206,7 @@ namespace BlackC
                     if (result)
                     {
                         token = scanner.getToken();
-                        result = (token is tIdentifier);
+                        result = isIdentifier(token);
                     }
                 }
                 if (!result)
@@ -206,7 +217,7 @@ namespace BlackC
                     if (result)
                     {
                         token = scanner.getToken();
-                        result = (token is tIdentifier);
+                        result = isIdentifier(token);
                     }
                 }
                 if (!result)
@@ -247,7 +258,7 @@ namespace BlackC
                 int cuepoint2 = scanner.record();
                 Token token = scanner.getToken();
                 result = (token is tComma);
-                if (!result)
+                if (result)
                 {
                     result = parseAssignExpression();
                 }
@@ -575,7 +586,7 @@ namespace BlackC
             equality-expression == relational-expression
             equality-expression != relational-expression
          */
-        public bool parseEqualExpression()
+        public bool parseEqualityExpression()
         {
             bool result = parseRelationalExpression();
             bool empty = result;
@@ -613,7 +624,7 @@ namespace BlackC
          */
         public bool parseANDExpression()
         {
-            bool result = parseEqualExpression();
+            bool result = parseEqualityExpression();
             bool empty = result;
             while (result)
             {
@@ -622,7 +633,7 @@ namespace BlackC
                 result = (token is tAmpersand);
                 if (result)
                 {
-                    result = parseEqualExpression();
+                    result = parseEqualityExpression();
                 }
                 if (!result)
                 {
@@ -751,7 +762,7 @@ namespace BlackC
                 bool result2 = (token is tQuestion);
                 if (result2)
                 {
-                    result2 = parseExpression();
+                    result2 = parseExpression();        
                     if (result2)
                     {
                         token = scanner.getToken();
@@ -775,19 +786,22 @@ namespace BlackC
             conditional-expression
             unary-expression assignment-operator assignment-expression
          */
+        //for parsing purposes, we change the second rule to:
+        //conditional-expression assignment-operator assignment-expression
         public bool parseAssignExpression()
         {
             bool result = parseConditionalExpression();
-            if (!result)
+            if (result)
             {
-                result = parseUnaryExpression();
-                if (result)
+                int cuepoint = scanner.record();
+                bool result2 = parseAssignOperator();
+                if (result2)
                 {
-                    result = parseAssignOperator();
-                    if (result)
-                    {
-                        result = parseAssignExpression();
-                    }
+                    result2 = parseAssignExpression();
+                }
+                if (!result2)
+                {
+                    scanner.rewind(cuepoint);
                 }
             }
             return result;
@@ -819,13 +833,13 @@ namespace BlackC
         public bool parseExpression()
         {
             bool result = parseAssignExpression();
-            bool empty = result;
+            bool empty = !result;
             while (result)
             {
                 int cuepoint2 = scanner.record();
                 Token token = scanner.getToken();
                 result = (token is tComma);
-                if (!result)
+                if (result)
                 {
                     result = parseAssignExpression();
                 }
@@ -834,7 +848,7 @@ namespace BlackC
                     scanner.rewind(cuepoint2);
                 }
             }
-            return empty;
+            return !empty;
         }
 
         /*(6.6) 
@@ -866,10 +880,6 @@ namespace BlackC
             if (result)
             {
                 declarCount++;
-                if (declarCount == 385)
-                {
-                    declarCount = declarCount;
-                }
                 Console.WriteLine("parsed declaration " + declarCount.ToString());
             }
             else
@@ -892,7 +902,7 @@ namespace BlackC
             bool result = parseStorageClassSpec();
             if (result)
             {
-                Console.WriteLine("parsed storage class declaration-specs");
+                //Console.WriteLine("parsed storage class declaration-specs");
                 parseDeclarationSpecs();
             }
             else
@@ -900,7 +910,7 @@ namespace BlackC
                 result = parseTypeSpec();
                 if (result)
                 {
-                    Console.WriteLine("parsed type spec declaration-specs");
+                    //Console.WriteLine("parsed type spec declaration-specs");
                     parseDeclarationSpecs();
                 }
                 else
@@ -908,7 +918,7 @@ namespace BlackC
                     result = parseTypeQual();
                     if (result)
                     {
-                        Console.WriteLine("parsed type qual declaration-specs");
+                        //Console.WriteLine("parsed type qual declaration-specs");
                         parseDeclarationSpecs();
                     }
                     else
@@ -916,7 +926,7 @@ namespace BlackC
                         result = parseFunctionSpec();
                         if (result)
                         {
-                            Console.WriteLine("parsed func spec declaration-specs");
+                            //Console.WriteLine("parsed func spec declaration-specs");
                             parseDeclarationSpecs();
                         }
                     }
@@ -939,7 +949,7 @@ namespace BlackC
             bool result = parseInitDeclarator();
             if (result)
             {
-                Console.WriteLine("parsed init-declarator init-declarator-list");
+                //Console.WriteLine("parsed init-declarator init-declarator-list");
             }
             bool notEmpty = result;
             while (result)
@@ -952,7 +962,7 @@ namespace BlackC
                     result = parseInitDeclarator();
                     if (result)
                     {
-                        Console.WriteLine("parsed another init-declarator init-declarator-list");
+                        //Console.WriteLine("parsed another init-declarator init-declarator-list");
                     }
                 }
                 if (!result)
@@ -978,14 +988,14 @@ namespace BlackC
                 bool result2 = (token is tEqual);
                 if (!result2)
                 {
-                    Console.WriteLine("parsed declarator init-declarator");
+                    //Console.WriteLine("parsed declarator init-declarator");
                 }
                 if (result2)
                 {
                     result2 = parseInitializer();
                     if (!result2)
                     {
-                        Console.WriteLine("parsed declarator = initializer init-declarator");
+                        //Console.WriteLine("parsed declarator = initializer init-declarator");
                     }
                 }
                 if (!result2)
@@ -1011,7 +1021,7 @@ namespace BlackC
             bool result = ((token is tTypedef) || (token is tExtern) || (token is tStatic) || (token is tAuto) || (token is tRegister));
             if (result)
             {
-                Console.WriteLine("parsed storage class spec");
+                //Console.WriteLine("parsed storage class spec");
             }
             else 
             {
@@ -1045,7 +1055,7 @@ namespace BlackC
                 || (token is tFloat) || (token is tDouble) || (token is tSigned) || (token is tUnsigned));
             if (result)
             {
-                Console.WriteLine("parsed base type-spec");
+                //Console.WriteLine("parsed base type-spec");
             }
             if (!result)
             {
@@ -1053,7 +1063,7 @@ namespace BlackC
                 result = parseStructOrUnionSpec();
                 if (result)
                 {
-                    Console.WriteLine("parsed struct/union type-spec");
+                    //Console.WriteLine("parsed struct/union type-spec");
                 }
             }
             if (!result)
@@ -1061,7 +1071,7 @@ namespace BlackC
                 result = parseEnumeratorSpec();
                 if (result)
                 {
-                    Console.WriteLine("parsed enumeration type-spec");
+                    //Console.WriteLine("parsed enumeration type-spec");
                 }
             }
             if (!result)
@@ -1069,7 +1079,7 @@ namespace BlackC
                 result = parseTypedefName();
                 if (result)
                 {
-                    Console.WriteLine("parsed typedef type-spec");
+                    //Console.WriteLine("parsed typedef type-spec");
                 }
             }
             if (!result)
@@ -1095,7 +1105,7 @@ namespace BlackC
             if (result)
             {
                 Token token = scanner.getToken();
-                result = (token is tIdentifier);
+                result = isIdentifier(token);
                 if (result)
                 {
                     int cuepoint2 = scanner.record();
@@ -1103,7 +1113,7 @@ namespace BlackC
                     bool result2 = (token is tLBrace);
                     if (!result2)
                     {
-                        Console.WriteLine("parsed struct-or-union ident struct-or-union-spec");
+                        //Console.WriteLine("parsed struct-or-union ident struct-or-union-spec");
                     }
                     if (result2)
                     {
@@ -1114,7 +1124,7 @@ namespace BlackC
                             result2 = (token is tRBrace);
                             if (result2)
                             {
-                                Console.WriteLine("parsed struct-or-union ident struct-declar-list struct-or-union-spec");
+                                //Console.WriteLine("parsed struct-or-union ident struct-declar-list struct-or-union-spec");
                             }
                         }
                     }
@@ -1125,7 +1135,7 @@ namespace BlackC
                 }
                 else
                 {
-                    token = scanner.getToken();
+                    //token = scanner.getToken();
                     result = (token is tLBrace);
                     if (result)
                     {
@@ -1136,7 +1146,7 @@ namespace BlackC
                             result = (token is tRBrace);
                             if (result)
                             {
-                                Console.WriteLine("parsed struct-or-union struct-declar-list struct-or-union-spec");
+                                //Console.WriteLine("parsed struct-or-union struct-declar-list struct-or-union-spec");
                             }
                         }
                     }
@@ -1161,7 +1171,7 @@ namespace BlackC
             bool result = ((token is tStruct) || (token is tUnion));
             if (result)
             {
-                Console.WriteLine("parsed struct-or-union");
+                //Console.WriteLine("parsed struct-or-union");
             }
             if (!result)
             {
@@ -1181,7 +1191,7 @@ namespace BlackC
             bool result = parseStructDeclaration();         //the first field def
             if (result)
             {
-                Console.WriteLine("parsed struct-declar struct-declar-list");
+                //Console.WriteLine("parsed struct-declar struct-declar-list");
             }
             bool notEmpty = result;
             while (result)
@@ -1189,7 +1199,7 @@ namespace BlackC
                 result = parseStructDeclaration();          //the next field def
                 if (result)
                 {
-                    Console.WriteLine("parsed another struct-declar struct-declar-list");
+                    //Console.WriteLine("parsed another struct-declar struct-declar-list");
                 }
             }
             return notEmpty;
@@ -1213,7 +1223,7 @@ namespace BlackC
                     result = (token is tSemicolon);
                     if (result)
                     {
-                        Console.WriteLine("parsed spec-qual-list struct-declar-list struct-declar");
+                        //Console.WriteLine("parsed spec-qual-list struct-declar-list struct-declar");
                     }
                 }
             }
@@ -1238,7 +1248,7 @@ namespace BlackC
                 parseSpecQualList();
                 if (result)
                 {
-                    Console.WriteLine("parsed type-spec struct-qual-list");
+                    //Console.WriteLine("parsed type-spec struct-qual-list");
                 }
             }
             else
@@ -1250,7 +1260,7 @@ namespace BlackC
                 }
                 if (result)
                 {
-                    Console.WriteLine("parsed type-qual struct-qual-list");
+                    //Console.WriteLine("parsed type-qual struct-qual-list");
                 }
             }
             return result;
@@ -1267,7 +1277,7 @@ namespace BlackC
             bool result = parseStructDeclarator();      //the first field name
             if (result)
             {
-                Console.WriteLine("parsed struct-declar struct-declar-list");
+                //Console.WriteLine("parsed struct-declar struct-declar-list");
             }
             bool notEmpty = result;
             while (result)
@@ -1280,7 +1290,7 @@ namespace BlackC
                     result = parseStructDeclarator();       //the next field name
                     if (result)
                     {
-                        Console.WriteLine("parsed another struct-declar struct-declar-list");
+                        //Console.WriteLine("parsed another struct-declar struct-declar-list");
                     }
                 }
                 if (!result)
@@ -1311,12 +1321,12 @@ namespace BlackC
                     result2 = parseConstantExpression();
                     if (result2)
                     {
-                        Console.WriteLine("parsed declar const-exp struct-declar");
+                        //Console.WriteLine("parsed declar const-exp struct-declar");
                     }
                 }
                 if (!result2)
                 {
-                    Console.WriteLine("parsed declar struct-declar");
+                    //Console.WriteLine("parsed declar struct-declar");
                 }
                 if (!result2)
                 {
@@ -1332,7 +1342,7 @@ namespace BlackC
                     result = parseConstantExpression();
                     if (result)
                     {
-                        Console.WriteLine("parsed const-exp struct-declar");
+                        //Console.WriteLine("parsed const-exp struct-declar");
                     }
                 }
             }
@@ -1359,7 +1369,7 @@ namespace BlackC
             if (result)
             {
                 token = scanner.getToken();
-                result = (token is tIdentifier);
+                result = isIdentifier(token);
                 if (result)
                 {
                     int cuepoint2 = scanner.record();
@@ -1374,7 +1384,7 @@ namespace BlackC
                             result2 = (token is tRBrace);
                             if (result2)
                             {
-                                Console.WriteLine("parsed ident enumerator-list enum-spec");
+                                //Console.WriteLine("parsed ident enumerator-list enum-spec");
                             }
                             if (!result2)
                             {
@@ -1385,7 +1395,7 @@ namespace BlackC
                                     result2 = (token is tRBrace);
                                     if (result2)
                                     {
-                                        Console.WriteLine("parsed ident enumerator-list comma enum-spec");
+                                        //Console.WriteLine("parsed ident enumerator-list comma enum-spec");
                                     }
                                 }
                             }
@@ -1393,7 +1403,7 @@ namespace BlackC
                     }
                     if (!result2)
                     {
-                        Console.WriteLine("parsed ident enum-spec");
+                        //Console.WriteLine("parsed ident enum-spec");
                     }
                     if (!result2)
                     {
@@ -1413,7 +1423,7 @@ namespace BlackC
                             result = (token is tRBrace);
                             if (result)
                             {
-                                Console.WriteLine("parsed enumerator-list enum-spec");
+                                //Console.WriteLine("parsed enumerator-list enum-spec");
                             }
                             if (!result)
                             {
@@ -1424,7 +1434,7 @@ namespace BlackC
                                     result = (token is tRBrace);
                                     if (result)
                                     {
-                                        Console.WriteLine("parsed enumerator-list comma enum-spec");
+                                        //Console.WriteLine("parsed enumerator-list comma enum-spec");
                                     }
                                 }
                             }
@@ -1449,7 +1459,7 @@ namespace BlackC
             bool result = parseEnumerator();
             if (result)
             {
-                Console.WriteLine("parsed enumerator enumerator-list");
+                //Console.WriteLine("parsed enumerator enumerator-list");
             }
             bool notEmpty = result;
             while (result)
@@ -1462,7 +1472,7 @@ namespace BlackC
                     result = parseEnumerator();
                     if (result)
                     {
-                        Console.WriteLine("parsed another enumerator enumerator-list");
+                        //Console.WriteLine("parsed another enumerator enumerator-list");
                     }
                 }
                 if (!result)
@@ -1492,11 +1502,11 @@ namespace BlackC
                 }
                 if (result2)
                 {
-                    Console.WriteLine("parsed const = expr enumerator");
+                    //Console.WriteLine("parsed const = expr enumerator");
                 }
                 else
                 {
-                    Console.WriteLine("parsed const enumerator");
+                    //Console.WriteLine("parsed const enumerator");
                 }
                 if (!result2)
                 {
@@ -1514,10 +1524,10 @@ namespace BlackC
         {
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            bool result = (token is tIdentifier);
+            bool result = isIdentifier(token);
             if (result)
             {
-                Console.WriteLine("parsed enum const");
+                //Console.WriteLine("parsed enum const");
             }
             if (!result)
             {
@@ -1541,7 +1551,7 @@ namespace BlackC
             bool result = ((token is tConst) || (token is tRestrict) || (token is tVolatile));
             if (result)
             {
-                Console.WriteLine("parsed type qual");
+                //Console.WriteLine("parsed type qual");
             }
             if (!result)
             {
@@ -1561,7 +1571,7 @@ namespace BlackC
             bool result = (token is tInline);
             if (result)
             {
-                Console.WriteLine("parsed func spec");
+                //Console.WriteLine("parsed func spec");
             }
             if (!result)
             {
@@ -1585,7 +1595,7 @@ namespace BlackC
                 result = parseDirectDeclarator();
                 if (result)
                 {
-                    Console.WriteLine("parsed pointer direct-declar declar");
+                    //Console.WriteLine("parsed pointer direct-declar declar");
                 }
             }
             else
@@ -1593,7 +1603,7 @@ namespace BlackC
                 result = parseDirectDeclarator();
                 if (result)
                 {
-                    Console.WriteLine("parsed direct-declar declar");
+                    //Console.WriteLine("parsed direct-declar declar");
                 }
             }
             if (!result)
@@ -1618,10 +1628,10 @@ namespace BlackC
         {
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            bool result = (token is tIdentifier);               //identifier
+            bool result = isIdentifier(token);               //identifier
             if (result)
             {
-                Console.WriteLine("parsed ident direct-declar");
+                //Console.WriteLine("parsed ident direct-declar");
             }
             if (!result)
             {
@@ -1637,7 +1647,7 @@ namespace BlackC
                         result = (token is tRParen);
                         if (result)
                         {
-                            Console.WriteLine("parsed declar direct-declar");
+                            //Console.WriteLine("parsed declar direct-declar");
                         }
                     }
                 }
@@ -1656,7 +1666,7 @@ namespace BlackC
                     result = (token is tRBracket);
                     if (result)
                     {
-                        Console.WriteLine("parsed assign expr direct-declar");
+                        //Console.WriteLine("parsed assign expr direct-declar");
                     }
                 }
                 if (!result)
@@ -1678,7 +1688,7 @@ namespace BlackC
                                 result = (token is tRBracket);
                                 if (result)
                                 {
-                                    Console.WriteLine("parsed static assign expr direct-declar");
+                                    //Console.WriteLine("parsed static assign expr direct-declar");
                                 }
                             }
                         }
@@ -1705,7 +1715,7 @@ namespace BlackC
                                     result = (token is tRBracket);
                                     if (result)
                                     {
-                                        Console.WriteLine("parsed type-qual-list direct-declar");
+                                        //Console.WriteLine("parsed type-qual-list direct-declar");
                                     }
                                 }
                             }
@@ -1728,7 +1738,7 @@ namespace BlackC
                             result = (token is tRBrace);
                             if (result)
                             {
-                                Console.WriteLine("parsed pointer direct-declar");
+                                //Console.WriteLine("parsed pointer direct-declar");
                             }
                         }
                     }
@@ -1747,7 +1757,7 @@ namespace BlackC
                             result = (token is tRParen);
                             if (result)
                             {
-                                Console.WriteLine("parsed param-type-list direct-declar");
+                                //Console.WriteLine("parsed param-type-list direct-declar");
                             }
                         }
                     }
@@ -1766,7 +1776,7 @@ namespace BlackC
                             result = (token is tRParen);
                             if (result)
                             {
-                                Console.WriteLine("parsed ident-list direct-declar");
+                                //Console.WriteLine("parsed ident-list direct-declar");
                             }
                         }
                     }
@@ -1799,7 +1809,7 @@ namespace BlackC
                 parsePointer();
                 if (result)
                 {
-                    Console.WriteLine("parsed * type-qual pointer");
+                    //Console.WriteLine("parsed * type-qual pointer");
                 }
             }
             if (!result)
@@ -1819,7 +1829,7 @@ namespace BlackC
             bool result = parseTypeQual();
             if (result)
             {
-                Console.WriteLine("parsed type-qual type-qual-list");
+                //Console.WriteLine("parsed type-qual type-qual-list");
             }
             bool notEmpty = result;
             while (result)
@@ -1827,7 +1837,7 @@ namespace BlackC
                 result = parseTypeQual();
                 if (result)
                 {
-                    Console.WriteLine("parsed another type-qual type-qual-list");
+                    //Console.WriteLine("parsed another type-qual type-qual-list");
                 }
             }
             return notEmpty;
@@ -1852,12 +1862,12 @@ namespace BlackC
                     result2 = (token is tEllipsis);
                     if (result2)
                     {
-                        Console.WriteLine("parsed param-list elipsis param-type-list");
+                        //Console.WriteLine("parsed param-list elipsis param-type-list");
                     }
                 }
                 if (!result2)
                 {
-                    Console.WriteLine("parsed param-list param-type-list");
+                    //Console.WriteLine("parsed param-list param-type-list");
                 }
                 if (!result2)
                 {
@@ -1877,7 +1887,7 @@ namespace BlackC
             bool result = parseParameterDeclar();
             if (result)
             {
-                Console.WriteLine("parsed param-declar param-list");
+                //Console.WriteLine("parsed param-declar param-list");
             }
             bool notEmpty = result;
             while (result)
@@ -1890,7 +1900,7 @@ namespace BlackC
                     result = parseParameterDeclar();
                     if (result)
                     {
-                        Console.WriteLine("parsed another param-declar param-list");
+                        //Console.WriteLine("parsed another param-declar param-list");
                     }
                 }
                 if (!result)
@@ -1915,14 +1925,14 @@ namespace BlackC
                 bool result2 = parseDeclarator();
                 if (result)
                 {
-                    Console.WriteLine("parsed declar-spec declar param-declar");
+                    //Console.WriteLine("parsed declar-spec declar param-declar");
                 }
                 if (!result2)
                 {
                     parseAbstractDeclarator();
                     if (result)
                     {
-                        Console.WriteLine("parsed declar-spec abs-declar param-declar");
+                        //Console.WriteLine("parsed declar-spec abs-declar param-declar");
                     }
                 }
             }
@@ -1942,10 +1952,10 @@ namespace BlackC
         {
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            bool result = (token is tIdentifier);
+            bool result = isIdentifier(token);
             if (result)
             {
-                Console.WriteLine("parsed ident ident-list");
+                //Console.WriteLine("parsed ident ident-list");
             }
             bool empty = !result;
             while (result)
@@ -1956,10 +1966,10 @@ namespace BlackC
                 if (!result)
                 {
                     token = scanner.getToken();
-                    result = (token is tIdentifier);
+                    result = isIdentifier(token);
                     if (result)
                     {
-                        Console.WriteLine("parsed another ident ident-list");
+                        //Console.WriteLine("parsed another ident ident-list");
                     }
                 }
                 if (!result)
@@ -1986,7 +1996,7 @@ namespace BlackC
                 parseAbstractDeclarator();
                 if (result)
                 {
-                    Console.WriteLine("parsed spec-qual abstractor-declarator type-name");
+                    //Console.WriteLine("parsed spec-qual abstractor-declarator type-name");
                 }
             }
             return result;
@@ -2002,14 +2012,14 @@ namespace BlackC
             bool result = parsePointer();
             if (result)
             {
-                Console.WriteLine("parsed pointer abstractor-declarator");
+                //Console.WriteLine("parsed pointer abstractor-declarator");
             }
             if (result)
             {
                 parseDirectAbstractDeclarator();        //don't need result of this call, the base case <pointer> is true in either case
                 if (result)
                 {
-                    Console.WriteLine("parsed pointer direct-abs abstractor-declarator");
+                    //Console.WriteLine("parsed pointer direct-abs abstractor-declarator");
                 }
             }
             else
@@ -2017,7 +2027,7 @@ namespace BlackC
                 result = parseDirectAbstractDeclarator();
                 if (result)
                 {
-                    Console.WriteLine("parsed direct-abs abstractor-declarator");
+                    //Console.WriteLine("parsed direct-abs abstractor-declarator");
                 }
             }
             return result;
@@ -2046,7 +2056,7 @@ namespace BlackC
                     result = (token is tRParen);
                     if (result)
                     {
-                        Console.WriteLine("parsed abstract-declarator direct-abstractor-declarator");
+                        //Console.WriteLine("parsed abstract-declarator direct-abstractor-declarator");
                     }
                 }
             }
@@ -2069,7 +2079,7 @@ namespace BlackC
                     result = (token is tRBracket);
                     if (result)
                     {
-                        Console.WriteLine("parsed assignment expr direct-abstractor-declarator");
+                        //Console.WriteLine("parsed assignment expr direct-abstractor-declarator");
                     }
                 }
 
@@ -2092,7 +2102,7 @@ namespace BlackC
                                 result = (token is tRBracket);
                                 if (result)
                                 {
-                                    Console.WriteLine("parsed static assignment expr direct-abstractor-declarator");
+                                    //Console.WriteLine("parsed static assignment expr direct-abstractor-declarator");
                                 }
                             }
                         }
@@ -2119,7 +2129,7 @@ namespace BlackC
                                     result = (token is tRBracket);
                                     if (result)
                                     {
-                                        Console.WriteLine("parsed type qual assignment expr direct-abstractor-declarator");
+                                        //Console.WriteLine("parsed type qual assignment expr direct-abstractor-declarator");
                                     }
                                 }
                             }
@@ -2141,7 +2151,7 @@ namespace BlackC
                             result = (token is tRBracket);
                             if (result)
                             {
-                                Console.WriteLine("parsed pointer direct-abstractor-declarator");
+                                //Console.WriteLine("parsed pointer direct-abstractor-declarator");
                             }
                         }
                     }
@@ -2160,7 +2170,7 @@ namespace BlackC
                             result = (token is tRParen);
                             if (result)
                             {
-                                Console.WriteLine("parsed param type list direct-abstractor-declarator");
+                                //Console.WriteLine("parsed param type list direct-abstractor-declarator");
                             }
                         }
                     }
@@ -2191,7 +2201,7 @@ namespace BlackC
             if (result)
             {
                 tIdentifier id = (tIdentifier)token;
-                Console.WriteLine("parsed typedef name = " + id.ident);
+                //Console.WriteLine("parsed typedef name = " + id.ident);
             }
             if (!result)
             {
@@ -2213,7 +2223,7 @@ namespace BlackC
             bool result = parseAssignExpression();
             if (result)
             {
-                Console.WriteLine("parsed assign expr initializer");
+                //Console.WriteLine("parsed assign expr initializer");
             }
             else
             {
@@ -2229,7 +2239,7 @@ namespace BlackC
                         result = (token is tRBrace);
                         if (result)
                         {
-                            Console.WriteLine("parsed initializer-list initializer");
+                            //Console.WriteLine("parsed initializer-list initializer");
                         }
                         else
                         {
@@ -2240,7 +2250,7 @@ namespace BlackC
                                 result = (token is tRBrace);
                                 if (result)
                                 {
-                                    Console.WriteLine("parsed initializer-list and comma initializer");
+                                    //Console.WriteLine("parsed initializer-list and comma initializer");
                                 }
                             }
                         }
@@ -2266,7 +2276,7 @@ namespace BlackC
             bool notEmpty = result;
             if (result)
             {
-                Console.WriteLine("parsed (designation) initializer initializer-list");
+                //Console.WriteLine("parsed (designation) initializer initializer-list");
             }
             while (result)
             {
@@ -2279,7 +2289,7 @@ namespace BlackC
                     result = parseInitializer();
                     if (result)
                     {
-                        Console.WriteLine("parsed another (designation) initializer initializer-list");
+                        //Console.WriteLine("parsed another (designation) initializer initializer-list");
                     }
                 }
                 if (!result)
@@ -2304,7 +2314,7 @@ namespace BlackC
                 result = (token is tEqual);
                 if (result)
                 {
-                    Console.WriteLine("parsed designation");
+                    //Console.WriteLine("parsed designation");
                 }
             }
             if (!result)
@@ -2324,7 +2334,7 @@ namespace BlackC
             bool result = parseDesignator();
             if (result)
             {
-                Console.WriteLine("parsed designator designator-list");
+                //Console.WriteLine("parsed designator designator-list");
             }
             bool notEmpty = result;
             while (result)
@@ -2332,7 +2342,7 @@ namespace BlackC
                 result = parseDesignator();
                 if (result)
                 {
-                    Console.WriteLine("parsed another designator designator-list");
+                    //Console.WriteLine("parsed another designator designator-list");
                 }
             }
             return notEmpty;
@@ -2357,7 +2367,7 @@ namespace BlackC
                     result = (token is tRBracket);
                     if (result)
                     {
-                        Console.WriteLine("parsed constant expression designator");
+                        //Console.WriteLine("parsed constant expression designator");
                     }
                 }
             }
@@ -2367,10 +2377,10 @@ namespace BlackC
                 if (result)
                 {
                     token = scanner.getToken();
-                    result = (token is tIdentifier);
+                    result = isIdentifier(token);
                     if (result)
                     {
-                        Console.WriteLine("parsed dot identifier designator");
+                        //Console.WriteLine("parsed dot identifier designator");
                     }
                 }
             }
@@ -2428,7 +2438,7 @@ namespace BlackC
         {
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            bool result = (token is tIdentifier);             //identifier : statement
+            bool result = isIdentifier(token);             //identifier : statement
             if (result)
             {
                 token = scanner.getToken();
@@ -2580,12 +2590,12 @@ namespace BlackC
                             {
                                 int cuepoint2 = scanner.record();     //if ( expression ) statement else statement
                                 token = scanner.getToken();
-                                result = (token is tElse);
-                                if (result)
+                                bool result2 = (token is tElse);
+                                if (result2)
                                 {
-                                    result = parseStatement();
+                                    result2 = parseStatement();
                                 }
-                                if (!result)
+                                if (!result2)
                                 {
                                     scanner.rewind(cuepoint2);
                                 }
@@ -2777,7 +2787,7 @@ namespace BlackC
             if (result)
             {
                 token = scanner.getToken();
-                result = (token is tIdentifier);
+                result = isIdentifier(token);
                 if (result)
                 {
                     token = scanner.getToken();
@@ -2913,6 +2923,7 @@ namespace BlackC
 
             scanner = new Scanner(lines);
             arbor = new Arbor();
+            scanner.arbor = arbor;
 
             parseTranslationUnit();
 

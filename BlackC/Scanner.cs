@@ -32,6 +32,8 @@ namespace BlackC
         int pos;
         bool atEOF;
 
+        public Arbor arbor;
+
         List<Token> replay;
         int recpos;
 
@@ -69,6 +71,7 @@ namespace BlackC
         {
             linenum++;
             pos = 0;
+
             atEOF = (linenum == lines.Length);
             if (!atEOF)
             {
@@ -83,6 +86,20 @@ namespace BlackC
                 if (pos >= curline.Length)      //if at eoln
                 {
                     gotoNextLine();
+
+                    //the devil made me do it!
+                    if ((curline.Length > 1) && (curline[0] == '@'))
+                    {
+                        String typeid = curline.Substring(1);
+                        arbor.setTypeDef(typeid);
+                        gotoNextLine();
+                    }
+                    if ((curline.Length > 1) && (curline[0] == '^'))
+                    {
+                        String typeid = curline.Substring(1);
+                        arbor.unsetTypeDef(typeid);
+                        gotoNextLine();
+                    }
                 }
                 else
                 {
@@ -425,6 +442,24 @@ namespace BlackC
             }
         }
 
+        //works for now, needs improvement
+        private Token scanCharLiteral(char c)
+        {
+            char ch = (char)0;
+            if ((pos < curline.Length - 1) && (curline[pos] != '\\'))
+            {
+                ch = curline[pos];
+                pos += 2;
+            }
+            else
+            {
+                ch = curline[pos+1];
+                ch = (char)((int)ch - (int)'0');
+                pos += 3;
+            }
+            return new tCharacterConstant(ch);
+        }
+
         public Token scanString(char c)
         {
             String str = "";
@@ -435,12 +470,12 @@ namespace BlackC
                 char c1 = curline[pos++];
                 if (c1 != endchar)
                 {
-                    str = str + c;
+                    str = str + c1;
                     atend = !(pos < curline.Length);
                 }
                 else
                 {
-                    pos--;
+                    //pos--;
                     atend = true;
                 }
             }
@@ -541,6 +576,9 @@ namespace BlackC
                         break;
 
                     case '\'':
+                        token = scanCharLiteral(c);
+                        break;
+
                     case '"':
                         token = scanString(c);
                         break;
