@@ -67,5 +67,30 @@ namespace BlackC
         {
             typepdefids.Remove(typeid);
         }
+
+        internal ExprNode makeIntegerConstantNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal ExprNode makeFloatConstantNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal ExprNode makeCharConstantNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal ExprNode makeStringConstantNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal EnumeratorNode makeEnumeratorNode(EnumConstantNode enumconst, ConstExprNode constexpr)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

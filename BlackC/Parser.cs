@@ -45,8 +45,9 @@ namespace BlackC
             funcCount = 0;
         }
 
-        public bool isIdentifier(Token token)
+        public bool isIdentifier(Token token, out Node idNode)
         {
+            idNode = null;
             bool result = (token is tIdentifier);
             if (result)
             {
@@ -65,31 +66,48 @@ namespace BlackC
             string-literal
             ( expression )
          */
-        public bool parsePrimaryExpression()
+        public bool parsePrimaryExpression(out Node primeExpr)
         {
+            primeExpr = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            bool result = isIdentifier(token);
+            bool result = isIdentifier(token, out primeExpr);
             if (!result)
             {
                 result = (token is tIntegerConstant);
+                if (result)
+                {
+                    primeExpr = arbor.makeIntegerConstantNode(token);
+                }
             }
             if (!result)
             {
                 result = (token is tFloatConstant);
+                if (result)
+                {
+                    primeExpr = arbor.makeFloatConstantNode(token);
+                }
             }
             if (!result)
             {
                 result = (token is tCharacterConstant);
+                if (result)
+                {
+                    primeExpr = arbor.makeCharConstantNode(token);
+                }
             }
             if (!result)
             {
                 result = (token is tStringConstant);
+                if (result)
+                {
+                    primeExpr = arbor.makeStringConstantNode(token);
+                }
             }
             if (!result)
             {
                 scanner.rewind(cuepoint);
-                result = parseEnumerationConstant();
+                result = parseEnumerationConstant(out primeExpr);
             }
             if (!result)
             {
@@ -125,7 +143,7 @@ namespace BlackC
             postfix-expression ++
             postfix-expression --
          */
-        public bool parsePostfixExpression()
+        public bool parsePostfixExpression(out Node postfixExpr)
         {
             int cuepoint = scanner.record();
             bool result = parsePrimaryExpression();         //primary-expression
@@ -279,7 +297,7 @@ namespace BlackC
             sizeof unary-expression
             sizeof ( type-name )
          */
-        public bool parseUnaryExpression()
+        public bool parseUnaryExpression(out Node expr)
         {
             int cuepoint = scanner.record();
             bool result = parsePostfixExpression();         //postfix-expression
@@ -370,7 +388,7 @@ namespace BlackC
             unary-expression
             ( type-name ) cast-expression
          */
-        public bool parseCastExpression()
+        public bool parseCastExpression(out Node expr)
         {
             bool result = parseUnaryExpression();
             if (!result)
@@ -406,7 +424,7 @@ namespace BlackC
             multiplicative-expression / cast-expression
             multiplicative-expression % cast-expression
          */
-        public bool parseMultExpression()
+        public bool parseMultExpression(out Node expr)
         {
             bool result = parseCastExpression();
             bool empty = result;
@@ -453,7 +471,7 @@ namespace BlackC
             additive-expression + multiplicative-expression
             additive-expression - multiplicative-expression
          */
-        public bool parseAddExpression()
+        public bool parseAddExpression(out Node addExpr)
         {
             bool result = parseMultExpression();
             bool empty = result;
@@ -490,7 +508,7 @@ namespace BlackC
             shift-expression << additive-expression
             shift-expression >> additive-expression
          */
-        public bool parseShiftExpression()
+        public bool parseShiftExpression(out Node expr)
         {
             bool result = parseAddExpression();
             bool empty = result;
@@ -529,7 +547,7 @@ namespace BlackC
             relational-expression <= shift-expression
             relational-expression >= shift-expression
          */
-        public bool parseRelationalExpression()
+        public bool parseRelationalExpression(out Node expr)
         {
             bool result = parseShiftExpression();
             bool empty = result;
@@ -586,7 +604,7 @@ namespace BlackC
             equality-expression == relational-expression
             equality-expression != relational-expression
          */
-        public bool parseEqualityExpression()
+        public bool parseEqualityExpression(out Node expr)
         {
             bool result = parseRelationalExpression();
             bool empty = result;
@@ -622,7 +640,7 @@ namespace BlackC
             equality-expression
             AND-expression & equality-expression
          */
-        public bool parseANDExpression()
+        public bool parseANDExpression(out Node expr)
         {
             bool result = parseEqualityExpression();
             bool empty = result;
@@ -648,7 +666,7 @@ namespace BlackC
             AND-expression
             exclusive-OR-expression ^ AND-expression
          */
-        public bool parseXORExpression()
+        public bool parseXORExpression(out Node expr)
         {
             bool result = parseANDExpression();
             bool empty = result;
@@ -674,7 +692,7 @@ namespace BlackC
             exclusive-OR-expression
             inclusive-OR-expression | exclusive-OR-expression
          */
-        public bool parseORExpression()
+        public bool parseORExpression(out Node expr)
         {
             bool result = parseXORExpression();
             bool empty = result;
@@ -700,7 +718,7 @@ namespace BlackC
             inclusive-OR-expression
             logical-AND-expression && inclusive-OR-expression
          */
-        public bool parseLogicalANDExpression()
+        public bool parseLogicalANDExpression(out Node expr)
         {
             bool result = parseORExpression();
             bool empty = result;
@@ -726,7 +744,7 @@ namespace BlackC
             logical-AND-expression
             logical-OR-expression || logical-AND-expression
          */
-        public bool parseLogicalORExpression()
+        public bool parseLogicalORExpression(out ExprNode expr)
         {
             bool result = parseLogicalANDExpression();
             bool empty = result;
@@ -752,7 +770,7 @@ namespace BlackC
             logical-OR-expression
             logical-OR-expression ? expression : conditional-expression
          */
-        public bool parseConditionalExpression()
+        public bool parseConditionalExpression(out Node expr)
         {
             bool result = parseLogicalORExpression();
             if (result)
@@ -788,7 +806,7 @@ namespace BlackC
          */
         //for parsing purposes, we change the second rule to:
         //conditional-expression assignment-operator assignment-expression
-        public bool parseAssignExpression()
+        public bool parseAssignExpression(out Node expr)
         {
             bool result = parseConditionalExpression();
             if (result)
@@ -830,9 +848,14 @@ namespace BlackC
             assignment-expression
             expression , assignment-expression
          */
-        public bool parseExpression()
+        public bool parseExpression(out Node expr)
         {
-            bool result = parseAssignExpression();
+            expr = new ExprNode();
+            bool result = parseAssignExpression(out expr);
+            if (result)
+            {
+                exprList.Add(expr);
+            }
             bool empty = !result;
             while (result)
             {
@@ -841,7 +864,11 @@ namespace BlackC
                 result = (token is tComma);
                 if (result)
                 {
-                    result = parseAssignExpression();
+                    result = parseAssignExpression(out expr);
+                    if (result)
+                    {
+                        exprList.Add(expr);
+                    }
                 }
                 if (!result)
                 {
@@ -855,9 +882,9 @@ namespace BlackC
          constant-expression:
             conditional-expression
          */
-        public bool parseConstantExpression()
+        public ExprNode parseConstantExpression()
         {
-            bool result = parseConditionalExpression();
+            ExprNode result = parseConditionalExpression();
             return result;
         }
 
@@ -1454,14 +1481,16 @@ namespace BlackC
             enumerator
             enumerator-list , enumerator
          */
-        public bool parseEnumeratorList()
+        public List<EnumeratorNode> parseEnumeratorList()
         {
-            bool result = parseEnumerator();
+            List<EnumeratorNode> enumlistnode = null;
+            EnumeratorNode enumnode = parseEnumerator();
+            bool result = (enumnode != null);
             if (result)
             {
-                //Console.WriteLine("parsed enumerator enumerator-list");
+                enumlistnode = new List<EnumeratorNode>();
+                enumlistnode.Add(enumnode);
             }
-            bool notEmpty = result;
             while (result)
             {
                 int cuepoint2 = scanner.record();
@@ -1469,10 +1498,11 @@ namespace BlackC
                 result = (token is tComma);
                 if (result)
                 {
-                    result = parseEnumerator();
+                    enumnode = parseEnumerator();
+                    result = (enumnode != null);
                     if (result)
                     {
-                        //Console.WriteLine("parsed another enumerator enumerator-list");
+                        enumlistnode.Add(enumnode);
                     }
                 }
                 if (!result)
@@ -1480,7 +1510,7 @@ namespace BlackC
                     scanner.rewind(cuepoint2);
                 }
             }
-            return notEmpty;
+            return enumlistnode;
         }
 
         /*(6.7.2.2) 
@@ -1488,9 +1518,12 @@ namespace BlackC
             enumeration-constant
             enumeration-constant = constant-expression
          */
-        public bool parseEnumerator()
+        public EnumeratorNode parseEnumerator()
         {
-            bool result = parseEnumerationConstant();
+            EnumeratorNode node = null;
+            EnumConstantNode enumconst = parseEnumerationConstant();
+            ConstExprNode constexpr = null;
+            bool result = (enumconst != null);
             if (result)
             {
                 int cuepoint = scanner.record();
@@ -1498,22 +1531,16 @@ namespace BlackC
                 bool result2 = (token is tEqual);
                 if (result2)
                 {
-                    result2 = parseConstantExpression();
-                }
-                if (result2)
-                {
-                    //Console.WriteLine("parsed const = expr enumerator");
-                }
-                else
-                {
-                    //Console.WriteLine("parsed const enumerator");
+                    ConstExprNode constexpr = parseConstantExpression();
+                    result2 = (constexpr != null);
                 }
                 if (!result2)
                 {
                     scanner.rewind(cuepoint);
                 }
+                node = arbor.makeEnumeratorNode(enumconst, constexpr);
             }
-            return result;
+            return node;
         }
 
         /*(6.4.4.3) 
@@ -2879,7 +2906,7 @@ namespace BlackC
                 result = parseDeclarator();
                 if (result)
                 {
-                    parseDesignatorList();
+                    parseDeclarationList();
                     result = parseCompoundStatement();
                 }
             }
@@ -2901,15 +2928,21 @@ namespace BlackC
             declaration
             declaration-list declaration
         */
-        public bool parseDeclarationList()
+        public List<DeclarationNode> parseDeclarationList()
         {
-            bool result = parseDeclaration();
-            bool notEmpty = result;
-            while (result)
+            List<DeclarationNode> declarList = null;
+            DeclarationNode declar = parseDeclaration();
+            if (declar != null)
             {
-                result = parseDeclaration();
+                declarList = new List<DeclarationNode>();
+                declarList.Add(declar);
             }
-            return notEmpty;
+            while (declar != null)
+            {
+                declar = parseDeclaration();
+                declarList.Add(declar);
+            }
+            return declarList;
         }
 
         //-----------------------------------------------------------------------------

@@ -25,88 +25,88 @@ using System.Text;
 namespace Origami.AST
 {
     //base class
-    class Node
+    public class Node
     {
     }
 
 //- operation nodes -----------------------------------------------------------
 
-    class AddOpNode : Node
+    public class AddOpNode : Node
     {
     }
 
-    class SubtractOpNode : Node
+    public class SubtractOpNode : Node
     {
     }
 
-    class MultiplyOpNode : Node
+    public class MultiplyOpNode : Node
     {
     }
 
-    class DivideOpNode : Node
+    public class DivideOpNode : Node
     {
     }
 
-    class ModOpNode : Node
+    public class ModOpNode : Node
     {
     }
 
-    class NotOpNode : Node
+    public class NotOpNode : Node
     {
     }
 
-    class AndOpNode : Node
+    public class AndOpNode : Node
     {
     }
 
-    class OrOpNode : Node
+    public class OrOpNode : Node
     {
     }
 
-    class XorOpNode : Node
+    public class XorOpNode : Node
     {
     }
 
-    class ShiftLeftOpNode : Node
+    public class ShiftLeftOpNode : Node
     {
     }
 
-    class ShiftRightOpNode : Node
+    public class ShiftRightOpNode : Node
     {
     }
 
-    class IncrementOpNode : Node
+    public class IncrementOpNode : Node
     {
     }
 
-    class DecrementOpNode : Node
+    public class DecrementOpNode : Node
     {
     }
 
 
 //- conditional nodes -----------------------------------------------------------
 
-    class EqualConditNode : Node
+    public class EqualConditNode : Node
     {
     }
 
-    class NotEqualConditNode : Node
+    public class NotEqualConditNode : Node
     {
     }
 
-    class LessThanConditNode : Node
+    public class LessThanConditNode : Node
     {
     }
 
-    class LessEqualConditNode : Node
+    public class LessEqualConditNode : Node
     {
     }
 
-    class GreaterThanConditNode : Node
+    public class GreaterThanConditNode : Node
     {
     }
 
-    class GreaterEqualConditNode : Node
+    public class GreaterEqualConditNode : Node
     {
     }
 
@@ -114,48 +114,48 @@ namespace Origami.AST
 //- statement nodes -----------------------------------------------------------
 
     //base statement node
-    class StatementNode : Node
+    public class StatementNode : Node
     {
         StatementNode nextStmt;
     }
 
-    class IfNode : StatementNode
+    public class IfNode : StatementNode
     {
     }
 
-    class IfElseNode : StatementNode
+    public class IfElseNode : StatementNode
     {
     }
 
-    class WhileNode : StatementNode
+    public class WhileNode : StatementNode
     {
     }
 
-    class DoWhileNode : StatementNode
+    public class DoWhileNode : StatementNode
     {
     }
 
-    class SwitchNode : StatementNode
+    public class SwitchNode : StatementNode
     {
     }
 
-    class CaseNode : StatementNode
+    public class CaseNode : StatementNode
     {
     }
 
-    class ForNode : StatementNode
+    public class ForNode : StatementNode
     {
     }
 
-    class BreakNode : StatementNode
+    public class BreakNode : StatementNode
     {
     }
 
-    class ContinueNode : StatementNode
+    public class ContinueNode : StatementNode
     {
     }
 
-    class ReturnNode : StatementNode
+    public class ReturnNode : StatementNode
     {
     }
 }
