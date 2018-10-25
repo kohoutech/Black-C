@@ -39,6 +39,50 @@ namespace BlackC
     {
     }
 
+    public class ConstExprNode : Node
+    {
+    }
+
+    public class IdentNode : Node
+    {
+    }
+
+    public class FuncSpecNode : Node
+    {
+    }
+
+    public class StructUnionNode : Node
+    {
+    }
+
+    public class StructDeclarationNode : Node
+    {
+    }
+
+    public class StructDeclaratorNode : Node
+    {
+    }
+
+    public class DeclarSpecNode : Node
+    {
+    }
+
+    public class TypeSpecNode : DeclarSpecNode
+    {
+    }
+
+    public class BaseTypeSpecNode : TypeSpecNode
+    {
+    }
+
+    public class StructSpecNode : TypeSpecNode
+    {
+    }
+
+    public class EnumSpecNode : TypeSpecNode
+    {
+    }
+
     public class EnumeratorNode : Node
     {
     }
@@ -47,10 +91,11 @@ namespace BlackC
     {
     }
 
-    public class ConstExprNode : Node
+    public class TypeQualNode : DeclarSpecNode
     {
     }
 
-
-
+    public class DeclaratorNode : Node
+    {
+    }
 }

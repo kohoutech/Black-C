@@ -88,7 +88,66 @@ namespace BlackC
             throw new NotImplementedException();
         }
 
-        internal EnumeratorNode makeEnumeratorNode(EnumConstantNode enumconst, ConstExprNode constexpr)
+        internal IdentNode makeIdentifierNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal TypeQualNode makeTypeQualNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal FuncSpecNode makeFuncSpecNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        //- struct/unions -----------------------------------------------------
+
+        public StructSpecNode makeStructSpec(StructUnionNode tag, IdentNode name, List<StructDeclarationNode> declarList)
+        {
+            throw new NotImplementedException();
+        }
+
+        public StructUnionNode makeStructUnionNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public StructDeclarationNode makeStructDeclarationNode(List<DeclarSpecNode> specqual, List<StructDeclaratorNode> fieldnames)
+        {
+            throw new NotImplementedException();
+        }
+
+        public StructDeclaratorNode makeStructDeclaractorNode(DeclaratorNode declarnode, ExprNode constexpr)
+        {
+            throw new NotImplementedException();
+        }
+
+        //- enums -------------------------------------------------------------
+
+        public EnumSpecNode makeEnumSpec(IdentNode idNode, List<EnumeratorNode> enumList)
+        {
+            throw new NotImplementedException();
+        }
+
+        public EnumeratorNode makeEnumeratorNode(EnumConstantNode enumconst, ExprNode constexpr)
+        {
+            throw new NotImplementedException();
+        }
+
+        public EnumConstantNode makeEnumConstNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public EnumConstantNode getEnumConstNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public BaseTypeSpecNode makeBaseTypeSpec(Token token)
         {
             throw new NotImplementedException();
         }

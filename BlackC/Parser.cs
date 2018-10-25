@@ -1074,8 +1074,9 @@ namespace BlackC
             enum-specifier
             typedef-name
          */
-        public bool parseTypeSpec()
+        public TypeSpecNode parseTypeSpec()
         {
+            TypeSpecNode typespec = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
             bool result = ((token is tVoid) || (token is tChar) || (token is tShort) || (token is tInt) || (token is tLong)
@@ -1083,6 +1084,7 @@ namespace BlackC
             if (result)
             {
                 //Console.WriteLine("parsed base type-spec");
+                typespec = arbor.makeBaseTypeSpec(token);
             }
             if (!result)
             {
@@ -1113,7 +1115,7 @@ namespace BlackC
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return typespec;
         }
 
         // stuctures/unions -----------------------------------------
@@ -1125,14 +1127,17 @@ namespace BlackC
          */
         // struct w/o ident is for anonymous struct (possibly part of a typedef)
         // struct w/o {list} is for a already defined struct type
-        public bool parseStructOrUnionSpec()
+        public StructSpecNode parseStructOrUnionSpec()
         {
+            StructSpecNode node = null;
             int cuepoint = scanner.record();
-            bool result = parseStuctOrUnion();
+            StructUnionNode tag = parseStuctOrUnion();
+            bool result = (tag != null);
             if (result)
             {
                 Token token = scanner.getToken();
-                result = isIdentifier(token);
+                IdentNode name = arbor.makeIdentifierNode(token);
+                result = (name != null);
                 if (result)
                 {
                     int cuepoint2 = scanner.record();
@@ -1140,18 +1145,19 @@ namespace BlackC
                     bool result2 = (token is tLBrace);
                     if (!result2)
                     {
-                        //Console.WriteLine("parsed struct-or-union ident struct-or-union-spec");
+                        node = arbor.makeStructSpec(tag, name, null);       //struct-or-union ident
                     }
                     if (result2)
                     {
-                        result2 = parseStructDeclarationList();
+                        List<StructDeclarationNode> declarList = parseStructDeclarationList();
+                        result2 = (declarList != null);
                         if (result2)
                         {
                             token = scanner.getToken();
                             result2 = (token is tRBrace);
                             if (result2)
                             {
-                                //Console.WriteLine("parsed struct-or-union ident struct-declar-list struct-or-union-spec");
+                                node = arbor.makeStructSpec(tag, name, declarList);         //struct-or-union ident struct-declar-list
                             }
                         }
                     }
@@ -1162,18 +1168,18 @@ namespace BlackC
                 }
                 else
                 {
-                    //token = scanner.getToken();
                     result = (token is tLBrace);
                     if (result)
                     {
-                        result = parseStructDeclarationList();
+                        List<StructDeclarationNode> declarList = parseStructDeclarationList();
+                        result = (declarList != null);
                         if (result)
                         {
                             token = scanner.getToken();
                             result = (token is tRBrace);
                             if (result)
                             {
-                                //Console.WriteLine("parsed struct-or-union struct-declar-list struct-or-union-spec");
+                                node = arbor.makeStructSpec(tag, null, declarList);         //struct-or-union struct-declar-list
                             }
                         }
                     }
@@ -1183,7 +1189,7 @@ namespace BlackC
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return node;
         }
 
         /*(6.7.2.1) 
@@ -1191,20 +1197,21 @@ namespace BlackC
             struct
             union
          */
-        public bool parseStuctOrUnion()
+        public StructUnionNode parseStuctOrUnion()
         {
+            StructUnionNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
             bool result = ((token is tStruct) || (token is tUnion));
             if (result)
             {
-                //Console.WriteLine("parsed struct-or-union");
+                node = arbor.makeStructUnionNode(token);
             }
             if (!result)
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return node;
         }
 
         /*(6.7.2.1) 
@@ -1213,23 +1220,24 @@ namespace BlackC
             struct-declaration-list struct-declaration
          */
         // the list of struct field defs
-        public bool parseStructDeclarationList()
+        public List<StructDeclarationNode> parseStructDeclarationList()
         {
-            bool result = parseStructDeclaration();         //the first field def
-            if (result)
+            List<StructDeclarationNode> fieldlist = null;
+            StructDeclarationNode fieldnode = parseStructDeclaration();         //the first field def
+            if (fieldnode != null)
             {
-                //Console.WriteLine("parsed struct-declar struct-declar-list");
+                fieldlist = new List<StructDeclarationNode>();
+                fieldlist.Add(fieldnode);
             }
-            bool notEmpty = result;
-            while (result)
+            while (fieldnode != null)
             {
-                result = parseStructDeclaration();          //the next field def
-                if (result)
+                fieldnode = parseStructDeclaration();          //the next field def
+                if (fieldnode != null)
                 {
-                    //Console.WriteLine("parsed another struct-declar struct-declar-list");
+                    fieldlist.Add(fieldnode);
                 }
             }
-            return notEmpty;
+            return fieldlist;
         }
 
         /*(6.7.2.1) 
@@ -1237,20 +1245,23 @@ namespace BlackC
             specifier-qualifier-list struct-declarator-list ;
          */
         // a single struct field def (can have mult fields, ie int a, b;)
-        public bool parseStructDeclaration()
+        public StructDeclarationNode parseStructDeclaration()
         {
+            StructDeclarationNode node = null;
             int cuepoint = scanner.record();
-            bool result = parseSpecQualList();          //field type
+            List<DeclarSpecNode> specqual = parseSpecQualList();          //field type
+            bool result = (specqual != null);          
             if (result)
             {
-                result = parseStructDeclaratorList();           //list of field names 
+                List<StructDeclaratorNode> fieldnames = parseStructDeclaratorList();           //list of field names 
+                result = (fieldnames != null);           
                 if (result)
                 {
                     Token token = scanner.getToken();
                     result = (token is tSemicolon);
                     if (result)
                     {
-                        //Console.WriteLine("parsed spec-qual-list struct-declar-list struct-declar");
+                        node = arbor.makeStructDeclarationNode(specqual, fieldnames);
                     }
                 }
             }
@@ -1258,7 +1269,7 @@ namespace BlackC
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return node;
         }
 
         /*(6.7.2.1) 
@@ -1267,30 +1278,25 @@ namespace BlackC
             type-qualifier specifier-qualifier-list[opt]
          */
         // struct field's type - same as declaration-specifiers, w/o the storage-class-specifier or function-specifier
-        public bool parseSpecQualList()
+        public List<DeclarSpecNode> parseSpecQualList()
         {
-            bool result = parseTypeSpec();
-            if (result)
+            List<DeclarSpecNode> speclist = null;
+            DeclarSpecNode specnode = parseTypeSpec();
+            if (specnode == null)
             {
-                parseSpecQualList();
-                if (result)
+                specnode = parseTypeQual();
+            }
+            if (specnode != null)
+            {
+                speclist = new List<DeclarSpecNode>();
+                speclist.Add(specnode);
+                List<DeclarSpecNode> taillist = parseSpecQualList();
+                if (taillist != null)
                 {
-                    //Console.WriteLine("parsed type-spec struct-qual-list");
+                    speclist.AddRange(taillist);
                 }
             }
-            else
-            {
-                result = parseTypeQual();
-                if (result)
-                {
-                    parseSpecQualList();
-                }
-                if (result)
-                {
-                    //Console.WriteLine("parsed type-qual struct-qual-list");
-                }
-            }
-            return result;
+            return speclist;
         }
 
         /*(6.7.2.1) 
@@ -1299,14 +1305,16 @@ namespace BlackC
             struct-declarator-list , struct-declarator
          */
         // the list of field names, fx the "a, b, c" in "int a, b, c;" that def's three fields of type int
-        public bool parseStructDeclaratorList()
+        public List<StructDeclaratorNode> parseStructDeclaratorList()
         {
-            bool result = parseStructDeclarator();      //the first field name
+            List<StructDeclaratorNode> fieldlist = null;
+            StructDeclaratorNode fieldnode = parseStructDeclarator();      //the first field name
+            bool result = (fieldnode != null);
             if (result)
             {
-                //Console.WriteLine("parsed struct-declar struct-declar-list");
+                fieldlist = new List<StructDeclaratorNode>();
+                fieldlist.Add(fieldnode);
             }
-            bool notEmpty = result;
             while (result)
             {
                 int cuepoint2 = scanner.record();
@@ -1314,10 +1322,11 @@ namespace BlackC
                 result = (token is tComma);
                 if (result)
                 {
-                    result = parseStructDeclarator();       //the next field name
+                    fieldnode = parseStructDeclarator();       //the next field name
+                    result = (fieldnode != null);
                     if (result)
                     {
-                        //Console.WriteLine("parsed another struct-declar struct-declar-list");
+                        fieldlist.Add(fieldnode);
                     }
                 }
                 if (!result)
@@ -1325,7 +1334,7 @@ namespace BlackC
                     scanner.rewind(cuepoint2);
                 }
             }
-            return notEmpty;
+            return fieldlist;
         }
 
         /*(6.7.2.1) 
@@ -1334,10 +1343,12 @@ namespace BlackC
             declarator[opt] : constant-expression
          */
         //a single field name, possibly followed by a field width (fx foo : 4;)
-        public bool parseStructDeclarator()
+        public StructDeclaratorNode parseStructDeclarator()
         {
+            StructDeclaratorNode node = null;
             int cuepoint = scanner.record();
-            bool result = parseDeclarator();
+            DeclaratorNode declarnode = parseDeclarator();
+            bool result = (declarnode != null);
             if (result)
             {
                 int cuepoint2 = scanner.record();
@@ -1345,15 +1356,16 @@ namespace BlackC
                 bool result2 = (token is tColon);
                 if (result2)
                 {
-                    result2 = parseConstantExpression();
+                    ExprNode constexpr = parseConstantExpression();
+                    result2 = (constexpr != null);
                     if (result2)
                     {
-                        //Console.WriteLine("parsed declar const-exp struct-declar");
+                        node = arbor.makeStructDeclaractorNode(declarnode, constexpr);      //declarator : constant-expression
                     }
                 }
                 if (!result2)
                 {
-                    //Console.WriteLine("parsed declar struct-declar");
+                    node = arbor.makeStructDeclaractorNode(declarnode, null);       //declarator
                 }
                 if (!result2)
                 {
@@ -1366,10 +1378,12 @@ namespace BlackC
                 result = (token is tColon);
                 if (result)
                 {
-                    result = parseConstantExpression();
+                    ExprNode constexpr = parseConstantExpression();
+                    result = (constexpr != null);
                     if (result)
                     {
                         //Console.WriteLine("parsed const-exp struct-declar");
+                        node = arbor.makeStructDeclaractorNode(null, constexpr);      // : constant-expression
                     }
                 }
             }
@@ -1377,7 +1391,7 @@ namespace BlackC
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return node;
         }
 
         // enumerations ---------------------------------------------
@@ -1388,49 +1402,48 @@ namespace BlackC
             enum identifier[opt] { enumerator-list , }
             enum identifier
          */
-        public bool parseEnumeratorSpec()
+        public EnumSpecNode parseEnumeratorSpec()
         {
+            EnumSpecNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            bool result = (token is tEnum);             //enum identifier
+            bool result = (token is tEnum);             
             if (result)
             {
                 token = scanner.getToken();
-                result = isIdentifier(token);
+                IdentNode idNode = arbor.makeIdentifierNode(token);
+                result = (idNode != null);
                 if (result)
                 {
                     int cuepoint2 = scanner.record();
                     token = scanner.getToken();
-                    bool result2 = (token is tLBrace);             //enum identifier[opt] { enumerator-list }
+                    bool result2 = (token is tLBrace);             //enum identifier { enumerator-list }
                     if (result2)
                     {
-                        result2 = parseEnumeratorList();
+                        List<EnumeratorNode> enumList = parseEnumeratorList();
+                        result2 = (enumList != null);
                         if (result2)
                         {
                             token = scanner.getToken();
                             result2 = (token is tRBrace);
-                            if (result2)
-                            {
-                                //Console.WriteLine("parsed ident enumerator-list enum-spec");
-                            }
                             if (!result2)
                             {
-                                result2 = (token is tComma);            //enum identifier[opt] { enumerator-list , }
+                                result2 = (token is tComma);            //enum identifier { enumerator-list , }
                                 if (result2)
                                 {
                                     token = scanner.getToken();
                                     result2 = (token is tRBrace);
-                                    if (result2)
-                                    {
-                                        //Console.WriteLine("parsed ident enumerator-list comma enum-spec");
-                                    }
                                 }
+                            }
+                            if (result2)
+                            {
+                                node = arbor.makeEnumSpec(idNode, enumList);
                             }
                         }
                     }
                     if (!result2)
                     {
-                        //Console.WriteLine("parsed ident enum-spec");
+                        node = arbor.makeEnumSpec(idNode, null);        //enum identifier
                     }
                     if (!result2)
                     {
@@ -1440,30 +1453,27 @@ namespace BlackC
                 else
                 {
                     token = scanner.getToken();
-                    result = (token is tLBrace);             //enum identifier[opt] { enumerator-list }
+                    result = (token is tLBrace);             //enum { enumerator-list }
                     if (result)
                     {
-                        result = parseEnumeratorList();
+                        List<EnumeratorNode> enumList = parseEnumeratorList();
+                        result = (enumList != null);
                         if (result)
                         {
                             token = scanner.getToken();
                             result = (token is tRBrace);
-                            if (result)
-                            {
-                                //Console.WriteLine("parsed enumerator-list enum-spec");
-                            }
                             if (!result)
                             {
-                                result = (token is tComma);            //enum identifier[opt] { enumerator-list , }
+                                result = (token is tComma);            //enum { enumerator-list , }
                                 if (result)
                                 {
                                     token = scanner.getToken();
                                     result = (token is tRBrace);
-                                    if (result)
-                                    {
-                                        //Console.WriteLine("parsed enumerator-list comma enum-spec");
-                                    }
                                 }
+                            }
+                            if (result)
+                            {
+                                node = arbor.makeEnumSpec(null, enumList);
                             }
                         }
                     }
@@ -1473,7 +1483,7 @@ namespace BlackC
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return node;
         }
 
         /*(6.7.2.2) 
@@ -1521,8 +1531,8 @@ namespace BlackC
         public EnumeratorNode parseEnumerator()
         {
             EnumeratorNode node = null;
-            EnumConstantNode enumconst = parseEnumerationConstant();
-            ConstExprNode constexpr = null;
+            EnumConstantNode enumconst = parseEnumerationConstant(true);
+            ExprNode constexpr = null;
             bool result = (enumconst != null);
             if (result)
             {
@@ -1531,7 +1541,7 @@ namespace BlackC
                 bool result2 = (token is tEqual);
                 if (result2)
                 {
-                    ConstExprNode constexpr = parseConstantExpression();
+                    constexpr = parseConstantExpression();
                     result2 = (constexpr != null);
                 }
                 if (!result2)
@@ -1547,20 +1557,24 @@ namespace BlackC
          enumeration-constant:
             identifier
          */
-        public bool parseEnumerationConstant()
+        public EnumConstantNode parseEnumerationConstant(bool define)
         {
+            EnumConstantNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            bool result = isIdentifier(token);
-            if (result)
+            if (define)
             {
-                //Console.WriteLine("parsed enum const");
+                node = arbor.makeEnumConstNode(token);
             }
-            if (!result)
+            else
+            {
+                node = arbor.getEnumConstNode(token);
+            }
+            if (node == null)
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return node;
         }
 
         //- end of enumerations -------------------------------------
@@ -1571,40 +1585,40 @@ namespace BlackC
             restrict
             volatile
          */
-        public bool parseTypeQual()
+        public TypeQualNode parseTypeQual()
         {
+            TypeQualNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            bool result = ((token is tConst) || (token is tRestrict) || (token is tVolatile));
-            if (result)
+            if ((token is tConst) || (token is tRestrict) || (token is tVolatile))
             {
-                //Console.WriteLine("parsed type qual");
+                node = arbor.makeTypeQualNode(token);
             }
-            if (!result)
+            else
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return node;
         }
 
         /*(6.7.4) 
          function-specifier:
             inline
          */
-        public bool parseFunctionSpec()
+        public FuncSpecNode parseFunctionSpec()
         {
+            FuncSpecNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            bool result = (token is tInline);
-            if (result)
+            if (token is tInline)
             {
-                //Console.WriteLine("parsed func spec");
+                node = arbor.makeFuncSpecNode(token);
             }
-            if (!result)
+            else
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return node;
         }
 
         //- declarator ----------------------------------------------
