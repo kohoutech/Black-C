@@ -66,9 +66,9 @@ namespace BlackC
             string-literal
             ( expression )
          */
-        public bool parsePrimaryExpression(out Node primeExpr)
+        public ExprNode parsePrimaryExpression()
         {
-            primeExpr = null;
+            PrimaryExprNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
             bool result = isIdentifier(token, out primeExpr);
@@ -128,7 +128,7 @@ namespace BlackC
             {
                 scanner.rewind(cuepoint);
             }            
-            return result;
+            return node;
         }
 
         /*(6.5.2) 
@@ -143,8 +143,9 @@ namespace BlackC
             postfix-expression ++
             postfix-expression --
          */
-        public bool parsePostfixExpression(out Node postfixExpr)
+        public ExprNode parsePostfixExpression()
         {
+            PostfixExprNode node = null;
             int cuepoint = scanner.record();
             bool result = parsePrimaryExpression();         //primary-expression
             if (!result)
@@ -259,7 +260,7 @@ namespace BlackC
             {
                 scanner.rewind(cuepoint);
             }
-            return notEmpty;
+            return node;
         }
 
         /*(6.5.2) 
@@ -267,8 +268,9 @@ namespace BlackC
             assignment-expression
             argument-expression-list , assignment-expression
          */
-        public bool parseArgExpressionList()
+        public List<AssignExpressionNode> parseArgExpressionList()
         {
+            List<AssignExprNode> list = null;
             bool result = parseAssignExpression();
             bool empty = result;
             while (result)
@@ -285,7 +287,7 @@ namespace BlackC
                     scanner.rewind(cuepoint2);
                 }
             }
-            return empty;
+            return list;
         }
 
         /*(6.5.3) 
@@ -297,8 +299,9 @@ namespace BlackC
             sizeof unary-expression
             sizeof ( type-name )
          */
-        public bool parseUnaryExpression(out Node expr)
+        public ExprNode parseUnaryExpression()
         {
+            UnaryExprNode node = null;
             int cuepoint = scanner.record();
             bool result = parsePostfixExpression();         //postfix-expression
             if (!result)
@@ -363,7 +366,7 @@ namespace BlackC
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return node;
         }
 
         /*(6.5.3) 
@@ -388,8 +391,9 @@ namespace BlackC
             unary-expression
             ( type-name ) cast-expression
          */
-        public bool parseCastExpression(out Node expr)
+        public ExprNode parseCastExpression()
         {
+            CastExprNode node = null;
             bool result = parseUnaryExpression();
             if (!result)
             {
@@ -414,7 +418,7 @@ namespace BlackC
                     scanner.rewind(cuepoint2);
                 }
             }
-            return result;
+            return node;
         }
 
         /*(6.5.5) 
@@ -424,10 +428,10 @@ namespace BlackC
             multiplicative-expression / cast-expression
             multiplicative-expression % cast-expression
          */
-        public bool parseMultExpression(out Node expr)
+        public ExprNode parseMultExpression()
         {
-            bool result = parseCastExpression();
-            bool empty = result;
+            ExprNode lhs = parseCastExpression();
+            bool result = (lhs != null);
             while (result)
             {
                 int cuepoint2 = scanner.record();
@@ -435,7 +439,13 @@ namespace BlackC
                 result = (token is tAsterisk);
                 if (result)
                 {
-                    result = parseCastExpression();
+                    ExprNode rhs = parseCastExpression();
+                    result = (rhs != null);
+                    if (result)
+                    {
+                        lhs = arbor.makeMultiplyExprNode(lhs, rhs);
+                        result = (lhs != null);
+                    }
                 }
                 if (!result)
                 {
@@ -444,7 +454,13 @@ namespace BlackC
                     result = (token is tSlash);
                     if (result)
                     {
-                        result = parseCastExpression();
+                        ExprNode rhs = parseCastExpression();
+                        result = (rhs != null);
+                        if (result)
+                        {
+                            lhs = arbor.makeDivideExprNode(lhs, rhs);
+                            result = (lhs != null);
+                        }
                     }
                 }
                 if (!result)
@@ -454,7 +470,13 @@ namespace BlackC
                     result = (token is tPercent);
                     if (result)
                     {
-                        result = parseCastExpression();
+                        ExprNode rhs = parseCastExpression();
+                        result = (rhs != null);
+                        if (result)
+                        {
+                            lhs = arbor.makeModuloExprNode(lhs, rhs);
+                            result = (lhs != null);
+                        }
                     }
                 }
                 if (!result)
@@ -462,7 +484,7 @@ namespace BlackC
                     scanner.rewind(cuepoint2);
                 }
             }
-            return empty;
+            return lhs;
         }
 
         /*(6.5.6) 
@@ -471,10 +493,10 @@ namespace BlackC
             additive-expression + multiplicative-expression
             additive-expression - multiplicative-expression
          */
-        public bool parseAddExpression(out Node addExpr)
+        public ExprNode parseAddExpression()
         {
-            bool result = parseMultExpression();
-            bool empty = result;
+            ExprNode lhs = parseMultExpression();
+            bool result = (lhs != null);
             while (result)
             {
                 int cuepoint2 = scanner.record();
@@ -482,7 +504,13 @@ namespace BlackC
                 result = (token is tPlus);
                 if (result)
                 {
-                    result = parseMultExpression();
+                    ExprNode rhs = parseMultExpression();
+                    result = (rhs != null);
+                    if (result)
+                    {
+                        lhs = arbor.makeAddExprNode(lhs, rhs);
+                        result = (lhs != null);
+                    }
                 }
                 if (!result)
                 {
@@ -491,7 +519,13 @@ namespace BlackC
                     result = (token is tMinus);
                     if (result)
                     {
-                        result = parseMultExpression();
+                        ExprNode rhs = parseMultExpression();
+                        result = (rhs != null);
+                        if (result)
+                        {
+                            lhs = arbor.makeSubtractExprNode(lhs, rhs);
+                            result = (lhs != null);
+                        }
                     }
                 }
                 if (!result)
@@ -499,7 +533,7 @@ namespace BlackC
                     scanner.rewind(cuepoint2);
                 }
             }
-            return empty;
+            return lhs;
         }
 
         /*(6.5.7) 
@@ -508,9 +542,10 @@ namespace BlackC
             shift-expression << additive-expression
             shift-expression >> additive-expression
          */
-        public bool parseShiftExpression(out Node expr)
+        public ExprNode parseShiftExpression()
         {
-            bool result = parseAddExpression();
+            ExprNode lhs = parseAddExpression();
+            bool result = (lhs != null);
             bool empty = result;
             while (result)
             {
@@ -519,7 +554,13 @@ namespace BlackC
                 result = (token is tLeftShift);
                 if (result)
                 {
-                    result = parseAddExpression();
+                    ExprNode rhs = parseAddExpression();
+                    result = (rhs != null);
+                    if (result)
+                    {
+                        lhs = arbor.makeShiftLeftExprNode(lhs, rhs);
+                        result = (lhs != null);
+                    }
                 }
                 if (!result)
                 {
@@ -528,7 +569,13 @@ namespace BlackC
                     result = (token is tRightShift);
                     if (result)
                     {
-                        result = parseAddExpression();
+                        ExprNode rhs = parseAddExpression();
+                        result = (rhs != null);
+                        if (result)
+                        {
+                            lhs = arbor.makeShiftRightExprNode(lhs, rhs);
+                            result = (lhs != null);
+                        }
                     }
                 }
                 if (!result)
@@ -536,7 +583,7 @@ namespace BlackC
                     scanner.rewind(cuepoint2);
                 }
             }
-            return empty;
+            return lhs;
         }
 
         /*(6.5.8) 
@@ -547,10 +594,10 @@ namespace BlackC
             relational-expression <= shift-expression
             relational-expression >= shift-expression
          */
-        public bool parseRelationalExpression(out Node expr)
+        public ExprNode parseRelationalExpression()
         {
-            bool result = parseShiftExpression();
-            bool empty = result;
+            ExprNode lhs = parseShiftExpression();
+            bool result = (lhs != null);
             while (result)
             {
                 int cuepoint2 = scanner.record();
@@ -558,7 +605,13 @@ namespace BlackC
                 result = (token is tLessThan);
                 if (result)
                 {
-                    result = parseShiftExpression();
+                    ExprNode rhs = parseShiftExpression();
+                    result = (rhs != null);
+                    if (result)
+                    {
+                        lhs = arbor.makeLessThanExprNode(lhs, rhs);
+                        result = (lhs != null);
+                    }
                 }
                 if (!result)
                 {
@@ -567,7 +620,13 @@ namespace BlackC
                     result = (token is tGtrThan);
                     if (result)
                     {
-                        result = parseShiftExpression();
+                        ExprNode rhs = parseShiftExpression();
+                        result = (rhs != null);
+                        if (result)
+                        {
+                            lhs = arbor.makeGreaterThanExprNode(lhs, rhs);
+                            result = (lhs != null);
+                        }
                     }
                 }
                 if (!result)
@@ -577,7 +636,13 @@ namespace BlackC
                     result = (token is tLessEqual);
                     if (result)
                     {
-                        result = parseShiftExpression();
+                        ExprNode rhs = parseShiftExpression();
+                        result = (rhs != null);
+                        if (result)
+                        {
+                            lhs = arbor.makeLessEqualExprNode(lhs, rhs);
+                            result = (lhs != null);
+                        }
                     }
                 }
                 if (!result)
@@ -587,7 +652,13 @@ namespace BlackC
                     result = (token is tGtrEqual);
                     if (result)
                     {
-                        result = parseShiftExpression();
+                        ExprNode rhs = parseShiftExpression();
+                        result = (rhs != null);
+                        if (result)
+                        {
+                            lhs = arbor.makeGreaterEqualExprNode(lhs, rhs);
+                            result = (lhs != null);
+                        }
                     }
                 }
                 if (!result)
@@ -595,7 +666,7 @@ namespace BlackC
                     scanner.rewind(cuepoint2);
                 }
             }
-            return empty;
+            return lhs;
         }
 
         /*(6.5.9) 
@@ -604,10 +675,10 @@ namespace BlackC
             equality-expression == relational-expression
             equality-expression != relational-expression
          */
-        public bool parseEqualityExpression(out Node expr)
+        public ExprNode parseEqualityExpression()
         {
-            bool result = parseRelationalExpression();
-            bool empty = result;
+            ExprNode lhs = parseRelationalExpression();
+            bool result = (lhs != null);
             while (result)
             {
                 int cuepoint2 = scanner.record();
@@ -615,7 +686,13 @@ namespace BlackC
                 result = (token is tEqualEqual);
                 if (result)
                 {
-                    result = parseRelationalExpression();
+                    ExprNode rhs = parseRelationalExpression();
+                    result = (rhs != null);
+                    if (result)
+                    {
+                        lhs = arbor.makeEqualsExprNode(lhs, rhs);
+                        result = (lhs != null);
+                    }
                 }
                 if (!result)
                 {
@@ -624,7 +701,13 @@ namespace BlackC
                     result = (token is tNotEqual);
                     if (result)
                     {
-                        result = parseRelationalExpression();
+                        ExprNode rhs = parseRelationalExpression();
+                        result = (rhs != null);
+                        if (result)
+                        {
+                            lhs = arbor.makeNotEqualsExprNode(lhs, rhs);
+                            result = (lhs != null);
+                        }
                     }
                 }
                 if (!result)
@@ -632,7 +715,7 @@ namespace BlackC
                     scanner.rewind(cuepoint2);
                 }
             }
-            return empty;
+            return lhs;
         }
 
         /*(6.5.10) 
@@ -640,10 +723,10 @@ namespace BlackC
             equality-expression
             AND-expression & equality-expression
          */
-        public bool parseANDExpression(out Node expr)
+        public ExprNode parseANDExpression()
         {
-            bool result = parseEqualityExpression();
-            bool empty = result;
+            ExprNode lhs = parseEqualityExpression();
+            bool result = (lhs != null);
             while (result)
             {
                 int cuepoint2 = scanner.record();
@@ -651,14 +734,20 @@ namespace BlackC
                 result = (token is tAmpersand);
                 if (result)
                 {
-                    result = parseEqualityExpression();
+                    ExprNode rhs = parseEqualityExpression();
+                    result = (rhs != null);
+                    if (result)
+                    {
+                        lhs = arbor.makeANDExprNode(lhs, rhs);
+                        result = (lhs != null);
+                    }
                 }
                 if (!result)
                 {
                     scanner.rewind(cuepoint2);
                 }
             }
-            return empty;
+            return lhs;
         }
 
         /*(6.5.11) 
@@ -666,10 +755,10 @@ namespace BlackC
             AND-expression
             exclusive-OR-expression ^ AND-expression
          */
-        public bool parseXORExpression(out Node expr)
+        public ExprNode parseXORExpression()
         {
-            bool result = parseANDExpression();
-            bool empty = result;
+            ExprNode lhs = parseANDExpression();
+            bool result = (lhs != null);
             while (result)
             {
                 int cuepoint2 = scanner.record();
@@ -677,14 +766,20 @@ namespace BlackC
                 result = (token is tCaret);
                 if (result)
                 {
-                    result = parseANDExpression();
+                    ExprNode rhs = parseANDExpression();
+                    result = (rhs != null);
+                    if (result)
+                    {
+                        lhs = arbor.makeXORExprNode(lhs, rhs);
+                        result = (lhs != null);
+                    }
                 }
                 if (!result)
                 {
                     scanner.rewind(cuepoint2);
                 }
             }
-            return empty;
+            return lhs;
         }
 
         /*(6.5.12) 
@@ -692,10 +787,10 @@ namespace BlackC
             exclusive-OR-expression
             inclusive-OR-expression | exclusive-OR-expression
          */
-        public bool parseORExpression(out Node expr)
+        public ExprNode parseORExpression()
         {
-            bool result = parseXORExpression();
-            bool empty = result;
+            ExprNode lhs = parseXORExpression();
+            bool result = (lhs != null);
             while (result)
             {
                 int cuepoint2 = scanner.record();
@@ -703,14 +798,20 @@ namespace BlackC
                 result = (token is tBar);
                 if (result)
                 {
-                    result = parseXORExpression();
+                    ExprNode rhs = parseXORExpression();
+                    result = (rhs != null);
+                    if (result)
+                    {
+                        lhs = arbor.makeORExprNode(lhs, rhs);
+                        result = (lhs != null);
+                    }
                 }
                 if (!result)
                 {
                     scanner.rewind(cuepoint2);
                 }
             }
-            return empty;
+            return lhs;
         }
 
         /*(6.5.13) 
@@ -718,10 +819,10 @@ namespace BlackC
             inclusive-OR-expression
             logical-AND-expression && inclusive-OR-expression
          */
-        public bool parseLogicalANDExpression(out Node expr)
+        public ExprNode parseLogicalANDExpression()
         {
-            bool result = parseORExpression();
-            bool empty = result;
+            ExprNode lhs = parseORExpression();
+            bool result = (lhs != null);
             while (result)
             {
                 int cuepoint2 = scanner.record();
@@ -729,14 +830,20 @@ namespace BlackC
                 result = (token is tDoubleAmp);
                 if (result)
                 {
-                    result = parseORExpression();
+                    ExprNode rhs = parseORExpression();
+                    result = (rhs != null);
+                    if (result)
+                    {
+                        lhs = arbor.makeLogicalANDExprNode(lhs, rhs);
+                        result = (lhs != null);
+                    }
                 }
                 if (!result)
                 {
                     scanner.rewind(cuepoint2);
                 }
             }
-            return empty;
+            return lhs;
         }
 
         /*(6.5.14) 
@@ -744,10 +851,10 @@ namespace BlackC
             logical-AND-expression
             logical-OR-expression || logical-AND-expression
          */
-        public bool parseLogicalORExpression(out ExprNode expr)
+        public ExprNode parseLogicalORExpression()
         {
-            bool result = parseLogicalANDExpression();
-            bool empty = result;
+            ExprNode lhs = parseLogicalANDExpression();
+            bool result = (lhs != null);
             while (result)
             {
                 int cuepoint2 = scanner.record();
@@ -755,14 +862,20 @@ namespace BlackC
                 result = (token is tDoubleBar);
                 if (result)
                 {
-                    result = parseLogicalANDExpression();
+                    ExprNode rhs = parseLogicalANDExpression();
+                    result = (rhs != null);
+                    if (result)
+                    {
+                        lhs = arbor.makeLogicalORExprNode(lhs, rhs);
+                        result = (lhs != null);
+                    }
                 }
                 if (!result)
                 {
                     scanner.rewind(cuepoint2);
                 }
             }
-            return empty;
+            return lhs;
         }
 
         /*(6.5.15) 
@@ -770,9 +883,10 @@ namespace BlackC
             logical-OR-expression
             logical-OR-expression ? expression : conditional-expression
          */
-        public bool parseConditionalExpression(out Node expr)
+        public ExprNode parseConditionalExpression()
         {
-            bool result = parseLogicalORExpression();
+            ExprNode lhs = parseLogicalORExpression();
+            bool result = (lhs != null);
             if (result)
             {
                 int cuepoint2 = scanner.record();
@@ -780,14 +894,21 @@ namespace BlackC
                 bool result2 = (token is tQuestion);
                 if (result2)
                 {
-                    result2 = parseExpression();        
+                    ExpressionNode expr = parseExpression();
+                    result = (expr != null);
                     if (result2)
                     {
                         token = scanner.getToken();
                         result2 = (token is tColon);
                         if (result2)
                         {
-                            result = parseConditionalExpression();
+                            ExprNode condit = parseConditionalExpression();
+                            result = (condit != null);
+                            if (result)
+                            {
+                                lhs = arbor.makeConditionalExprNode(lhs, expr, condit);
+                                result = (lhs != null);
+                            }
                         }                        
                     }
                 }
@@ -796,7 +917,7 @@ namespace BlackC
                     scanner.rewind(cuepoint2);
                 }
             }
-            return result;
+            return lhs;
         }
 
         /*(6.5.16) 
@@ -806,31 +927,41 @@ namespace BlackC
          */
         //for parsing purposes, we change the second rule to:
         //conditional-expression assignment-operator assignment-expression
-        public bool parseAssignExpression(out Node expr)
+        public AssignExpressionNode parseAssignExpression()
         {
-            bool result = parseConditionalExpression();
+            ExprNode lhs = parseConditionalExpression();
+            AssignOperatorNode oper = null;
+            bool result = (lhs != null);
             if (result)
             {
                 int cuepoint = scanner.record();
-                bool result2 = parseAssignOperator();
+                oper = parseAssignOperator();
+                bool result2 = (oper != null);
                 if (result2)
                 {
-                    result2 = parseAssignExpression();
+                    ExprNode rhs = parseAssignExpression();
+                    result = (rhs != null);
+                    if (result)
+                    {
+                        lhs = arbor.makeAssignExpressionNode(lhs, oper, rhs);
+                        result = (lhs != null);
+                    }
                 }
                 if (!result2)
                 {
                     scanner.rewind(cuepoint);
                 }
             }
-            return result;
+            return lhs;
         }
 
         /* (6.5.16) 
          assignment-operator: one of
             = *= /= %= += -= <<= >>= &= ^= |=
          */
-        public bool parseAssignOperator()
+        public AssignOperatorNode parseAssignOperator()
         {
+            AssignOperatorNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
             bool result = ((token is tEqual) || (token is tMultEqual) || (token is tSlashEqual) || (token is tPercentEqual) ||
@@ -840,7 +971,7 @@ namespace BlackC
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return node;
         }
 
         /*(6.5.17) 
@@ -848,10 +979,10 @@ namespace BlackC
             assignment-expression
             expression , assignment-expression
          */
-        public bool parseExpression(out Node expr)
+        public ExpressionNode parseExpression()
         {
-            expr = new ExprNode();
-            bool result = parseAssignExpression(out expr);
+            ExprNode node = null;
+            bool result = parseAssignExpression();
             if (result)
             {
                 exprList.Add(expr);
@@ -864,7 +995,7 @@ namespace BlackC
                 result = (token is tComma);
                 if (result)
                 {
-                    result = parseAssignExpression(out expr);
+                    result = parseAssignExpression();
                     if (result)
                     {
                         exprList.Add(expr);
@@ -875,17 +1006,18 @@ namespace BlackC
                     scanner.rewind(cuepoint2);
                 }
             }
-            return !empty;
+            return node;
         }
 
         /*(6.6) 
          constant-expression:
             conditional-expression
          */
-        public ExprNode parseConstantExpression()
+        public ConstExpressionNode parseConstantExpression()
         {
-            ExprNode result = parseConditionalExpression();
-            return result;
+            ExprNode condit = parseConditionalExpression();
+            ConstExpressionNode node = arbor.makeConstantExprNode(condit);
+            return node;
         }
 
         //- declarations ------------------------------------------------------
@@ -894,26 +1026,29 @@ namespace BlackC
          declaration:
             declaration-specifiers init-declarator-list[opt] ;
          */
-        public bool parseDeclaration()
+        public DeclarationNode parseDeclaration()
         {
+            DeclarationNode node = null;
             int cuepoint = scanner.record();
-            bool result = parseDeclarationSpecs();
+            List<DeclarSpecNode> declarspecs = parseDeclarationSpecs();
+            bool result = (declarspecs != null);
             if (result)
             {
-                parseInitDeclaratorList();
+                List<InitDeclaratorNode> initdeclarlist = parseInitDeclaratorList();
                 Token token = scanner.getToken();
                 result = (token is tSemicolon);
+                if (result)
+                {
+                    declarCount++;
+                    Console.WriteLine("parsed declaration " + declarCount.ToString());
+                    node = arbor.makeDeclaration(declarspecs, initdeclarlist);
+                }
             }
-            if (result)
-            {
-                declarCount++;
-                Console.WriteLine("parsed declaration " + declarCount.ToString());
-            }
-            else
+            if (!result)
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return node;
         }
 
         /* (6.7) 
@@ -923,47 +1058,38 @@ namespace BlackC
             type-qualifier declaration-specifiers[opt]
             function-specifier declaration-specifiers[opt]
          */
-        public bool parseDeclarationSpecs()
+        public List<DeclarSpecNode> parseDeclarationSpecs()
         {
+            List<DeclarSpecNode> specs = null;
             int cuepoint = scanner.record();
-            bool result = parseStorageClassSpec();
-            if (result)
+            DeclarSpecNode node = parseStorageClassSpec();
+            if (node == null)
             {
-                //Console.WriteLine("parsed storage class declaration-specs");
-                parseDeclarationSpecs();
+                node = parseTypeSpec();
+            }
+            if (node == null)
+            {
+                node = parseTypeQual();
+            }
+            if (node == null)
+            {
+                node = parseFunctionSpec();
+            }
+            if (node != null)
+            {
+                specs = new List<DeclarSpecNode>();
+                specs.Add(node);
+                List<DeclarSpecNode> tail = parseDeclarationSpecs();
+                if (tail != null)
+                {
+                    specs.AddRange(tail);
+                }
             }
             else
             {
-                result = parseTypeSpec();
-                if (result)
-                {
-                    //Console.WriteLine("parsed type spec declaration-specs");
-                    parseDeclarationSpecs();
-                }
-                else
-                {
-                    result = parseTypeQual();
-                    if (result)
-                    {
-                        //Console.WriteLine("parsed type qual declaration-specs");
-                        parseDeclarationSpecs();
-                    }
-                    else
-                    {
-                        result = parseFunctionSpec();
-                        if (result)
-                        {
-                            //Console.WriteLine("parsed func spec declaration-specs");
-                            parseDeclarationSpecs();
-                        }
-                    }
-                }
-            }
-            if (!result)
-            {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return specs;
         }
 
         /*(6.7) 
@@ -971,14 +1097,16 @@ namespace BlackC
             init-declarator
             init-declarator-list , init-declarator
          */
-        public bool parseInitDeclaratorList()
+        public List<InitDeclaratorNode> parseInitDeclaratorList()
         {
-            bool result = parseInitDeclarator();
+            List<InitDeclaratorNode> nodelist = null;
+            InitDeclaratorNode node = parseInitDeclarator();
+            bool result = (node != null);
             if (result)
             {
-                //Console.WriteLine("parsed init-declarator init-declarator-list");
+                nodelist = new List<InitDeclaratorNode>();
+                nodelist.Add(node);
             }
-            bool notEmpty = result;
             while (result)
             {
                 int cuepoint2 = scanner.record();
@@ -986,10 +1114,10 @@ namespace BlackC
                 result = (token is tComma);
                 if (result)
                 {
-                    result = parseInitDeclarator();
+                    node = parseInitDeclarator();
                     if (result)
                     {
-                        //Console.WriteLine("parsed another init-declarator init-declarator-list");
+                        nodelist.Add(node);
                     }
                 }
                 if (!result)
@@ -997,7 +1125,7 @@ namespace BlackC
                     scanner.rewind(cuepoint2);
                 }
             }
-            return notEmpty;
+            return nodelist;
         }
 
         /*(6.7) 
@@ -1005,9 +1133,11 @@ namespace BlackC
             declarator
             declarator = initializer
          */
-        public bool parseInitDeclarator()
+        public InitDeclaratorNode parseInitDeclarator()
         {
-            bool result = parseDeclarator();
+            InitDeclaratorNode node = null;
+            DeclaratorNode declarnode = parseDeclarator();
+            bool result = (declarnode != null);
             if (result)
             {
                 int cuepoint = scanner.record();
@@ -1015,14 +1145,15 @@ namespace BlackC
                 bool result2 = (token is tEqual);
                 if (!result2)
                 {
-                    //Console.WriteLine("parsed declarator init-declarator");
+                    node = arbor.makeInitDeclaratorNode(declarnode, null);          //declarator
                 }
                 if (result2)
                 {
-                    result2 = parseInitializer();
+                    InitializerNode initialnode = parseInitializer();
+                    result2 = (initialnode != null);
                     if (!result2)
                     {
-                        //Console.WriteLine("parsed declarator = initializer init-declarator");
+                        node = arbor.makeInitDeclaratorNode(declarnode, initialnode);       //declarator = initializer
                     }
                 }
                 if (!result2)
@@ -1030,7 +1161,7 @@ namespace BlackC
                     scanner.rewind(cuepoint);
                 }
             }
-            return result;
+            return node;
         }
 
         /*(6.7.1) 
@@ -1041,20 +1172,21 @@ namespace BlackC
             auto
             register
          */
-        public bool parseStorageClassSpec()
+        public StorageClassNode parseStorageClassSpec()
         {
+            StorageClassNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
             bool result = ((token is tTypedef) || (token is tExtern) || (token is tStatic) || (token is tAuto) || (token is tRegister));
             if (result)
             {
-                //Console.WriteLine("parsed storage class spec");
+                node = arbor.makeStoreageClassNode(token);
             }
             else 
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return node;
         }
 
         /*(6.7.2) 
@@ -1083,35 +1215,22 @@ namespace BlackC
                 || (token is tFloat) || (token is tDouble) || (token is tSigned) || (token is tUnsigned));
             if (result)
             {
-                //Console.WriteLine("parsed base type-spec");
                 typespec = arbor.makeBaseTypeSpec(token);
             }
-            if (!result)
+            if (typespec == null)
             {
                 scanner.rewind(cuepoint);
-                result = parseStructOrUnionSpec();
-                if (result)
-                {
-                    //Console.WriteLine("parsed struct/union type-spec");
-                }
+                typespec = parseStructOrUnionSpec();
             }
-            if (!result)
+            if (typespec == null)
             {
-                result = parseEnumeratorSpec();
-                if (result)
-                {
-                    //Console.WriteLine("parsed enumeration type-spec");
-                }
+                typespec = parseEnumeratorSpec();
             }
-            if (!result)
+            if (typespec == null)
             {
-                result = parseTypedefName();
-                if (result)
-                {
-                    //Console.WriteLine("parsed typedef type-spec");
-                }
+                typespec = parseTypedefName();
             }
-            if (!result)
+            if (typespec == null)
             {
                 scanner.rewind(cuepoint);
             }
@@ -1627,7 +1746,7 @@ namespace BlackC
          declarator:
             pointer[opt] direct-declarator
          */
-        public bool parseDeclarator()
+        public DeclaratorNode parseDeclarator()
         {
             int cuepoint = scanner.record();
             bool result = parsePointer();
@@ -2234,21 +2353,17 @@ namespace BlackC
          typedef-name:
             identifier
          */
-        public bool parseTypedefName()
+        public TypedefNode parseTypedefName()
         {
+            TypedefNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            bool result = ((token is tIdentifier) && arbor.isTypedef(((tIdentifier)token).ident));
-            if (result)
-            {
-                tIdentifier id = (tIdentifier)token;
-                //Console.WriteLine("parsed typedef name = " + id.ident);
-            }
-            if (!result)
+            node = arbor.getTypedefNode(token);
+            if (node == null)
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return node;
         }
 
         //- declaration initializers ------------------------------------
@@ -2259,7 +2374,7 @@ namespace BlackC
             { initializer-list }
             { initializer-list , }
          */
-        public bool parseInitializer()
+        public InitializerNode parseInitializer()
         {
             bool result = parseAssignExpression();
             if (result)

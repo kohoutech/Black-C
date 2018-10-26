@@ -68,6 +68,11 @@ namespace BlackC
             typepdefids.Remove(typeid);
         }
 
+        internal IdentNode makeIdentifierNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
         internal ExprNode makeIntegerConstantNode(Token token)
         {
             throw new NotImplementedException();
@@ -84,11 +89,6 @@ namespace BlackC
         }
 
         internal ExprNode makeStringConstantNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal IdentNode makeIdentifierNode(Token token)
         {
             throw new NotImplementedException();
         }
@@ -148,6 +148,134 @@ namespace BlackC
         }
 
         public BaseTypeSpecNode makeBaseTypeSpec(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal TypedefNode getTypedefNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal StorageClassNode makeStoreageClassNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal DeclarationNode makeDeclaration(List<DeclarSpecNode> declarspecs, List<InitDeclaratorNode> initdeclarlist)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal InitDeclaratorNode makeInitDeclaratorNode(DeclaratorNode declarnode, InitializerNode initialnode)
+        {
+            throw new NotImplementedException();
+        }
+
+        //- expressions -------------------------------------------------------------
+
+
+        internal ConstExpressionNode makeConstantExprNode(ExprNode condit)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal AddExprNode makeAddExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal SubtractExprNode makeSubtractExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal MultiplyExprNode makeMultiplyExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal DivideExprNode makeDivideExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal ModuloExprNode makeModuloExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal ShiftLeftExprNode makeShiftLeftExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal ShiftRightExprNode makeShiftRightExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal LessThanExprNode makeLessThanExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal GreaterThanExprNode makeGreaterThanExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal LessEqualExprNode makeLessEqualExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal GreaterEqualExprNode makeGreaterEqualExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal EqualsExprNode makeEqualsExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal NotEqualsExprNode makeNotEqualsExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal ANDExprNode makeANDExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal XORExprNode makeXORExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal ORExprNode makeORExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal LogicalANDExprNode makeLogicalANDExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal LogicalORExprNode makeLogicalORExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal ConditionalExprNode makeConditionalExprNode(ExprNode lhs, ExpressionNode expr, ExprNode condit)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal ExprNode makeAssignExpressionNode(ExprNode lhs, AssignOperatorNode oper, ExprNode rhs)
         {
             throw new NotImplementedException();
         }
