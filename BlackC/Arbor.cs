@@ -73,26 +73,6 @@ namespace BlackC
             throw new NotImplementedException();
         }
 
-        internal ExprNode makeIntegerConstantNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal ExprNode makeFloatConstantNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal ExprNode makeCharConstantNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal ExprNode makeStringConstantNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
         internal TypeQualNode makeTypeQualNode(Token token)
         {
             throw new NotImplementedException();
@@ -152,130 +132,270 @@ namespace BlackC
             throw new NotImplementedException();
         }
 
-        internal TypedefNode getTypedefNode(Token token)
+        public TypedefNode getTypedefNode(Token token)
         {
             throw new NotImplementedException();
         }
 
-        internal StorageClassNode makeStoreageClassNode(Token token)
+        public StorageClassNode makeStoreageClassNode(Token token)
         {
             throw new NotImplementedException();
         }
 
-        internal DeclarationNode makeDeclaration(List<DeclarSpecNode> declarspecs, List<InitDeclaratorNode> initdeclarlist)
+        public DeclarationNode makeDeclaration(List<DeclarSpecNode> declarspecs, List<InitDeclaratorNode> initdeclarlist)
         {
             throw new NotImplementedException();
         }
 
-        internal InitDeclaratorNode makeInitDeclaratorNode(DeclaratorNode declarnode, InitializerNode initialnode)
+        public InitDeclaratorNode makeInitDeclaratorNode(DeclaratorNode declarnode, InitializerNode initialnode)
         {
             throw new NotImplementedException();
         }
 
         //- expressions -------------------------------------------------------------
 
-
-        internal ConstExpressionNode makeConstantExprNode(ExprNode condit)
+        public ExprNode makeIdentExprNode(Token token)
         {
             throw new NotImplementedException();
         }
 
-        internal AddExprNode makeAddExprNode(ExprNode lhs, ExprNode rhs)
+        internal IntegerExprNode makeIntegerConstantNode(Token token)
         {
             throw new NotImplementedException();
         }
 
-        internal SubtractExprNode makeSubtractExprNode(ExprNode lhs, ExprNode rhs)
+        internal FloatExprNode makeFloatConstantNode(Token token)
         {
             throw new NotImplementedException();
         }
 
-        internal MultiplyExprNode makeMultiplyExprNode(ExprNode lhs, ExprNode rhs)
+        internal CharExprNode makeCharConstantNode(Token token)
         {
             throw new NotImplementedException();
         }
 
-        internal DivideExprNode makeDivideExprNode(ExprNode lhs, ExprNode rhs)
+        internal StringExprNode makeStringConstantNode(Token token)
         {
             throw new NotImplementedException();
         }
 
-        internal ModuloExprNode makeModuloExprNode(ExprNode lhs, ExprNode rhs)
+        public EnumExprNode makeEnumExprNode(Token token)
         {
             throw new NotImplementedException();
         }
 
-        internal ShiftLeftExprNode makeShiftLeftExprNode(ExprNode lhs, ExprNode rhs)
+        public SubExpressionNode makeSubexpressionNode(ExpressionNode expr)
+        {
+            throw new NotImplementedException();
+        }
+        
+        public TypeInitExprNode makeTypeInitExprNode(ExprNode node)
         {
             throw new NotImplementedException();
         }
 
-        internal ShiftRightExprNode makeShiftRightExprNode(ExprNode lhs, ExprNode rhs)
+        public IndexExprNode makeIndexExprNode(ExprNode node, ExpressionNode expr)
         {
             throw new NotImplementedException();
         }
 
-        internal LessThanExprNode makeLessThanExprNode(ExprNode lhs, ExprNode rhs)
+        public FuncCallExprNode makeFuncCallExprNode(ExprNode node, List<AssignExpressionNode> argList)
         {
             throw new NotImplementedException();
         }
 
-        internal GreaterThanExprNode makeGreaterThanExprNode(ExprNode lhs, ExprNode rhs)
+        public FieldExprNode makeFieldExprNode(ExprNode node, IdentNode idNode)
         {
             throw new NotImplementedException();
         }
 
-        internal LessEqualExprNode makeLessEqualExprNode(ExprNode lhs, ExprNode rhs)
+        public RefFieldExprNode makeRefFieldExprNode(ExprNode node, IdentNode idNode)
         {
             throw new NotImplementedException();
         }
 
-        internal GreaterEqualExprNode makeGreaterEqualExprNode(ExprNode lhs, ExprNode rhs)
+        public PostPlusPlusExprNode makePostPlusPlusExprNode(ExprNode node)
         {
             throw new NotImplementedException();
         }
 
-        internal EqualsExprNode makeEqualsExprNode(ExprNode lhs, ExprNode rhs)
+        public PostMinusMinusExprNode makePostMinusMinusExprNode(ExprNode node)
+        {
+            throw new NotImplementedException();
+        }
+        
+        public CastExprNode makeCastExprNode(TypeNameNode name, ExprNode rhs)
         {
             throw new NotImplementedException();
         }
 
-        internal NotEqualsExprNode makeNotEqualsExprNode(ExprNode lhs, ExprNode rhs)
+        public UnaryOperatorNode makeUnaryOperatorNode(Token token)
         {
             throw new NotImplementedException();
         }
 
-        internal ANDExprNode makeANDExprNode(ExprNode lhs, ExprNode rhs)
+        public PlusPlusExprNode makePlusPlusExprNode(ExprNode node)
         {
             throw new NotImplementedException();
         }
 
-        internal XORExprNode makeXORExprNode(ExprNode lhs, ExprNode rhs)
+        public MinusMinusExprNode makeMinusMinusExprNode(ExprNode node)
         {
             throw new NotImplementedException();
         }
 
-        internal ORExprNode makeORExprNode(ExprNode lhs, ExprNode rhs)
+        public UnaryCastExprNode makeUnaryCastExprNode(UnaryOperatorNode uniOp, ExprNode castExpr)
         {
             throw new NotImplementedException();
         }
 
-        internal LogicalANDExprNode makeLogicalANDExprNode(ExprNode lhs, ExprNode rhs)
+        public SizeofUnaryExprNode makeSizeofUnaryExprNode(ExprNode node)
         {
             throw new NotImplementedException();
         }
 
-        internal LogicalORExprNode makeLogicalORExprNode(ExprNode lhs, ExprNode rhs)
+        public SizeofTypeExprNode makeSizeofTypeExprNode(TypeNameNode name)
+        {
+            throw new NotImplementedException();
+        }
+        
+        public AddExprNode makeAddExprNode(ExprNode lhs, ExprNode rhs)
         {
             throw new NotImplementedException();
         }
 
-        internal ConditionalExprNode makeConditionalExprNode(ExprNode lhs, ExpressionNode expr, ExprNode condit)
+        public SubtractExprNode makeSubtractExprNode(ExprNode lhs, ExprNode rhs)
         {
             throw new NotImplementedException();
         }
 
-        internal ExprNode makeAssignExpressionNode(ExprNode lhs, AssignOperatorNode oper, ExprNode rhs)
+        public MultiplyExprNode makeMultiplyExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public DivideExprNode makeDivideExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ModuloExprNode makeModuloExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ShiftLeftExprNode makeShiftLeftExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ShiftRightExprNode makeShiftRightExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public LessThanExprNode makeLessThanExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public GreaterThanExprNode makeGreaterThanExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public LessEqualExprNode makeLessEqualExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public GreaterEqualExprNode makeGreaterEqualExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public EqualsExprNode makeEqualsExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public NotEqualsExprNode makeNotEqualsExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ANDExprNode makeANDExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public XORExprNode makeXORExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ORExprNode makeORExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public LogicalANDExprNode makeLogicalANDExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public LogicalORExprNode makeLogicalORExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ConditionalExprNode makeConditionalExprNode(ExprNode lhs, ExpressionNode expr, ExprNode condit)
+        {
+            throw new NotImplementedException();
+        }
+
+        public AssignExpressionNode makeAssignExpressionNode(ExprNode lhs, AssignOperatorNode oper, ExprNode rhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public AssignOperatorNode makeAssignOperatorNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ExpressionNode makeExpressionNode(ExpressionNode node, AssignExpressionNode expr)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ConstExpressionNode makeConstantExprNode(ExprNode condit)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal PointerNode makePointerNode(List<TypeQualNode> qualList, PointerNode ptr)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal TypeNameNode makeTypeNameNode(List<DeclarSpecNode> list, AbstractDeclaratorNode declar)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal AbstractDeclaratorNode makeAbstractDeclaratorNode(PointerNode ptr, DirectDeclatorNode direct)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        internal DirectDeclatorNode makeDirectAbstractIndexNode(AbstractDeclaratorNode declar, bool p, List<TypeQualNode> list, bool p_2, AssignExpressionNode assign)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal DirectDeclatorNode makeDirectAbstractParamNode(AbstractDeclaratorNode declar, ParamTypeListNode list)
         {
             throw new NotImplementedException();
         }

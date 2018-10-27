@@ -44,7 +44,15 @@ namespace BlackC
     {
     }
 
-    public class ConstExprNode : ExprNode
+    public class IntegerExprNode : ExprNode
+    {
+    }
+
+    public class FloatExprNode : ExprNode
+    {
+    }
+
+    public class CharExprNode : ExprNode
     {
     }
 
@@ -52,19 +60,31 @@ namespace BlackC
     {
     }
 
-    public class PostBracketExprNode : ExprNode
+    public class EnumExprNode : ExprNode
     {
     }
 
-    public class PostParenExprNode : ExprNode
+    public class SubExpressionNode : ExprNode
     {
     }
 
-    public class PostDotExprNode : ExprNode
+    public class TypeInitExprNode : ExprNode
     {
     }
 
-    public class PostArrowExprNode : ExprNode
+    public class IndexExprNode : ExprNode
+    {
+    }
+
+    public class FuncCallExprNode : ExprNode
+    {
+    }
+
+    public class FieldExprNode : ExprNode
+    {
+    }
+
+    public class RefFieldExprNode : ExprNode
     {
     }
 
@@ -73,10 +93,6 @@ namespace BlackC
     }
 
     public class PostMinusMinusExprNode : ExprNode
-    {
-    }
-
-    public class TypeInitExprNode : ExprNode
     {
     }
 
@@ -96,7 +112,7 @@ namespace BlackC
     {
     }
 
-    public class SizeRTypeExprNode : ExprNode
+    public class SizeofTypeExprNode : ExprNode
     {
     }
 
@@ -263,6 +279,26 @@ namespace BlackC
     }
 
     public class DeclaratorNode : ParseNode
+    {
+    }
+
+    public class PointerNode : ParseNode
+    {
+    }
+
+    public class ParamTypeListNode : ParseNode
+    {
+    }
+
+    public class TypeNameNode : ParseNode
+    {
+    }
+
+    public class AbstractDeclaratorNode : ParseNode
+    {
+    }
+
+    public class DirectDeclatorNode : ParseNode
     {
     }
 
