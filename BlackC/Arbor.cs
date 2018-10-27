@@ -53,101 +53,23 @@ namespace BlackC
             return result;
         }
 
-        internal void buildFunctionDef()
+        public void buildFunctionDef()
         {
             throw new NotImplementedException();
         }
 
-        internal void setTypeDef(string typeid)
+        //cruft
+        public void setTypeDef(string typeid)
         {
             typepdefids[typeid] = 0;
         }
 
-        internal void unsetTypeDef(string typeid)
+        public void unsetTypeDef(string typeid)
         {
             typepdefids.Remove(typeid);
         }
 
-        internal IdentNode makeIdentifierNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal TypeQualNode makeTypeQualNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal FuncSpecNode makeFuncSpecNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        //- struct/unions -----------------------------------------------------
-
-        public StructSpecNode makeStructSpec(StructUnionNode tag, IdentNode name, List<StructDeclarationNode> declarList)
-        {
-            throw new NotImplementedException();
-        }
-
-        public StructUnionNode makeStructUnionNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        public StructDeclarationNode makeStructDeclarationNode(List<DeclarSpecNode> specqual, List<StructDeclaratorNode> fieldnames)
-        {
-            throw new NotImplementedException();
-        }
-
-        public StructDeclaratorNode makeStructDeclaractorNode(DeclaratorNode declarnode, ExprNode constexpr)
-        {
-            throw new NotImplementedException();
-        }
-
-        //- enums -------------------------------------------------------------
-
-        public EnumSpecNode makeEnumSpec(IdentNode idNode, List<EnumeratorNode> enumList)
-        {
-            throw new NotImplementedException();
-        }
-
-        public EnumeratorNode makeEnumeratorNode(EnumConstantNode enumconst, ExprNode constexpr)
-        {
-            throw new NotImplementedException();
-        }
-
-        public EnumConstantNode makeEnumConstNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        public EnumConstantNode getEnumConstNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        public BaseTypeSpecNode makeBaseTypeSpec(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        public TypedefNode getTypedefNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        public StorageClassNode makeStoreageClassNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        public DeclarationNode makeDeclaration(List<DeclarSpecNode> declarspecs, List<InitDeclaratorNode> initdeclarlist)
-        {
-            throw new NotImplementedException();
-        }
-
-        public InitDeclaratorNode makeInitDeclaratorNode(DeclaratorNode declarnode, InitializerNode initialnode)
+        public IdentNode makeIdentifierNode(Token token)
         {
             throw new NotImplementedException();
         }
@@ -159,22 +81,22 @@ namespace BlackC
             throw new NotImplementedException();
         }
 
-        internal IntegerExprNode makeIntegerConstantNode(Token token)
+        public IntegerExprNode makeIntegerConstantNode(Token token)
         {
             throw new NotImplementedException();
         }
 
-        internal FloatExprNode makeFloatConstantNode(Token token)
+        public FloatExprNode makeFloatConstantNode(Token token)
         {
             throw new NotImplementedException();
         }
 
-        internal CharExprNode makeCharConstantNode(Token token)
+        public CharExprNode makeCharConstantNode(Token token)
         {
             throw new NotImplementedException();
         }
 
-        internal StringExprNode makeStringConstantNode(Token token)
+        public StringExprNode makeStringConstantNode(Token token)
         {
             throw new NotImplementedException();
         }
@@ -188,7 +110,7 @@ namespace BlackC
         {
             throw new NotImplementedException();
         }
-        
+
         public TypeInitExprNode makeTypeInitExprNode(ExprNode node)
         {
             throw new NotImplementedException();
@@ -223,7 +145,7 @@ namespace BlackC
         {
             throw new NotImplementedException();
         }
-        
+
         public CastExprNode makeCastExprNode(TypeNameNode name, ExprNode rhs)
         {
             throw new NotImplementedException();
@@ -258,7 +180,7 @@ namespace BlackC
         {
             throw new NotImplementedException();
         }
-        
+
         public AddExprNode makeAddExprNode(ExprNode lhs, ExprNode rhs)
         {
             throw new NotImplementedException();
@@ -374,28 +296,237 @@ namespace BlackC
             throw new NotImplementedException();
         }
 
-        internal PointerNode makePointerNode(List<TypeQualNode> qualList, PointerNode ptr)
+        //- declarations --------------------------------------------------------
+
+        public DeclarationNode makeDeclaration(List<DeclarSpecNode> declarspecs, List<InitDeclaratorNode> initdeclarlist)
         {
             throw new NotImplementedException();
         }
 
-        internal TypeNameNode makeTypeNameNode(List<DeclarSpecNode> list, AbstractDeclaratorNode declar)
+        public InitDeclaratorNode makeInitDeclaratorNode(DeclaratorNode declarnode, InitializerNode initialnode)
         {
             throw new NotImplementedException();
         }
 
-        internal AbstractDeclaratorNode makeAbstractDeclaratorNode(PointerNode ptr, DirectDeclatorNode direct)
+        public StorageClassNode makeStoreageClassNode(Token token)
         {
             throw new NotImplementedException();
         }
 
-
-        internal DirectDeclatorNode makeDirectAbstractIndexNode(AbstractDeclaratorNode declar, bool p, List<TypeQualNode> list, bool p_2, AssignExpressionNode assign)
+        public BaseTypeSpecNode makeBaseTypeSpec(Token token)
         {
             throw new NotImplementedException();
         }
 
-        internal DirectDeclatorNode makeDirectAbstractParamNode(AbstractDeclaratorNode declar, ParamTypeListNode list)
+        //- struct/unions -----------------------------------------------------
+
+        public StructSpecNode makeStructSpec(StructUnionNode tag, IdentNode name, List<StructDeclarationNode> declarList)
+        {
+            throw new NotImplementedException();
+        }
+
+        public StructUnionNode makeStructUnionNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public StructDeclarationNode makeStructDeclarationNode(List<DeclarSpecNode> specqual, List<StructDeclaratorNode> fieldnames)
+        {
+            throw new NotImplementedException();
+        }
+
+        public StructDeclaratorNode makeStructDeclaractorNode(DeclaratorNode declarnode, ExprNode constexpr)
+        {
+            throw new NotImplementedException();
+        }
+
+        //- enums -------------------------------------------------------------
+
+        public EnumSpecNode makeEnumSpec(IdentNode idNode, List<EnumeratorNode> enumList)
+        {
+            throw new NotImplementedException();
+        }
+
+        public EnumeratorNode makeEnumeratorNode(EnumConstantNode enumconst, ConstExpressionNode constexpr)
+        {
+            throw new NotImplementedException();
+        }
+
+        public EnumConstantNode makeEnumConstNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public EnumConstantNode getEnumConstNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public TypedefNode getTypedefNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public TypeQualNode makeTypeQualNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public FuncSpecNode makeFuncSpecNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        //- declarators -------------------------------------------------------
+
+        public DeclaratorNode makeDeclaratorNode(PointerNode ptr, DirectDeclaratorNode declar)
+        {
+            throw new NotImplementedException();
+        }
+
+        public DirectDeclaratorNode makeDirectIdentNode(IdentNode id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public DirectDeclaratorNode makeDirectDeclarNode(DeclaratorNode declar)
+        {
+            throw new NotImplementedException();
+        }
+
+        public DirectDeclaratorNode makeDirectIndexNode(DirectDeclaratorNode node, bool p, List<TypeQualNode> list, bool p_2, AssignExpressionNode assign)
+        {
+            throw new NotImplementedException();
+        }
+
+        public DirectDeclaratorNode makeDirectParamNode(DirectDeclaratorNode node, global::BlackC.ParamTypeListNode list)
+        {
+            throw new NotImplementedException();
+        }
+
+        public DirectDeclaratorNode makeDirectArgumentNode(DirectDeclaratorNode node, List<IdentNode> list)
+        {
+            throw new NotImplementedException();
+        }
+
+        public PointerNode makePointerNode(List<TypeQualNode> qualList, PointerNode ptr)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ParamTypeListNode ParamTypeListNode(List<ParamDeclarNode> list, bool p)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ParamDeclarNode makeParamDeclarNode(List<DeclarSpecNode> declarspecs, DeclaratorNode declar, AbstractDeclaratorNode absdeclar)
+        {
+            throw new NotImplementedException();
+        }
+
+        public TypeNameNode makeTypeNameNode(List<DeclarSpecNode> list, AbstractDeclaratorNode declar)
+        {
+            throw new NotImplementedException();
+        }
+
+        public AbstractDeclaratorNode makeAbstractDeclaratorNode(PointerNode ptr, DirectAbstractNode direct)
+        {
+            throw new NotImplementedException();
+        }
+
+        public DirectAbstractNode makeDirectAbstractDeclarNode(AbstractDeclaratorNode declar)
+        {
+            throw new NotImplementedException();
+        }
+
+        public DirectAbstractNode makeDirectAbstractParamNode(DirectAbstractNode node, global::BlackC.ParamTypeListNode list)
+        {
+            throw new NotImplementedException();
+        }
+
+        public DirectAbstractNode makeDirectAbstractIndexNode(DirectAbstractNode node, bool p, List<TypeQualNode> list, bool p_2, AssignExpressionNode assign)
+        {
+            throw new NotImplementedException();
+        }
+
+        //- statements --------------------------------------------------------
+
+        public LabelStatementNode makeLabelStatement(IdentNode labelId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public CaseStatementNode makeCaseStatementNode(ConstExpressionNode expr, StatementNode stmt)
+        {
+            throw new NotImplementedException();
+        }
+
+        public DefaultStatementNode makeDefaultStatementNode(StatementNode stmt)
+        {
+            throw new NotImplementedException();
+        }
+
+        public CompoundStatementNode makeCompoundStatementNode(List<BlockItemNode> list)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ExpressionStatementNode makeExpressionStatement(ExpressionNode expr)
+        {
+            throw new NotImplementedException();
+        }
+
+        public EmptyStatementNode makeEmptyStatement(ExpressionNode expr)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IfStatementNode makeIfStatementNode(ExpressionNode expr, StatementNode thenstmt, StatementNode elsestmt)
+        {
+            throw new NotImplementedException();
+        }
+
+        public SwitchStatementNode makeSwitchStatement(ExpressionNode expr, StatementNode stmt)
+        {
+            throw new NotImplementedException();
+        }
+
+        public WhileStatementNode makeWhileStatementNode(ExpressionNode expr, StatementNode stmt)
+        {
+            throw new NotImplementedException();
+        }
+
+        public DoStatementNode makeDoStatementNode(StatementNode stmt, ExpressionNode expr)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ForStatementNode makeForStatementNode(DeclarationNode declar, ExpressionNode expr2, ExpressionNode expr3, StatementNode stmt)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ForStatementNode makeForStatementNode(ExpressionNode expr1, ExpressionNode expr2, ExpressionNode expr3, StatementNode stmt)
+        {
+            throw new NotImplementedException();
+        }
+
+        public GotoStatementNode makeGotoStatementNode(IdentNode idNode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ContinueStatementNode makeContinueStatementNode()
+        {
+            throw new NotImplementedException();
+        }
+
+        public BreakStatementNode makeBreakStatementNode()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ReturnStatementNode makeReturnStatementNode(ExpressionNode expr)
         {
             throw new NotImplementedException();
         }

@@ -218,7 +218,7 @@ namespace BlackC
 
     //- declarations ----------------------------------------------------------
 
-    public class DeclarationNode : ParseNode
+    public class DeclarationNode : BlockItemNode
     {
     }
 
@@ -282,11 +282,19 @@ namespace BlackC
     {
     }
 
+    public class DirectDeclaratorNode : ParseNode
+    {
+    }
+
     public class PointerNode : ParseNode
     {
     }
 
     public class ParamTypeListNode : ParseNode
+    {
+    }
+
+    public class ParamDeclarNode : ParseNode
     {
     }
 
@@ -298,7 +306,7 @@ namespace BlackC
     {
     }
 
-    public class DirectDeclatorNode : ParseNode
+    public class DirectAbstractNode : ParseNode
     {
     }
 
@@ -309,4 +317,75 @@ namespace BlackC
     public class InitializerNode : ParseNode
     {
     }
+
+    //- statements ----------------------------------------------------------
+
+    public class StatementNode : BlockItemNode
+    {
+    }
+
+    public class LabelStatementNode : StatementNode
+    {
+    }
+
+    public class CaseStatementNode : StatementNode
+    {
+    }
+
+    public class DefaultStatementNode : StatementNode
+    {
+    }
+
+    public class CompoundStatementNode : StatementNode
+    {
+    }
+
+    public class ExpressionStatementNode : StatementNode
+    {
+    }
+
+    public class EmptyStatementNode : StatementNode
+    {
+    }
+
+    public class IfStatementNode : StatementNode
+    {
+    }
+    
+    public class SwitchStatementNode : StatementNode
+    {
+    }
+    
+    public class WhileStatementNode : StatementNode
+    {
+    }
+
+    public class DoStatementNode : StatementNode
+    {
+    }
+
+    public class ForStatementNode : StatementNode
+    {
+    }
+
+    public class GotoStatementNode : StatementNode
+    {
+    }
+
+    public class ContinueStatementNode : StatementNode
+    {
+    }
+
+    public class BreakStatementNode : StatementNode
+    {
+    }
+
+    public class ReturnStatementNode : StatementNode
+    {
+    }
+
+    public class BlockItemNode : ParseNode
+    {
+    }
+
 }
