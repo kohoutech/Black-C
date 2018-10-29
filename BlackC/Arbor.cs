@@ -29,13 +29,15 @@ using Origami.AST;
 
 namespace BlackC
 {
-    class Arbor
+    public class Arbor
     {
         Dictionary<string, int> typepdefids;
+        public SymbolTable curSymbolTable;
 
         public Arbor()
         {
             typepdefids = new Dictionary<string, int>();
+            curSymbolTable = null;
         }
 
         //temproary kludge to get around ambiguity in C99's grammar between typedef and identifier 
@@ -43,20 +45,15 @@ namespace BlackC
         //this will be removed once the rest of the semantic analysis is up & running and this is not needed anymore
         //crazy eh?
 
-        public bool isTypedef(String id)
-        {
-            bool result = false;
-            if (typepdefids.ContainsKey(id))
-            {
-                result = true;
-            }
-            return result;
-        }
-
-        public void buildFunctionDef()
-        {
-            throw new NotImplementedException();
-        }
+        //public bool isTypedef(String id)
+        //{
+        //    bool result = false;
+        //    if (typepdefids.ContainsKey(id))
+        //    {
+        //        result = true;
+        //    }
+        //    return result;
+        //}
 
         //cruft
         public void setTypeDef(string typeid)
@@ -69,466 +66,610 @@ namespace BlackC
             typepdefids.Remove(typeid);
         }
 
-        public IdentNode makeIdentifierNode(Token token)
+        //- symbol table ------------------------------------------------------------
+
+        public SymbolTable pushSymbolTable()
         {
-            throw new NotImplementedException();
+            SymbolTable newtbl = new SymbolTable(curSymbolTable);
+            curSymbolTable = newtbl;
+            return newtbl;
+        }
+
+        public SymbolTable popSymbolTable()
+        {
+            SymbolTable oldtbl = curSymbolTable;
+            curSymbolTable = curSymbolTable.parent;
+            return oldtbl;
+        }
+
+        //- identifiers -------------------------------------------------------------
+
+        //these only return new ident nodes
+        public IdentNode makeDeclarIdentNode(Token token)
+        {
+            String id = ((tIdentifier)token).ident;
+            IdentNode node = SymbolTable.addSymbol(curSymbolTable, id);
+            node.symtype = SYMTYPE.DECLAR;
+            return node;
+        }
+
+        public IdentNode makeLabelIdentNode(Token token)
+        {
+            String id = ((tIdentifier)token).ident;
+            IdentNode node = SymbolTable.addSymbol(curSymbolTable, id);
+            node.symtype = SYMTYPE.LABEL;
+            return node;
+        }
+
+        //these return either declared or new ident nodes 
+        public IdentNode getStructIdentNode(Token token)
+        {
+            String id = ((tIdentifier)token).ident;
+            IdentNode node = SymbolTable.findSymbol(curSymbolTable, id, SYMTYPE.STRUCT);
+            if (node == null)
+            {
+                node = SymbolTable.addSymbol(curSymbolTable, id);
+                node.symtype = SYMTYPE.STRUCT;
+            }            
+            return node;
+        }
+
+        public IdentNode getEnumIdentNode(Token token)
+        {
+            String id = ((tIdentifier)token).ident;
+            IdentNode node = SymbolTable.findSymbol(curSymbolTable, id, SYMTYPE.ENUM);
+            if (node == null)
+            {
+                node = SymbolTable.addSymbol(curSymbolTable, id);
+                node.symtype = SYMTYPE.ENUM;
+            }
+            return node;
+        }
+
+        //these return declared ident nodes 
+        public IdentNode getDeclarIdentNode(String id)
+        {
+            IdentNode node = SymbolTable.findSymbol(curSymbolTable, id, SYMTYPE.DECLAR);
+            return node;
+        }
+
+        //called before <makeFieldExprNode> and <makeRefFieldExprNode>
+        public IdentNode getFieldIdentNode(Token token)
+        {
+            return null;
+        }
+
+        public IdentNode getArgIdentNode(Token token)
+        {
+            return null;
+        }
+
+        public IdentNode getFieldInitializerNode(Token token)
+        {
+            return null;
+        }
+
+        public IdentNode getLabelIdentNode(Token token)
+        {
+            return null;
+        }
+
+        public TypedefNode getTypedefNode(Token token)
+        {
+            TypedefNode node = null;
+            if (token is tIdentifier)
+            {
+                String id = ((tIdentifier)token).ident;
+                IdentNode idnode = SymbolTable.findSymbol(curSymbolTable, id, SYMTYPE.TYPEDEF);
+                if (idnode != null)
+                {
+                    node = (TypedefNode)idnode.def;
+                }
+            }
+            return node;
         }
 
         //- expressions -------------------------------------------------------------
 
-        public ExprNode makeIdentExprNode(Token token)
+        public ExprNode getExprIdentNode(Token token)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public IntegerExprNode makeIntegerConstantNode(Token token)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public FloatExprNode makeFloatConstantNode(Token token)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public CharExprNode makeCharConstantNode(Token token)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public StringExprNode makeStringConstantNode(Token token)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
-        public EnumExprNode makeEnumExprNode(Token token)
+        public EnumExprNode getExprEnumNode(Token token)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public SubExpressionNode makeSubexpressionNode(ExpressionNode expr)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public TypeInitExprNode makeTypeInitExprNode(ExprNode node)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public IndexExprNode makeIndexExprNode(ExprNode node, ExpressionNode expr)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public FuncCallExprNode makeFuncCallExprNode(ExprNode node, List<AssignExpressionNode> argList)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public FieldExprNode makeFieldExprNode(ExprNode node, IdentNode idNode)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public RefFieldExprNode makeRefFieldExprNode(ExprNode node, IdentNode idNode)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public PostPlusPlusExprNode makePostPlusPlusExprNode(ExprNode node)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public PostMinusMinusExprNode makePostMinusMinusExprNode(ExprNode node)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public CastExprNode makeCastExprNode(TypeNameNode name, ExprNode rhs)
         {
-            throw new NotImplementedException();
-        }
-
-        public UnaryOperatorNode makeUnaryOperatorNode(Token token)
-        {
-            throw new NotImplementedException();
+            return null;
         }
 
         public PlusPlusExprNode makePlusPlusExprNode(ExprNode node)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public MinusMinusExprNode makeMinusMinusExprNode(ExprNode node)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public UnaryCastExprNode makeUnaryCastExprNode(UnaryOperatorNode uniOp, ExprNode castExpr)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public SizeofUnaryExprNode makeSizeofUnaryExprNode(ExprNode node)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public SizeofTypeExprNode makeSizeofTypeExprNode(TypeNameNode name)
         {
-            throw new NotImplementedException();
-        }
-
-        public AddExprNode makeAddExprNode(ExprNode lhs, ExprNode rhs)
-        {
-            throw new NotImplementedException();
-        }
-
-        public SubtractExprNode makeSubtractExprNode(ExprNode lhs, ExprNode rhs)
-        {
-            throw new NotImplementedException();
+            return null;            
         }
 
         public MultiplyExprNode makeMultiplyExprNode(ExprNode lhs, ExprNode rhs)
         {
-            throw new NotImplementedException();
+            return new MultiplyExprNode(lhs, rhs);
         }
 
         public DivideExprNode makeDivideExprNode(ExprNode lhs, ExprNode rhs)
         {
-            throw new NotImplementedException();
+            return new DivideExprNode(lhs, rhs);
         }
 
         public ModuloExprNode makeModuloExprNode(ExprNode lhs, ExprNode rhs)
         {
-            throw new NotImplementedException();
+            return new ModuloExprNode(lhs, rhs);
+        }
+
+        public AddExprNode makeAddExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            return new AddExprNode(lhs, rhs);
+        }
+
+        public SubtractExprNode makeSubtractExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            return new SubtractExprNode(lhs, rhs);
         }
 
         public ShiftLeftExprNode makeShiftLeftExprNode(ExprNode lhs, ExprNode rhs)
         {
-            throw new NotImplementedException();
+            return new ShiftLeftExprNode(lhs, rhs);
         }
 
         public ShiftRightExprNode makeShiftRightExprNode(ExprNode lhs, ExprNode rhs)
         {
-            throw new NotImplementedException();
+            return new ShiftRightExprNode(lhs, rhs);
         }
 
         public LessThanExprNode makeLessThanExprNode(ExprNode lhs, ExprNode rhs)
         {
-            throw new NotImplementedException();
+            return new LessThanExprNode(lhs, rhs);
         }
 
         public GreaterThanExprNode makeGreaterThanExprNode(ExprNode lhs, ExprNode rhs)
         {
-            throw new NotImplementedException();
+            return new GreaterThanExprNode(lhs, rhs);
         }
 
         public LessEqualExprNode makeLessEqualExprNode(ExprNode lhs, ExprNode rhs)
         {
-            throw new NotImplementedException();
+            return new LessEqualExprNode(lhs, rhs);
         }
 
         public GreaterEqualExprNode makeGreaterEqualExprNode(ExprNode lhs, ExprNode rhs)
         {
-            throw new NotImplementedException();
+            return new GreaterEqualExprNode(lhs, rhs);
         }
 
         public EqualsExprNode makeEqualsExprNode(ExprNode lhs, ExprNode rhs)
         {
-            throw new NotImplementedException();
+            return new EqualsExprNode(lhs, rhs);
         }
 
         public NotEqualsExprNode makeNotEqualsExprNode(ExprNode lhs, ExprNode rhs)
         {
-            throw new NotImplementedException();
+            return new NotEqualsExprNode(lhs, rhs);
         }
 
         public ANDExprNode makeANDExprNode(ExprNode lhs, ExprNode rhs)
         {
-            throw new NotImplementedException();
+            return new ANDExprNode(lhs, rhs);
         }
 
         public XORExprNode makeXORExprNode(ExprNode lhs, ExprNode rhs)
         {
-            throw new NotImplementedException();
+            return new XORExprNode(lhs, rhs);
         }
 
         public ORExprNode makeORExprNode(ExprNode lhs, ExprNode rhs)
         {
-            throw new NotImplementedException();
+            return new ORExprNode(lhs, rhs);
         }
 
         public LogicalANDExprNode makeLogicalANDExprNode(ExprNode lhs, ExprNode rhs)
         {
-            throw new NotImplementedException();
+            return new LogicalANDExprNode(lhs, rhs);
         }
 
         public LogicalORExprNode makeLogicalORExprNode(ExprNode lhs, ExprNode rhs)
         {
-            throw new NotImplementedException();
+            return new LogicalORExprNode(lhs, rhs);
         }
 
-        public ConditionalExprNode makeConditionalExprNode(ExprNode lhs, ExpressionNode expr, ExprNode condit)
+        public ConditionalExprNode makeConditionalExprNode(ExprNode lhs, ExpressionNode trueexpr, ExprNode falseexpr)
         {
-            throw new NotImplementedException();
+            return new ConditionalExprNode(lhs, trueexpr, falseexpr);
         }
 
         public AssignExpressionNode makeAssignExpressionNode(ExprNode lhs, AssignOperatorNode oper, ExprNode rhs)
         {
-            throw new NotImplementedException();
-        }
-
-        public AssignOperatorNode makeAssignOperatorNode(Token token)
-        {
-            throw new NotImplementedException();
+            return null;
         }
 
         public ExpressionNode makeExpressionNode(ExpressionNode node, AssignExpressionNode expr)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public ConstExpressionNode makeConstantExprNode(ExprNode condit)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         //- declarations --------------------------------------------------------
 
-        public DeclarationNode makeDeclaration(List<DeclarSpecNode> declarspecs, List<InitDeclaratorNode> initdeclarlist)
+        public DeclarationNode makeDeclaration(List<DeclarSpecNode> specs, List<InitDeclaratorNode> list)
         {
-            throw new NotImplementedException();
+            return new DeclarationNode(specs, list);
         }
 
-        public InitDeclaratorNode makeInitDeclaratorNode(DeclaratorNode declarnode, InitializerNode initialnode)
+        public InitDeclaratorNode makeInitDeclaratorNode(DeclaratorNode declar, InitializerNode initial)
         {
-            throw new NotImplementedException();
-        }
-
-        public StorageClassNode makeStoreageClassNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        public BaseTypeSpecNode makeBaseTypeSpec(Token token)
-        {
-            throw new NotImplementedException();
+            return new InitDeclaratorNode(declar, initial);
         }
 
         //- struct/unions -----------------------------------------------------
 
         public StructSpecNode makeStructSpec(StructUnionNode tag, IdentNode name, List<StructDeclarationNode> declarList)
         {
-            throw new NotImplementedException();
-        }
-
-        public StructUnionNode makeStructUnionNode(Token token)
-        {
-            throw new NotImplementedException();
+            return null;
         }
 
         public StructDeclarationNode makeStructDeclarationNode(List<DeclarSpecNode> specqual, List<StructDeclaratorNode> fieldnames)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
-        public StructDeclaratorNode makeStructDeclaractorNode(DeclaratorNode declarnode, ExprNode constexpr)
+        public StructDeclaratorNode makeStructDeclaractorNode(DeclaratorNode declarnode, ConstExpressionNode constexpr)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         //- enums -------------------------------------------------------------
 
         public EnumSpecNode makeEnumSpec(IdentNode idNode, List<EnumeratorNode> enumList)
         {
-            throw new NotImplementedException();
+            String id = idNode.ident;
+            return new EnumSpecNode(id, enumList);
         }
 
         public EnumeratorNode makeEnumeratorNode(EnumConstantNode enumconst, ConstExpressionNode constexpr)
         {
-            throw new NotImplementedException();
+            return new EnumeratorNode(enumconst, constexpr);
         }
 
         public EnumConstantNode makeEnumConstNode(Token token)
         {
-            throw new NotImplementedException();
-        }
-
-        public EnumConstantNode getEnumConstNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        public TypedefNode getTypedefNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        public TypeQualNode makeTypeQualNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        public FuncSpecNode makeFuncSpecNode(Token token)
-        {
-            throw new NotImplementedException();
+            String id = ((tIdentifier)token).ident;
+            return new EnumConstantNode(id);
         }
 
         //- declarators -------------------------------------------------------
 
         public DeclaratorNode makeDeclaratorNode(PointerNode ptr, DirectDeclaratorNode declar)
         {
-            throw new NotImplementedException();
+            return new DeclaratorNode(ptr, declar);
         }
 
-        public DirectDeclaratorNode makeDirectIdentNode(IdentNode id)
+        public DirectDeclaratorNode makeDirectIdentNode(IdentNode ident)
         {
-            throw new NotImplementedException();
+            DirectDeclaratorNode node = new DirectDeclaratorNode();
+            node.ident = ident;
+            return node;
         }
 
         public DirectDeclaratorNode makeDirectDeclarNode(DeclaratorNode declar)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public DirectDeclaratorNode makeDirectIndexNode(DirectDeclaratorNode node, bool p, List<TypeQualNode> list, bool p_2, AssignExpressionNode assign)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public DirectDeclaratorNode makeDirectParamNode(DirectDeclaratorNode node, global::BlackC.ParamTypeListNode list)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public DirectDeclaratorNode makeDirectArgumentNode(DirectDeclaratorNode node, List<IdentNode> list)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public PointerNode makePointerNode(List<TypeQualNode> qualList, PointerNode ptr)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public ParamTypeListNode ParamTypeListNode(List<ParamDeclarNode> list, bool p)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public ParamDeclarNode makeParamDeclarNode(List<DeclarSpecNode> declarspecs, DeclaratorNode declar, AbstractDeclaratorNode absdeclar)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public TypeNameNode makeTypeNameNode(List<DeclarSpecNode> list, AbstractDeclaratorNode declar)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public AbstractDeclaratorNode makeAbstractDeclaratorNode(PointerNode ptr, DirectAbstractNode direct)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public DirectAbstractNode makeDirectAbstractDeclarNode(AbstractDeclaratorNode declar)
         {
-            throw new NotImplementedException();
+            return null; 
         }
 
         public DirectAbstractNode makeDirectAbstractParamNode(DirectAbstractNode node, global::BlackC.ParamTypeListNode list)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public DirectAbstractNode makeDirectAbstractIndexNode(DirectAbstractNode node, bool p, List<TypeQualNode> list, bool p_2, AssignExpressionNode assign)
         {
-            throw new NotImplementedException();
+            return null;
+        }
+
+        //- declaration initializers ------------------------------------
+
+        public InitializerNode makeInitializerNode(AssignExpressionNode expr)
+        {
+            return null;
+        }
+
+        public InitializerNode makeInitializerNode(List<InitializerNode> list)
+        {
+            return null;
+        }
+
+        public DesignationNode makeDesignationNode(List<DesignatorNode> list)
+        {
+            return null; 
+        }
+
+        public DesignatorNode makeDesignatorNode(ConstExpressionNode expr)
+        {
+            return null;
+        }
+
+        public DesignatorNode makeDesignatorNode(IdentNode ident)
+        {
+            return null;
         }
 
         //- statements --------------------------------------------------------
 
         public LabelStatementNode makeLabelStatement(IdentNode labelId)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public CaseStatementNode makeCaseStatementNode(ConstExpressionNode expr, StatementNode stmt)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public DefaultStatementNode makeDefaultStatementNode(StatementNode stmt)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public CompoundStatementNode makeCompoundStatementNode(List<BlockItemNode> list)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public ExpressionStatementNode makeExpressionStatement(ExpressionNode expr)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public EmptyStatementNode makeEmptyStatement(ExpressionNode expr)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public IfStatementNode makeIfStatementNode(ExpressionNode expr, StatementNode thenstmt, StatementNode elsestmt)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public SwitchStatementNode makeSwitchStatement(ExpressionNode expr, StatementNode stmt)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public WhileStatementNode makeWhileStatementNode(ExpressionNode expr, StatementNode stmt)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public DoStatementNode makeDoStatementNode(StatementNode stmt, ExpressionNode expr)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public ForStatementNode makeForStatementNode(DeclarationNode declar, ExpressionNode expr2, ExpressionNode expr3, StatementNode stmt)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public ForStatementNode makeForStatementNode(ExpressionNode expr1, ExpressionNode expr2, ExpressionNode expr3, StatementNode stmt)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public GotoStatementNode makeGotoStatementNode(IdentNode idNode)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public ContinueStatementNode makeContinueStatementNode()
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public BreakStatementNode makeBreakStatementNode()
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public ReturnStatementNode makeReturnStatementNode(ExpressionNode expr)
         {
-            throw new NotImplementedException();
+            return null;
+        }
+
+        public FunctionDefNode makeFunctionDefNode(List<DeclarSpecNode> specs, DeclaratorNode signature, 
+            List<DeclarationNode> oldparamlist, StatementNode block)
+        {
+            return new FunctionDefNode(specs, signature, oldparamlist, block);
+        }
+
+        public bool handleTypeDef(DeclarationNode declar)
+        {
+            List<DeclarSpecNode> specs = declar.declarspecs;
+            bool isTypedef = false;
+            foreach (DeclarSpecNode spec in specs)
+            {
+                if (spec is StorageClassNode)
+                {
+                    StorageClassNode storspec = (StorageClassNode)spec;
+                    if (storspec.storage == StorageClassNode.STORAGE.TYPEDEF)
+                    {
+                        isTypedef = true;
+                        break;
+                    }
+                }
+            }
+            if (isTypedef)
+            {
+                TypeSpecNode def = getTypeSpec(declar.declarspecs);
+                TypedefNode tdnode = new TypedefNode(def);
+                IdentNode idnode = declar.declarlist[0].declarnode.declar.ident;
+                idnode.symtype = SYMTYPE.TYPEDEF;
+                idnode.def = tdnode;                
+            }
+            return isTypedef;
+        }
+
+        private TypeSpecNode getTypeSpec(List<DeclarSpecNode> list)
+        {
+            List<TypeSpecNode> typespecs = new List<TypeSpecNode>();
+            foreach (DeclarSpecNode spec in list)
+            {
+                if (spec is TypeSpecNode)
+                {
+                    typespecs.Add((TypeSpecNode)spec);
+                }
+            }
+            if (typespecs.Count == 1)
+            {
+                return typespecs[0];
+            }
+            else
+            {
+                BaseTypeSpecNode basespec = (BaseTypeSpecNode)typespecs[0];
+                for (int i = 1; i < typespecs.Count; i++)
+                {
+                    basespec.setModifer(((BaseTypeSpecNode)typespecs[1]).baseclass);
+                }
+                return basespec;
+            }
         }
     }
 }
+
+//Console.WriteLine("There's no sun in the shadow of the wizard");

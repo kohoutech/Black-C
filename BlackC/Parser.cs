@@ -36,25 +36,9 @@ namespace BlackC
         Preprocessor preprocessor;
         Scanner scanner;
         Arbor arbor;
-        int declarCount;
-        int funcCount;
 
         public Parser()
-        {
-            declarCount = 0;
-            funcCount = 0;
-        }
-
-        public bool isIdentifier(Token token, out Node idNode)
-        {
-            idNode = null;
-            bool result = (token is tIdentifier);
-            if (result)
-            {
-                tIdentifier id = (tIdentifier)token;
-                result = !arbor.isTypedef(id.ident);
-            }
-            return result;
+        {            
         }
 
         //- expressions ------------------------------------------------------
@@ -70,7 +54,7 @@ namespace BlackC
         {
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            ExprNode node = arbor.makeIdentExprNode(token);
+            ExprNode node = arbor.getExprIdentNode(token);
             bool result = (node != null);
             if (!result)
             {
@@ -106,7 +90,7 @@ namespace BlackC
             }
             if (!result)
             {
-                node = arbor.makeEnumExprNode(token);
+                node = arbor.getExprEnumNode(token);
                 result = (node != null);
             }
             if (!result)
@@ -249,7 +233,7 @@ namespace BlackC
                     if (result)
                     {
                         token = scanner.getToken();
-                        IdentNode idNode = arbor.makeIdentifierNode(token);
+                        IdentNode idNode = arbor.getFieldIdentNode(token);
                         result = (idNode != null);
                         if (result)
                         {
@@ -266,7 +250,7 @@ namespace BlackC
                     if (result)
                     {
                         token = scanner.getToken();
-                        IdentNode idNode = arbor.makeIdentifierNode(token);
+                        IdentNode idNode = arbor.getFieldIdentNode(token);
                         result = (idNode != null);
                         if (result)
                         {
@@ -468,13 +452,33 @@ namespace BlackC
             UnaryOperatorNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            bool result = ((token is tAmpersand) || (token is tAsterisk) || (token is tPlus) || (token is tMinus) ||
-                (token is tTilde) || (token is tExclaim));
-            if (result)
+            switch (token.ToString())
             {
-                node = arbor.makeUnaryOperatorNode(token);
+                case "AMPERSAND":
+                    node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.AMPERSAND);
+                    break;
+
+                case "ASTERISK":
+                    node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.ASTERISK);
+                    break;
+
+                case "PLUS":
+                    node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.PLUS);
+                    break;
+
+                case "MINUS":
+                    node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.MINUS);
+                    break;
+
+                case "TILDE":
+                    node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.TILDE);
+                    break;
+
+                case "EXCLAIM":
+                    node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.EXCLAIM);
+                    break;
             }
-            if (!result)
+            if (node == null)
             {
                 scanner.rewind(cuepoint);
             }
@@ -1065,14 +1069,53 @@ namespace BlackC
             AssignOperatorNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            bool result = ((token is tEqual) || (token is tMultEqual) || (token is tSlashEqual) || (token is tPercentEqual) ||
-                (token is tPlusEqual) || (token is tMinusEqual) || (token is tLShiftEqual) || (token is tRShiftEqual) ||
-                (token is tAmpEqual) || (token is tCaretEqual) || (token is tBarEqual));
-            if (result)
+            switch (token.ToString())
             {
-                node = arbor.makeAssignOperatorNode(token);
+                case "EQUAL":
+                    node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.EQUAL);
+                    break;
+
+                case "MULTEQUAL":
+                    node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.MULTEQUAL);
+                    break;
+
+                case "SLASHEQUAL":
+                    node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.SLASHEQUAL);
+                    break;
+
+                case "PERCENTEQUAL":
+                    node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.PERCENTEQUAL);
+                    break;
+
+                case "PLUSEQUAL":
+                    node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.PLUSEQUAL);
+                    break;
+
+                case "MINUSEQUAL":
+                    node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.MINUSEQUAL);
+                    break;
+
+                case "LSHIFTEQUAL":
+                    node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.LSHIFTEQUAL);
+                    break;
+
+                case "RSHIFTEQUAL":
+                    node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.RSHIFTEQUAL);
+                    break;
+
+                case "AMPEQUAL":
+                    node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.AMPEQUAL);
+                    break;
+
+                case "CARETEQUAL":
+                    node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.CARETEQUAL);
+                    break;
+
+                case "BAREQUAL":
+                    node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.BAREQUAL);
+                    break;
             }
-            else
+            if (node == null)
             {
                 scanner.rewind(cuepoint);
             }
@@ -1143,8 +1186,6 @@ namespace BlackC
                 result = (token is tSemicolon);
                 if (result)
                 {
-                    declarCount++;
-                    Console.WriteLine("parsed declaration " + declarCount.ToString());
                     node = arbor.makeDeclaration(declarspecs, initdeclarlist);
                 }
             }
@@ -1281,12 +1322,29 @@ namespace BlackC
             StorageClassNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            bool result = ((token is tTypedef) || (token is tExtern) || (token is tStatic) || (token is tAuto) || (token is tRegister));
-            if (result)
+            switch (token.ToString())
             {
-                node = arbor.makeStoreageClassNode(token);
+                case "TYPEDEF":
+                    node = new StorageClassNode(StorageClassNode.STORAGE.TYPEDEF);
+                    break;
+
+                case "EXTERN":
+                    node = new StorageClassNode(StorageClassNode.STORAGE.EXTERN);
+                    break;
+
+                case "STATIC":
+                    node = new StorageClassNode(StorageClassNode.STORAGE.STATIC);
+                    break;
+
+                case "AUTO":
+                    node = new StorageClassNode(StorageClassNode.STORAGE.AUTO);
+                    break;
+
+                case "REGISTER":
+                    node = new StorageClassNode(StorageClassNode.STORAGE.REGISTER);
+                    break;
             }
-            else
+            if (node == null)
             {
                 scanner.rewind(cuepoint);
             }
@@ -1312,15 +1370,8 @@ namespace BlackC
          */
         public TypeSpecNode parseTypeSpec()
         {
-            TypeSpecNode typespec = null;
             int cuepoint = scanner.record();
-            Token token = scanner.getToken();
-            bool result = ((token is tVoid) || (token is tChar) || (token is tShort) || (token is tInt) || (token is tLong)
-                || (token is tFloat) || (token is tDouble) || (token is tSigned) || (token is tUnsigned));
-            if (result)
-            {
-                typespec = arbor.makeBaseTypeSpec(token);
-            }
+            TypeSpecNode typespec = parseBaseClassSpec();
             if (typespec == null)
             {
                 scanner.rewind(cuepoint);
@@ -1341,13 +1392,65 @@ namespace BlackC
             return typespec;
         }
 
+        public BaseTypeSpecNode parseBaseClassSpec()
+        {
+            BaseTypeSpecNode node = null;
+            int cuepoint = scanner.record();
+            Token token = scanner.getToken();
+            switch (token.ToString())
+            {
+                case "VOID":
+                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.VOID);
+                    break;
+
+                case "CHAR":
+                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.CHAR);
+                    break;
+
+                case "SHORT":
+                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.SHORT);
+                    break;
+
+                case "INT":
+                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.INT);
+                    break;
+
+                case "LONG":
+                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.LONG);
+                    break;
+
+                case "FLOAT":
+                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.FLOAT);
+                    break;
+
+                case "DOUBLE":
+                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.DOUBLE);
+                    break;
+
+                case "SIGNED":
+                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.SIGNED);
+                    break;
+
+                case "UNSIGNED":
+                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.UNSIGNED);
+                    break;
+            }
+            if (node == null)
+            {
+                scanner.rewind(cuepoint);
+            }
+            return node;
+        }
+
+
         // stuctures/unions -----------------------------------------
 
         /*(6.7.2.1) 
          struct-or-union-specifier:
             struct-or-union identifier[opt] { struct-declaration-list }
             struct-or-union identifier
-         */
+
+        */
         // struct w/o ident is for anonymous struct (possibly part of a typedef)
         // struct w/o {list} is for a already defined struct type
         public StructSpecNode parseStructOrUnionSpec()
@@ -1359,7 +1462,7 @@ namespace BlackC
             if (result)
             {
                 Token token = scanner.getToken();
-                IdentNode name = arbor.makeIdentifierNode(token);
+                IdentNode name = arbor.getStructIdentNode(token);
                 result = (name != null);
                 if (result)
                 {
@@ -1419,18 +1522,23 @@ namespace BlackC
          struct-or-union:
             struct
             union
-         */
+        */
         public StructUnionNode parseStuctOrUnion()
         {
             StructUnionNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            bool result = ((token is tStruct) || (token is tUnion));
-            if (result)
+            switch (token.ToString())
             {
-                node = arbor.makeStructUnionNode(token);
+                case "STRUCT":
+                    node = new StructUnionNode(StructUnionNode.LAYOUT.STRUCT);
+                    break;
+
+                case "UNION":
+                    node = new StructUnionNode(StructUnionNode.LAYOUT.UNION);
+                    break;
             }
-            if (!result)
+            if (node == null)
             {
                 scanner.rewind(cuepoint);
             }
@@ -1579,7 +1687,7 @@ namespace BlackC
                 bool result2 = (token is tColon);
                 if (result2)
                 {
-                    ExprNode constexpr = parseConstantExpression();
+                    ConstExpressionNode constexpr = parseConstantExpression();
                     result2 = (constexpr != null);
                     if (result2)
                     {
@@ -1601,7 +1709,7 @@ namespace BlackC
                 result = (token is tColon);
                 if (result)
                 {
-                    ExprNode constexpr = parseConstantExpression();
+                    ConstExpressionNode constexpr = parseConstantExpression();
                     result = (constexpr != null);
                     if (result)
                     {
@@ -1634,7 +1742,7 @@ namespace BlackC
             if (result)
             {
                 token = scanner.getToken();
-                IdentNode idNode = arbor.makeIdentifierNode(token);
+                IdentNode idNode = arbor.getEnumIdentNode(token);
                 result = (idNode != null);
                 if (result)
                 {
@@ -1785,13 +1893,9 @@ namespace BlackC
             EnumConstantNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            if (define)
+            if (token != null)
             {
                 node = arbor.makeEnumConstNode(token);
-            }
-            else
-            {
-                node = arbor.getEnumConstNode(token);
             }
             if (node == null)
             {
@@ -1806,13 +1910,17 @@ namespace BlackC
          typedef-name:
             identifier
          */
-        public TypedefNode parseTypedefName()
+        public TypeSpecNode parseTypedefName()
         {
-            TypedefNode node = null;
+            TypeSpecNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            node = arbor.getTypedefNode(token);
-            if (node == null)
+            TypedefNode tdnode = arbor.getTypedefNode(token);
+            if (tdnode != null)
+            {
+                node = tdnode.typedef;
+            }
+            else 
             {
                 scanner.rewind(cuepoint);
             }
@@ -1830,11 +1938,21 @@ namespace BlackC
             TypeQualNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            if ((token is tConst) || (token is tRestrict) || (token is tVolatile))
+            switch (token.ToString())
             {
-                node = arbor.makeTypeQualNode(token);
+                case "CONST":
+                    node = new TypeQualNode(TypeQualNode.QUAL.CONST);
+                    break;
+
+                case "RESTRICT":
+                    node = new TypeQualNode(TypeQualNode.QUAL.RESTRICT);
+                    break;
+
+                case "VOLATILE":
+                    node = new TypeQualNode(TypeQualNode.QUAL.VOLATILE);
+                    break;
             }
-            else
+            if (node == null)
             {
                 scanner.rewind(cuepoint);
             }
@@ -1850,11 +1968,13 @@ namespace BlackC
             FuncSpecNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            if (token is tInline)
+            switch (token.ToString())
             {
-                node = arbor.makeFuncSpecNode(token);
+                case "INLINE":
+                    node = new FuncSpecNode(FuncSpecNode.FUNC.INLINE);
+                    break;
             }
-            else
+            if (node == null)
             {
                 scanner.rewind(cuepoint);
             }
@@ -1902,7 +2022,7 @@ namespace BlackC
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
             DeclaratorNode declar = null;
-            IdentNode id = arbor.makeIdentifierNode(token);             //identifier
+            IdentNode id = arbor.makeDeclarIdentNode(token);             //identifier
             bool result = (id != null);
             if (result)
             {
@@ -2247,7 +2367,7 @@ namespace BlackC
             List<IdentNode> list = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            IdentNode id = arbor.makeIdentifierNode(token);
+            IdentNode id = arbor.getArgIdentNode(token);
             bool result = (id != null);
             if (result)
             {
@@ -2263,7 +2383,7 @@ namespace BlackC
                 if (!result)
                 {
                     token = scanner.getToken();
-                    id = arbor.makeIdentifierNode(token);
+                    id = arbor.getArgIdentNode(token);
                     result = (id != null);
                     if (result)
                     {
@@ -2441,7 +2561,7 @@ namespace BlackC
                             result = (token is tRBracket);
                             if (result)
                             {
-                                node = arbor.makeDirectAbstractIndexNode(declar, false, null, true, null);
+                                node = arbor.makeDirectAbstractIndexNode(node, false, null, true, null);
                             }
                         }
                     }
@@ -2485,10 +2605,12 @@ namespace BlackC
          */
         public InitializerNode parseInitializer()
         {
-            bool result = parseAssignExpression();
+            InitializerNode node = null;
+            AssignExpressionNode expr = parseAssignExpression();
+            bool result = (expr != null);
             if (result)
             {
-                //Console.WriteLine("parsed assign expr initializer");
+                node = arbor.makeInitializerNode(expr);
             }
             else
             {
@@ -2497,27 +2619,24 @@ namespace BlackC
                 result = (token is tLBrace);
                 if (result)
                 {
-                    result = parseInitializerList();
+                    List<InitializerNode> list = parseInitializerList();
+                    result = (list != null);
                     if (result)
                     {
                         token = scanner.getToken();
                         result = (token is tRBrace);
-                        if (result)
-                        {
-                            //Console.WriteLine("parsed initializer-list initializer");
-                        }
-                        else
+                        if (!result)
                         {
                             result = (token is tComma);
                             if (result)
                             {
                                 token = scanner.getToken();
                                 result = (token is tRBrace);
-                                if (result)
-                                {
-                                    //Console.WriteLine("parsed initializer-list and comma initializer");
-                                }
                             }
+                        }
+                        if (result)
+                        {
+                            node = arbor.makeInitializerNode(list);
                         }
                     }
                 }
@@ -2526,7 +2645,7 @@ namespace BlackC
                     scanner.rewind(cuepoint);
                 }
             }
-            return result;
+            return node;
         }
 
         /*(6.7.8) 
@@ -2536,12 +2655,15 @@ namespace BlackC
          */
         public List<InitializerNode> parseInitializerList()
         {
-            parseDesignation();
-            bool result = parseInitializer();
-            bool notEmpty = result;
+            List<InitializerNode> list = null;
+            DesignationNode desinode = parseDesignation();
+            InitializerNode initnode = parseInitializer();
+            bool result = (initnode != null);
             if (result)
             {
-                //Console.WriteLine("parsed (designation) initializer initializer-list");
+                list = new List<InitializerNode>();
+                initnode.addDesignation(desinode);
+                list.Add(initnode);
             }
             while (result)
             {
@@ -2550,11 +2672,13 @@ namespace BlackC
                 result = (token is tComma);
                 if (result)
                 {
-                    parseDesignation();
-                    result = parseInitializer();
+                    desinode = parseDesignation();
+                    initnode = parseInitializer();
+                    result = (initnode != null);
                     if (result)
                     {
-                        //Console.WriteLine("parsed another (designation) initializer initializer-list");
+                        initnode.addDesignation(desinode);
+                        list.Add(initnode);
                     }
                 }
                 if (!result)
@@ -2562,31 +2686,33 @@ namespace BlackC
                     scanner.rewind(cuepoint);
                 }
             }
-            return notEmpty;
+            return list;
         }
 
         /*(6.7.8) 
          designation:
             designator-list =
          */
-        public bool parseDesignation()
+        public DesignationNode parseDesignation()
         {
+            DesignationNode node = null;
             int cuepoint = scanner.record();
-            bool result = parseDesignatorList();
+            List<DesignatorNode> list = parseDesignatorList();
+            bool result = (list != null);
             if (result)
             {
                 Token token = scanner.getToken();
                 result = (token is tEqual);
                 if (result)
                 {
-                    //Console.WriteLine("parsed designation");
+                    node = arbor.makeDesignationNode(list);
                 }
             }
             if (!result)
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return node;
         }
 
         /*(6.7.8) 
@@ -2594,23 +2720,24 @@ namespace BlackC
             designator
             designator-list designator
          */
-        public bool parseDesignatorList()
+        public List<DesignatorNode> parseDesignatorList()
         {
-            bool result = parseDesignator();
-            if (result)
+            List<DesignatorNode> list = null;
+            DesignatorNode node = parseDesignator();
+            if (node != null)
             {
-                //Console.WriteLine("parsed designator designator-list");
+                list = new List<DesignatorNode>();
+                list.Add(node);
             }
-            bool notEmpty = result;
-            while (result)
+            while (node != null)
             {
-                result = parseDesignator();
-                if (result)
+                node = parseDesignator();
+                if (node != null)
                 {
-                    //Console.WriteLine("parsed another designator designator-list");
+                    list.Add(node);
                 }
             }
-            return notEmpty;
+            return list;
         }
 
         /*(6.7.8) 
@@ -2618,21 +2745,22 @@ namespace BlackC
             [ constant-expression ]
             . identifier
          */
-        public bool parseDesignator()
+        public DesignatorNode parseDesignator()
         {
+            DesignatorNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
             bool result = (token is tLBracket);
             if (result)
             {
-                result = parseConstantExpression();
+                ConstExpressionNode expr = parseConstantExpression();
                 if (result)
                 {
                     token = scanner.getToken();
                     result = (token is tRBracket);
                     if (result)
                     {
-                        //Console.WriteLine("parsed constant expression designator");
+                        node = arbor.makeDesignatorNode(expr);              //[ constant-expression ]
                     }
                 }
             }
@@ -2642,10 +2770,11 @@ namespace BlackC
                 if (result)
                 {
                     token = scanner.getToken();
-                    result = isIdentifier(token);
+                    IdentNode ident = arbor.getFieldInitializerNode(token);         
+                    result = (ident != null);
                     if (result)
                     {
-                        //Console.WriteLine("parsed dot identifier designator");
+                        node = arbor.makeDesignatorNode(ident);             //. identifier
                     }
                 }
             }
@@ -2653,7 +2782,7 @@ namespace BlackC
             {
                 scanner.rewind(cuepoint);
             }
-            return result;
+            return node;
         }
 
         //- statements --------------------------------------------------------
@@ -2704,7 +2833,7 @@ namespace BlackC
             StatementNode node = null;
             int cuepoint = scanner.record();
             Token token = scanner.getToken();
-            IdentNode labelId = arbor.makeIdentifierNode(token);         //identifier : statement
+            IdentNode labelId = arbor.makeLabelIdentNode(token);         //identifier : statement
             bool result = (labelId != null);
             if (result)
             {
@@ -3086,7 +3215,7 @@ namespace BlackC
                     if (result)
                     {
                         DeclarationNode declar = parseDeclaration();
-                        result = (decl != null);
+                        result = (declar != null);
                         if (result)
                         {
                             ExpressionNode expr2 = parseExpression();
@@ -3134,7 +3263,7 @@ namespace BlackC
             if (result)
             {
                 token = scanner.getToken();
-                IdentNode idNode = arbor.makeIdentifierNode(token);
+                IdentNode idNode = arbor.getLabelIdentNode(token);
                 result = (idNode != null);
                 if (result)
                 {
@@ -3205,59 +3334,74 @@ namespace BlackC
          translation-unit:
             external-declaration
             translation-unit external-declaration 
-        */
-        public void parseTranslationUnit()
-        {
-            bool result = parseExternalDeclaration();
-            while (result)
-            {
-                result = parseExternalDeclaration();
-            }
-        }
 
-        /* (6.9) 
          external-declaration:
             function-definition
             declaration
         */
-        public bool parseExternalDeclaration()
+
+        public TranslationUnit parseTranslationUnit()
         {
-            bool result = parseFunctionDef();
-            if (!result)
+            TranslationUnit unit = new TranslationUnit(arbor);
+
+            bool result = false;
+            do
             {
-                result = parseDeclaration();
+                FunctionDefNode func = parseFunctionDef();
+                result = (func != null);
+                if (result)
+                {
+                    unit.addFunctionDef(func);
+                }
+                else
+                {
+                    DeclarationNode declar = parseDeclaration();
+                    result = (declar != null);
+                    if (result)
+                    {
+                        if (!arbor.handleTypeDef(declar))
+                        {
+                            unit.addDeclaration(declar);
+                        }
+                    }
+                }
             }
-            return result;
+            while (result);
+            return unit;
         }
 
         /* (6.9.1) 
          function-definition:
             declaration-specifiers declarator declaration-list[opt] compound-statement
          */
-        public bool parseFunctionDef()
+        public FunctionDefNode parseFunctionDef()
         {
+            FunctionDefNode node = null;
             int cuepoint = scanner.record();
-            bool result = parseDeclarationSpecs();
+            List<DeclarSpecNode> specs = parseDeclarationSpecs();
+            bool result = (specs != null);
             if (result)
             {
-                result = parseDeclarator();
+                arbor.pushSymbolTable();
+                DeclaratorNode signature = parseDeclarator();
+                result = (signature != null);
                 if (result)
                 {
-                    parseDeclarationList();
-                    result = parseCompoundStatement();
+                    List<DeclarationNode> oldparamlist = parseDeclarationList();
+                    StatementNode block = parseCompoundStatement();
+                    result = (block != null);
+                    if (result)
+                    {
+                        node = arbor.makeFunctionDefNode(specs, signature, oldparamlist, block);
+                    }
                 }
             }
-            if (result)
-            {
-                //arbor.buildFunctionDef();
-                funcCount++;
-                Console.WriteLine("parsed function def " + funcCount.ToString());
-            }
-            else
+            if (!result)
             {
                 scanner.rewind(cuepoint);
+                arbor.popSymbolTable();
             }
-            return result;
+            return node;
         }
 
         /*(6.9.1) 
@@ -3265,6 +3409,7 @@ namespace BlackC
             declaration
             declaration-list declaration
         */
+        //old-style function parameter defs - here for completeness
         public List<DeclarationNode> parseDeclarationList()
         {
             List<DeclarationNode> declarList = null;
@@ -3293,11 +3438,10 @@ namespace BlackC
 
             scanner = new Scanner(lines);
             arbor = new Arbor();
-            scanner.arbor = arbor;
+            scanner.arbor = arbor;                  //to be removed!
 
-            parseTranslationUnit();
-
-            Console.WriteLine("done parsing");
+            TranslationUnit unit = parseTranslationUnit();
+            unit.write();            
         }
     }
 }

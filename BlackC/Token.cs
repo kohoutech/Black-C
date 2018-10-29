@@ -24,11 +24,11 @@ using System.Text;
 
 namespace BlackC
 {
-    class Token
+    public class Token
     {
     }
 
-    class tEOF : Token
+    public class tEOF : Token
     {
         public override string ToString()
         {
@@ -38,7 +38,7 @@ namespace BlackC
 
     //- keywords -----------------------------------------------------------
 
-    class tAuto : Token 
+    public class tAuto : Token 
     {
         public override string ToString()
         {
@@ -46,7 +46,7 @@ namespace BlackC
         }
     }
 
-    class tBreak : Token
+    public class tBreak : Token
     {
         public override string ToString()
         {
@@ -54,7 +54,7 @@ namespace BlackC
         }
     }
 
-    class tCase : Token
+    public class tCase : Token
     {
         public override string ToString()
         {
@@ -62,7 +62,7 @@ namespace BlackC
         }
     }
 
-    class tChar : Token
+    public class tChar : Token
     {
         public override string ToString()
         {
@@ -70,7 +70,7 @@ namespace BlackC
         }
     }
 
-    class tConst : Token
+    public class tConst : Token
     {
         public override string ToString()
         {
@@ -78,7 +78,7 @@ namespace BlackC
         }
     }
 
-    class tContinue : Token
+    public class tContinue : Token
     {
         public override string ToString()
         {
@@ -86,7 +86,7 @@ namespace BlackC
         }
     }
 
-    class tDefault : Token
+    public class tDefault : Token
     {
         public override string ToString()
         {
@@ -94,7 +94,7 @@ namespace BlackC
         }
     }
 
-    class tDo : Token
+    public class tDo : Token
     {
         public override string ToString()
         {
@@ -102,7 +102,7 @@ namespace BlackC
         }
     }
 
-    class tDouble : Token
+    public class tDouble : Token
     {
         public override string ToString()
         {
@@ -110,7 +110,7 @@ namespace BlackC
         }
     }
 
-    class tElse : Token
+    public class tElse : Token
     {
         public override string ToString()
         {
@@ -118,7 +118,7 @@ namespace BlackC
         }
     }
 
-    class tEnum : Token
+    public class tEnum : Token
     {
         public override string ToString()
         {
@@ -126,7 +126,7 @@ namespace BlackC
         }
     }
 
-    class tExtern : Token
+    public class tExtern : Token
     {
         public override string ToString()
         {
@@ -134,7 +134,7 @@ namespace BlackC
         }
     }
 
-    class tFloat : Token
+    public class tFloat : Token
     {
         public override string ToString()
         {
@@ -142,7 +142,7 @@ namespace BlackC
         }
     }
 
-    class tFor : Token
+    public class tFor : Token
     {
         public override string ToString()
         {
@@ -150,7 +150,7 @@ namespace BlackC
         }
     }
 
-    class tGoto : Token
+    public class tGoto : Token
     {
         public override string ToString()
         {
@@ -158,7 +158,7 @@ namespace BlackC
         }
     }
 
-    class tIf : Token
+    public class tIf : Token
     {
         public override string ToString()
         {
@@ -166,15 +166,15 @@ namespace BlackC
         }
     }
 
-    class tInline : Token
+    public class tInline : Token
     {
         public override string ToString()
         {
             return "INLINE";
         }
     }
-    
-    class tInt : Token
+
+    public class tInt : Token
     {
         public override string ToString()
         {
@@ -182,7 +182,7 @@ namespace BlackC
         }
     }
 
-    class tLong : Token
+    public class tLong : Token
     {
         public override string ToString()
         {
@@ -190,7 +190,7 @@ namespace BlackC
         }
     }
 
-    class tRegister : Token
+    public class tRegister : Token
     {
         public override string ToString()
         {
@@ -198,7 +198,7 @@ namespace BlackC
         }
     }
 
-    class tRestrict : Token
+    public class tRestrict : Token
     {
         public override string ToString()
         {
@@ -206,7 +206,7 @@ namespace BlackC
         }
     }
 
-    class tReturn : Token
+    public class tReturn : Token
     {
         public override string ToString()
         {
@@ -214,7 +214,7 @@ namespace BlackC
         }
     }
 
-    class tShort : Token
+    public class tShort : Token
     {
         public override string ToString()
         {
@@ -222,7 +222,7 @@ namespace BlackC
         }
     }
 
-    class tSigned : Token
+    public class tSigned : Token
     {
         public override string ToString()
         {
@@ -230,7 +230,7 @@ namespace BlackC
         }
     }
 
-    class tSizeof : Token
+    public class tSizeof : Token
     {
         public override string ToString()
         {
@@ -238,7 +238,7 @@ namespace BlackC
         }
     }
 
-    class tStatic : Token
+    public class tStatic : Token
     {
         public override string ToString()
         {
@@ -246,7 +246,7 @@ namespace BlackC
         }
     }
 
-    class tStruct : Token
+    public class tStruct : Token
     {
         public override string ToString()
         {
@@ -254,7 +254,7 @@ namespace BlackC
         }
     }
 
-    class tSwitch : Token
+    public class tSwitch : Token
     {
         public override string ToString()
         {
@@ -262,7 +262,7 @@ namespace BlackC
         }
     }
 
-    class tTypedef : Token
+    public class tTypedef : Token
     {
         public override string ToString()
         {
@@ -270,7 +270,7 @@ namespace BlackC
         }
     }
 
-    class tUnion : Token
+    public class tUnion : Token
     {
         public override string ToString()
         {
@@ -278,7 +278,7 @@ namespace BlackC
         }
     }
 
-    class tUnsigned : Token
+    public class tUnsigned : Token
     {
         public override string ToString()
         {
@@ -286,7 +286,7 @@ namespace BlackC
         }
     }
 
-    class tVoid : Token
+    public class tVoid : Token
     {
         public override string ToString()
         {
@@ -294,7 +294,7 @@ namespace BlackC
         }
     }
 
-    class tVolatile : Token
+    public class tVolatile : Token
     {
         public override string ToString()
         {
@@ -302,7 +302,7 @@ namespace BlackC
         }
     }
 
-    class tWhile : Token
+    public class tWhile : Token
     {
         public override string ToString()
         {
@@ -312,7 +312,7 @@ namespace BlackC
 
     //- identifier -----------------------------------------------------------
 
-    class tIdentifier : Token
+    public class tIdentifier : Token
     {
         public String ident;
 
@@ -330,7 +330,7 @@ namespace BlackC
 
     //- constants -----------------------------------------------------------
 
-    class tIntegerConstant : Token
+    public class tIntegerConstant : Token
     {
         enum WIDTH { NONE, LONG, LONGLONG };
 
@@ -352,7 +352,7 @@ namespace BlackC
         }
     }
 
-    class tFloatConstant : Token
+    public class tFloatConstant : Token
     {
         enum WIDTH { NONE, FLOAT, LONG };
 
@@ -372,7 +372,7 @@ namespace BlackC
         }
     }
 
-    class tCharacterConstant : Token
+    public class tCharacterConstant : Token
     {
         Char val;
 
@@ -388,7 +388,7 @@ namespace BlackC
         }
     }
 
-    class tStringConstant : Token
+    public class tStringConstant : Token
     {
         String val;
 
@@ -406,7 +406,7 @@ namespace BlackC
 
     //- punctuation -----------------------------------------------------------
 
-    class tLParen : Token                   //(
+    public class tLParen : Token                   //(
     {
         public override string ToString()
         {
@@ -414,7 +414,7 @@ namespace BlackC
         }
     }
 
-    class tRParen : Token                   //)
+    public class tRParen : Token                   //)
     {
         public override string ToString()
         {
@@ -422,7 +422,7 @@ namespace BlackC
         }
     }
 
-    class tLBrace : Token                   //{
+    public class tLBrace : Token                   //{
     {
         public override string ToString()
         {
@@ -430,7 +430,7 @@ namespace BlackC
         }
     }
 
-    class tRBrace : Token                   //}
+    public class tRBrace : Token                   //}
     {
         public override string ToString()
         {
@@ -438,7 +438,7 @@ namespace BlackC
         }
     }
 
-    class tLBracket : Token                 //[
+    public class tLBracket : Token                 //[
     {
         public override string ToString()
         {
@@ -446,7 +446,7 @@ namespace BlackC
         }
     }
 
-    class tRBracket : Token                 //]
+    public class tRBracket : Token                 //]
     {
         public override string ToString()
         {
@@ -454,7 +454,7 @@ namespace BlackC
         }
     }
 
-    class tPeriod : Token
+    public class tPeriod : Token
     {
         public override string ToString()
         {
@@ -462,7 +462,7 @@ namespace BlackC
         }
     }
 
-    class tComma : Token
+    public class tComma : Token
     {
         public override string ToString()
         {
@@ -470,7 +470,7 @@ namespace BlackC
         }
     }
 
-    class tColon : Token
+    public class tColon : Token
     {
         public override string ToString()
         {
@@ -478,7 +478,7 @@ namespace BlackC
         }
     }
 
-    class tSemicolon : Token
+    public class tSemicolon : Token
     {
         public override string ToString()
         {
@@ -486,7 +486,7 @@ namespace BlackC
         }
     }
 
-    class tAsterisk : Token
+    public class tAsterisk : Token
     {
         public override string ToString()
         {
@@ -494,7 +494,7 @@ namespace BlackC
         }
     }
 
-    class tEllipsis : Token                     //...
+    public class tEllipsis : Token                     //...
     {
         public override string ToString()
         {
@@ -502,7 +502,7 @@ namespace BlackC
         }
     }
 
-    class tArrow : Token                //->
+    public class tArrow : Token                //->
     {
         public override string ToString()
         {
@@ -510,7 +510,7 @@ namespace BlackC
         }
     }
 
-    class tAmpersand : Token
+    public class tAmpersand : Token
     {
         public override string ToString()
         {
@@ -518,7 +518,7 @@ namespace BlackC
         }
     }
 
-    class tTilde : Token
+    public class tTilde : Token
     {
         public override string ToString()
         {
@@ -526,7 +526,7 @@ namespace BlackC
         }
     }
 
-    class tExclaim : Token
+    public class tExclaim : Token
     {
         public override string ToString()
         {
@@ -534,7 +534,7 @@ namespace BlackC
         }
     }
 
-    class tQuestion : Token
+    public class tQuestion : Token
     {
         public override string ToString()
         {
@@ -542,7 +542,7 @@ namespace BlackC
         }
     }
 
-    class tPlus : Token
+    public class tPlus : Token
     {
         public override string ToString()
         {
@@ -550,7 +550,7 @@ namespace BlackC
         }
     }
 
-    class tMinus : Token
+    public class tMinus : Token
     {
         public override string ToString()
         {
@@ -558,7 +558,7 @@ namespace BlackC
         }
     }
 
-    class tPlusPlus : Token
+    public class tPlusPlus : Token
     {
         public override string ToString()
         {
@@ -566,7 +566,7 @@ namespace BlackC
         }
     }
 
-    class tMinusMinus : Token
+    public class tMinusMinus : Token
     {
         public override string ToString()
         {
@@ -574,7 +574,7 @@ namespace BlackC
         }
     }
 
-    class tSlash : Token
+    public class tSlash : Token
     {
         public override string ToString()
         {
@@ -582,7 +582,7 @@ namespace BlackC
         }
     }
 
-    class tPercent : Token
+    public class tPercent : Token
     {
         public override string ToString()
         {
@@ -590,7 +590,7 @@ namespace BlackC
         }
     }
 
-    class tLeftShift : Token                //<<
+    public class tLeftShift : Token                //<<
     {
         public override string ToString()
         {
@@ -598,7 +598,7 @@ namespace BlackC
         }
     }
 
-    class tRightShift : Token               //>>
+    public class tRightShift : Token               //>>
     {
         public override string ToString()
         {
@@ -606,7 +606,7 @@ namespace BlackC
         }
     }
 
-    class tLessThan : Token
+    public class tLessThan : Token
     {
         public override string ToString()
         {
@@ -614,7 +614,7 @@ namespace BlackC
         }
     }
 
-    class tGtrThan : Token
+    public class tGtrThan : Token
     {
         public override string ToString()
         {
@@ -622,7 +622,7 @@ namespace BlackC
         }
     }
 
-    class tLessEqual : Token
+    public class tLessEqual : Token
     {
         public override string ToString()
         {
@@ -630,7 +630,7 @@ namespace BlackC
         }
     }
 
-    class tGtrEqual : Token
+    public class tGtrEqual : Token
     {
         public override string ToString()
         {
@@ -638,7 +638,7 @@ namespace BlackC
         }
     }
 
-    class tEqualEqual : Token
+    public class tEqualEqual : Token
     {
         public override string ToString()
         {
@@ -646,7 +646,7 @@ namespace BlackC
         }
     }
 
-    class tNotEqual : Token
+    public class tNotEqual : Token
     {
         public override string ToString()
         {
@@ -654,7 +654,7 @@ namespace BlackC
         }
     }
 
-    class tCaret : Token
+    public class tCaret : Token
     {
         public override string ToString()
         {
@@ -662,7 +662,7 @@ namespace BlackC
         }
     }
 
-    class tBar : Token
+    public class tBar : Token
     {
         public override string ToString()
         {
@@ -670,7 +670,7 @@ namespace BlackC
         }
     }
 
-    class tDoubleAmp : Token                    //&&
+    public class tDoubleAmp : Token                    //&&
     {
         public override string ToString()
         {
@@ -678,7 +678,7 @@ namespace BlackC
         }
     }
 
-    class tDoubleBar : Token                    //||
+    public class tDoubleBar : Token                    //||
     {
         public override string ToString()
         {
@@ -686,7 +686,7 @@ namespace BlackC
         }
     }
 
-    class tEqual : Token
+    public class tEqual : Token
     {
         public override string ToString()
         {
@@ -694,7 +694,7 @@ namespace BlackC
         }
     }
 
-    class tMultEqual : Token
+    public class tMultEqual : Token
     {
         public override string ToString()
         {
@@ -702,7 +702,7 @@ namespace BlackC
         }
     }
 
-    class tSlashEqual : Token
+    public class tSlashEqual : Token
     {
         public override string ToString()
         {
@@ -710,7 +710,7 @@ namespace BlackC
         }
     }
 
-    class tPercentEqual : Token
+    public class tPercentEqual : Token
     {
         public override string ToString()
         {
@@ -718,7 +718,7 @@ namespace BlackC
         }
     }
 
-    class tPlusEqual : Token
+    public class tPlusEqual : Token
     {
         public override string ToString()
         {
@@ -726,7 +726,7 @@ namespace BlackC
         }
     }
 
-    class tMinusEqual : Token
+    public class tMinusEqual : Token
     {
         public override string ToString()
         {
@@ -734,7 +734,7 @@ namespace BlackC
         }
     }
 
-    class tLShiftEqual : Token
+    public class tLShiftEqual : Token
     {
         public override string ToString()
         {
@@ -742,7 +742,7 @@ namespace BlackC
         }
     }
 
-    class tRShiftEqual : Token
+    public class tRShiftEqual : Token
     {
         public override string ToString()
         {
@@ -750,7 +750,7 @@ namespace BlackC
         }
     }
 
-    class tAmpEqual : Token
+    public class tAmpEqual : Token
     {
         public override string ToString()
         {
@@ -758,7 +758,7 @@ namespace BlackC
         }
     }
 
-    class tCaretEqual : Token
+    public class tCaretEqual : Token
     {
         public override string ToString()
         {
@@ -766,7 +766,7 @@ namespace BlackC
         }
     }
 
-    class tBarEqual : Token
+    public class tBarEqual : Token
     {
         public override string ToString()
         {
