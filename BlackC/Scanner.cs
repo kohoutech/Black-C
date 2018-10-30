@@ -86,20 +86,6 @@ namespace BlackC
                 if (pos >= curline.Length)      //if at eoln
                 {
                     gotoNextLine();
-
-                    //the devil made me do it!
-                    if ((curline.Length > 1) && (curline[0] == '@'))
-                    {
-                        String typeid = curline.Substring(1);
-                        arbor.setTypeDef(typeid);
-                        gotoNextLine();
-                    }
-                    if ((curline.Length > 1) && (curline[0] == '^'))
-                    {
-                        String typeid = curline.Substring(1);
-                        arbor.unsetTypeDef(typeid);
-                        gotoNextLine();
-                    }
                 }
                 else
                 {

@@ -2209,11 +2209,7 @@ namespace BlackC
             {
                 List<TypeQualNode> qualList = parseTypeQualList();
                 PointerNode ptr = parsePointer();
-                result = (ptr != null);
-                if (result)
-                {
-                    node = arbor.makePointerNode(qualList, ptr);
-                }
+                node = arbor.makePointerNode(qualList, ptr);
             }
             if (!result)
             {
@@ -3345,6 +3341,7 @@ namespace BlackC
             TranslationUnit unit = new TranslationUnit(arbor);
 
             bool result = false;
+            int typedefnum = 0;
             do
             {
                 FunctionDefNode func = parseFunctionDef();
@@ -3362,6 +3359,14 @@ namespace BlackC
                         if (!arbor.handleTypeDef(declar))
                         {
                             unit.addDeclaration(declar);
+                        }
+                        else
+                        {
+                            Console.WriteLine("parsed tyepdef " + ++typedefnum);
+                            if (typedefnum == 8)
+                            {
+                                typedefnum = typedefnum;
+                            }
                         }
                     }
                 }

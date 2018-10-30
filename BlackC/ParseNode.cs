@@ -507,7 +507,16 @@ namespace BlackC
 
     public class StructSpecNode : TypeSpecNode
     {
-        
+        StructUnionNode tag;
+        IdentNode name; 
+        List<StructDeclarationNode> declarList;
+
+        public StructSpecNode(StructUnionNode _tag, IdentNode _name, List<StructDeclarationNode> _declarList)
+        {
+            tag = _tag;
+            name = _name;
+            declarList = _declarList;
+        }        
     }
 
     public class StructUnionNode : ParseNode
@@ -627,14 +636,40 @@ namespace BlackC
 
     public class PointerNode : ParseNode
     {
+        public List<TypeQualNode> qualList;
+        public PointerNode chain;
+
+        public PointerNode(List<TypeQualNode> list, PointerNode ptr)
+        {
+            qualList = list;
+            chain = ptr;
+        }
     }
 
     public class ParamTypeListNode : ParseNode
     {
+        List<ParamDeclarNode> list;
+        bool hasElipsis;
+
+        public ParamTypeListNode(List<ParamDeclarNode> _list, bool _hasElipsis)
+        {
+            list = _list;
+            hasElipsis = _hasElipsis;
+        }
     }
 
     public class ParamDeclarNode : ParseNode
     {
+        List<DeclarSpecNode> specs;
+        DeclaratorNode declar;
+        AbstractDeclaratorNode absdeclar;
+
+        public ParamDeclarNode(List<DeclarSpecNode> _specs, DeclaratorNode _declar, AbstractDeclaratorNode _absdeclar)
+        {
+            specs = _specs;
+            declar = _declar;
+            absdeclar = _absdeclar;
+        }
     }
 
     public class TypeNameNode : ParseNode
@@ -643,6 +678,14 @@ namespace BlackC
 
     public class AbstractDeclaratorNode : ParseNode
     {
+        public PointerNode ptr;
+        public DirectAbstractNode direct;
+
+        public AbstractDeclaratorNode(PointerNode _ptr, DirectAbstractNode _direct)
+        {
+            ptr = _ptr;
+            direct = _direct;
+        }
     }
 
     public class DirectAbstractNode : ParseNode
@@ -762,11 +805,13 @@ namespace BlackC
         public void addFunctionDef(FunctionDefNode func)
         {
             defs.Add(func);
+            Console.WriteLine("parsed function " + defs.Count);
         }
 
         public void addDeclaration(DeclarationNode declar)
         {
             defs.Add(declar);
+            Console.WriteLine("parsed declaration " + defs.Count);
         }
 
         public void write()

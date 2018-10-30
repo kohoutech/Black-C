@@ -40,32 +40,6 @@ namespace BlackC
             curSymbolTable = null;
         }
 
-        //temproary kludge to get around ambiguity in C99's grammar between typedef and identifier 
-        //see https://en.wikipedia.org/wiki/The_lexer_hack
-        //this will be removed once the rest of the semantic analysis is up & running and this is not needed anymore
-        //crazy eh?
-
-        //public bool isTypedef(String id)
-        //{
-        //    bool result = false;
-        //    if (typepdefids.ContainsKey(id))
-        //    {
-        //        result = true;
-        //    }
-        //    return result;
-        //}
-
-        //cruft
-        public void setTypeDef(string typeid)
-        {
-            typepdefids[typeid] = 0;
-        }
-
-        public void unsetTypeDef(string typeid)
-        {
-            typepdefids.Remove(typeid);
-        }
-
         //- symbol table ------------------------------------------------------------
 
         public SymbolTable pushSymbolTable()
@@ -87,9 +61,13 @@ namespace BlackC
         //these only return new ident nodes
         public IdentNode makeDeclarIdentNode(Token token)
         {
-            String id = ((tIdentifier)token).ident;
-            IdentNode node = SymbolTable.addSymbol(curSymbolTable, id);
-            node.symtype = SYMTYPE.DECLAR;
+            IdentNode node = null;
+            if (token is tIdentifier)
+            {
+                String id = ((tIdentifier)token).ident;
+                node = SymbolTable.addSymbol(curSymbolTable, id);
+                node.symtype = SYMTYPE.DECLAR;
+            }
             return node;
         }
 
@@ -397,7 +375,9 @@ namespace BlackC
 
         public StructSpecNode makeStructSpec(StructUnionNode tag, IdentNode name, List<StructDeclarationNode> declarList)
         {
-            return null;
+            StructSpecNode node = new StructSpecNode(tag, name, declarList);
+            name.def = node;
+            return node;
         }
 
         public StructDeclarationNode makeStructDeclarationNode(List<DeclarSpecNode> specqual, List<StructDeclaratorNode> fieldnames)
@@ -445,7 +425,9 @@ namespace BlackC
 
         public DirectDeclaratorNode makeDirectDeclarNode(DeclaratorNode declar)
         {
-            return null;
+            DirectDeclaratorNode node = new DirectDeclaratorNode();
+            node.declar = declar;
+            return node;
         }
 
         public DirectDeclaratorNode makeDirectIndexNode(DirectDeclaratorNode node, bool p, List<TypeQualNode> list, bool p_2, AssignExpressionNode assign)
@@ -453,9 +435,12 @@ namespace BlackC
             return null;
         }
 
-        public DirectDeclaratorNode makeDirectParamNode(DirectDeclaratorNode node, global::BlackC.ParamTypeListNode list)
+        public DirectDeclaratorNode makeDirectParamNode(DirectDeclaratorNode chain, ParamTypeListNode list)
         {
-            return null;
+            DirectDeclaratorNode node = new DirectDeclaratorNode();
+            node.chain = chain;
+            node.paramList = list;
+            return node;
         }
 
         public DirectDeclaratorNode makeDirectArgumentNode(DirectDeclaratorNode node, List<IdentNode> list)
@@ -465,17 +450,17 @@ namespace BlackC
 
         public PointerNode makePointerNode(List<TypeQualNode> qualList, PointerNode ptr)
         {
-            return null;
+            return new PointerNode(qualList, ptr);
         }
 
-        public ParamTypeListNode ParamTypeListNode(List<ParamDeclarNode> list, bool p)
+        public ParamTypeListNode ParamTypeListNode(List<ParamDeclarNode> list, bool hasElipsis)
         {
-            return null;
+            return new ParamTypeListNode(list, hasElipsis);
         }
 
         public ParamDeclarNode makeParamDeclarNode(List<DeclarSpecNode> declarspecs, DeclaratorNode declar, AbstractDeclaratorNode absdeclar)
         {
-            return null;
+            return new ParamDeclarNode(declarspecs, declar, absdeclar);
         }
 
         public TypeNameNode makeTypeNameNode(List<DeclarSpecNode> list, AbstractDeclaratorNode declar)
@@ -485,7 +470,7 @@ namespace BlackC
 
         public AbstractDeclaratorNode makeAbstractDeclaratorNode(PointerNode ptr, DirectAbstractNode direct)
         {
-            return null;
+            return new AbstractDeclaratorNode(ptr, direct);
         }
 
         public DirectAbstractNode makeDirectAbstractDeclarNode(AbstractDeclaratorNode declar)
@@ -493,7 +478,7 @@ namespace BlackC
             return null; 
         }
 
-        public DirectAbstractNode makeDirectAbstractParamNode(DirectAbstractNode node, global::BlackC.ParamTypeListNode list)
+        public DirectAbstractNode makeDirectAbstractParamNode(DirectAbstractNode node, ParamTypeListNode list)
         {
             return null;
         }
@@ -639,6 +624,10 @@ namespace BlackC
                 TypeSpecNode def = getTypeSpec(declar.declarspecs);
                 TypedefNode tdnode = new TypedefNode(def);
                 IdentNode idnode = declar.declarlist[0].declarnode.declar.ident;
+                if (idnode == null)
+                {
+                    idnode = declar.declarlist[0].declarnode.declar.chain.declar.declar.ident;
+                }
                 idnode.symtype = SYMTYPE.TYPEDEF;
                 idnode.def = tdnode;                
             }
