@@ -62,9 +62,9 @@ namespace BlackC
         public IdentNode makeDeclarIdentNode(Token token)
         {
             IdentNode node = null;
-            if (token is tIdentifier)
+            if (token.type == TokenType.tIDENTIFIER)
             {
-                String id = ((tIdentifier)token).ident;
+                String id = token.chars;
                 node = SymbolTable.addSymbol(curSymbolTable, id);
                 node.symtype = SYMTYPE.DECLAR;
             }
@@ -73,7 +73,7 @@ namespace BlackC
 
         public IdentNode makeLabelIdentNode(Token token)
         {
-            String id = ((tIdentifier)token).ident;
+            String id = token.chars;
             IdentNode node = SymbolTable.addSymbol(curSymbolTable, id);
             node.symtype = SYMTYPE.LABEL;
             return node;
@@ -82,7 +82,7 @@ namespace BlackC
         //these return either declared or new ident nodes 
         public IdentNode getStructIdentNode(Token token)
         {
-            String id = ((tIdentifier)token).ident;
+            String id = token.chars;
             IdentNode node = SymbolTable.findSymbol(curSymbolTable, id, SYMTYPE.STRUCT);
             if (node == null)
             {
@@ -94,7 +94,7 @@ namespace BlackC
 
         public IdentNode getEnumIdentNode(Token token)
         {
-            String id = ((tIdentifier)token).ident;
+            String id = token.chars;
             IdentNode node = SymbolTable.findSymbol(curSymbolTable, id, SYMTYPE.ENUM);
             if (node == null)
             {
@@ -135,9 +135,9 @@ namespace BlackC
         public TypedefNode getTypedefNode(Token token)
         {
             TypedefNode node = null;
-            if (token is tIdentifier)
+            if (token.type == TokenType.tIDENTIFIER)
             {
-                String id = ((tIdentifier)token).ident;
+                String id = token.chars;
                 IdentNode idnode = SymbolTable.findSymbol(curSymbolTable, id, SYMTYPE.TYPEDEF);
                 if (idnode != null)
                 {
@@ -405,7 +405,7 @@ namespace BlackC
 
         public EnumConstantNode makeEnumConstNode(Token token)
         {
-            String id = ((tIdentifier)token).ident;
+            String id = token.chars;
             return new EnumConstantNode(id);
         }
 

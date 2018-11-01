@@ -32,8 +32,6 @@ namespace BlackC
         int pos;
         bool atEOF;
 
-        public Arbor arbor;
-
         List<Token> replay;
         int recpos;
 
@@ -99,140 +97,140 @@ namespace BlackC
             Token token = null;
             switch (id)
             {
-                case "auto": 
-                    token = new tAuto(); 
+                case "auto":
+                    token = new Token(TokenType.tAUTO);
                     break;
 
-                case "break": 
-                    token = new tBreak(); 
+                case "break":
+                    token = new Token(TokenType.tBREAK);
                     break;
 
-                case "case": 
-                    token = new tCase(); 
+                case "case":
+                    token = new Token(TokenType.tCASE);
                     break;
 
-                case "char": 
-                    token = new tChar(); 
+                case "char":
+                    token = new Token(TokenType.tCHAR);
                     break;
 
-                case "const": 
-                    token = new tConst(); 
+                case "const":
+                    token = new Token(TokenType.TCONST);
                     break;
 
-                case "continue": 
-                    token = new tContinue(); 
+                case "continue":
+                    token = new Token(TokenType.tCONTINUE);
                     break;
 
-                case "default": 
-                    token = new tDefault(); 
+                case "default":
+                    token = new Token(TokenType.tDEFAULT);
                     break;
 
-                case "do": 
-                    token = new tDo(); 
+                case "do":
+                    token = new Token(TokenType.tDO);
                     break;
 
                 case "double":
-                    token = new tDouble(); 
+                    token = new Token(TokenType.tDOUBLE);
                     break;
 
-                case "else": 
-                    token = new tElse(); 
+                case "else":
+                    token = new Token(TokenType.tELSE);
                     break;
 
-                case "enum": 
-                    token = new tEnum(); 
+                case "enum":
+                    token = new Token(TokenType.tENUM);
                     break;
 
-                case "extern": 
-                    token = new tExtern(); 
+                case "extern":
+                    token = new Token(TokenType.tEXTERN);
                     break;
 
-                case "float": 
-                    token = new tFloat(); 
+                case "float":
+                    token = new Token(TokenType.tFLOAT);
                     break;
 
                 case "for": 
-                    token = new tFor(); 
+                    token = new Token(TokenType.tFOR);
                     break;
 
-                case "goto": 
-                    token = new tGoto(); 
+                case "goto":
+                    token = new Token(TokenType.tGOTO);
                     break;
 
-                case "if": 
-                    token = new tIf(); 
+                case "if":
+                    token = new Token(TokenType.tIF);
                     break;
 
-                case "inline": 
-                    token = new tInline(); 
+                case "inline":
+                    token = new Token(TokenType.tINLINE);
                     break;
 
-                case "int": 
-                    token = new tInt(); 
+                case "int":
+                    token = new Token(TokenType.tINT);
                     break;
 
-                case "long": 
-                    token = new tLong(); 
+                case "long":
+                    token = new Token(TokenType.tLONG);
                     break;
 
-                case "register": 
-                    token = new tRegister(); 
+                case "register":
+                    token = new Token(TokenType.tREGISTER);
                     break;
 
-                case "restrict": 
-                    token = new tRestrict(); 
+                case "restrict":
+                    token = new Token(TokenType.tRESTRICT);
                     break;
 
-                case "return": 
-                    token = new tReturn(); 
+                case "return":
+                    token = new Token(TokenType.tRETURN);
                     break;
 
-                case "short": 
-                    token = new tShort(); 
+                case "short":
+                    token = new Token(TokenType.tSHORT);
                     break;
 
-                case "signed": 
-                    token = new tSigned(); 
+                case "signed":
+                    token = new Token(TokenType.tSIGNED);
                     break;
 
-                case "sizeof": 
-                    token = new tSizeof(); 
+                case "sizeof":
+                    token = new Token(TokenType.tSIZEOF);
                     break;
 
-                case "static": 
-                    token = new tStatic(); 
+                case "static":
+                    token = new Token(TokenType.tSTATIC);
                     break;
 
-                case "struct": 
-                    token = new tStruct(); 
+                case "struct":
+                    token = new Token(TokenType.tSTRUCT);
                     break;
 
-                case "switch": 
-                    token = new tSwitch(); 
+                case "switch":
+                    token = new Token(TokenType.tSWITCH);
                     break;
 
-                case "typedef": 
-                    token = new tTypedef(); 
+                case "typedef":
+                    token = new Token(TokenType.tTYPEDEF);
                     break;
 
-                case "union": 
-                    token = new tUnion(); 
+                case "union":
+                    token = new Token(TokenType.tUNION);
                     break;
 
-                case "unsigned": 
-                    token = new tUnsigned(); 
+                case "unsigned":
+                    token = new Token(TokenType.tUNSIGNED);
                     break;
 
-                case "void": 
-                    token = new tVoid(); 
+                case "void":
+                    token = new Token(TokenType.tVOID);
                     break;
 
-                case "volatile": 
-                    token = new tVolatile(); 
+                case "volatile":
+                    token = new Token(TokenType.tVOLATILE);
                     break;
 
-                case "while": 
-                    token = new tWhile(); 
+                case "while":
+                    token = new Token(TokenType.tWHILE);
                     break;
             }
             return token;
@@ -259,7 +257,7 @@ namespace BlackC
             Token token = findKeyword(id);
             if (token == null) 
             {
-                token = new tIdentifier(id);
+                token = new Token(TokenType.tIDENTIFIER, id);
             }
             return token;
 
@@ -331,8 +329,8 @@ namespace BlackC
                 pos++;
             }
 
-            double val = Convert.ToDouble(num);
-            return new tFloatConstant(val, fsuffix, lsuffix);
+            //double val = Convert.ToDouble(num);
+            return new Token(TokenType.tFLOATCONST, num);
         }
 
         public Token scanNumber(char c)
@@ -348,11 +346,11 @@ namespace BlackC
                 if ((pos < curline.Length - 1) && (curline[pos] == '.') && (curline[pos + 1] == '.'))
                 {
                     pos += 2;
-                    return new tEllipsis();
+                    return new Token(TokenType.tELLIPSIS);
                 }
                 else if ((pos < curline.Length) && !((curline[pos] >= '0') && (curline[pos] <= '9')))
                 {
-                    return new tPeriod();
+                    return new Token(TokenType.tPERIOD);
                 }
                 else floatpt = true;
             }
@@ -423,8 +421,8 @@ namespace BlackC
                         }
                     }
                 }
-                int value = Convert.ToInt32(num, bass);
-                return new tIntegerConstant(value, usuffix, lsuffix, llsuffix);
+                //int value = Convert.ToInt32(num, bass);
+                return new Token(TokenType.tINTCONST, num);
             }
         }
 
@@ -443,7 +441,7 @@ namespace BlackC
                 ch = (char)((int)ch - (int)'0');
                 pos += 3;
             }
-            return new tCharacterConstant(ch);
+            return new Token(TokenType.tCHARCONST, ("" + ch));
         }
 
         public Token scanString(char c)
@@ -465,7 +463,7 @@ namespace BlackC
                     atend = true;
                 }
             }
-            Token strconst = new tStringConstant(str);
+            Token strconst = new Token(TokenType.tSTRINGCONST, str);
             return strconst;            
         }
 
@@ -571,139 +569,134 @@ namespace BlackC
 
 //punctuation
                     case '[':
-                        token = new tLBracket();
+                        token = new Token(TokenType.tLBRACKET);
                         break;
 
                     case ']':
-                        token = new tRBracket();
+                        token = new Token(TokenType.tRBRACKET);
                         break;
 
                     case '(':
-                        token = new tLParen();
+                        token = new Token(TokenType.tLPAREN);
                         break;
 
                     case ')':
-                        token = new tRParen();
+                        token = new Token(TokenType.tRPAREN);
                         break;
 
                     case '{':
-                        token = new tLBrace();
+                        token = new Token(TokenType.tLBRACE);
                         break;
 
                     case '}':
-                        token = new tRBrace();
+                        token = new Token(TokenType.tRBRACE);
                         break;
 
                     case '+':
                         if ((pos < curline.Length) && (curline[pos] == '+'))
                         {
-                            token = new tPlusPlus();
+                            token = new Token(TokenType.tPLUSPLUS);
                             pos++;
                         }
                         else if ((pos < curline.Length) && (curline[pos] == '='))
                         {
-                            token = new tPlusEqual();
+                            token = new Token(TokenType.tPLUSEQUAL);
                             pos++;
                         }
                         else
                         {
-                            token = new tPlus();
+                            token = new Token(TokenType.tPLUS);
                         }
                         break;
 
                     case '-':
                         if ((pos < curline.Length) && (curline[pos] == '-'))
                         {
-                            token = new tMinusMinus();
+                            token = new Token(TokenType.tMINUSMINUS);
                             pos++;
                         }
                         else if ((pos < curline.Length) && (curline[pos] == '='))
                         {
-                            token = new tMinusEqual();
+                            token = new Token(TokenType.tMINNUSEQUAL);
                             pos++;
                         }
                         else if ((pos < curline.Length) && (curline[pos] == '>'))
                         {
-                            token = new tArrow();
+                            token = new Token(TokenType.tARROW);
                             pos++;
                         }
                         else
                         {
-                            token = new tMinus();
+                            token = new Token(TokenType.tMINUS);
                         }
                         break;
 
                     case '&':
                         if ((pos < curline.Length) && (curline[pos] == '&'))
                         {
-                            token = new tDoubleAmp();
+                            token = new Token(TokenType.tDOUBLEAMP);
                             pos++;
                         }
                         else if ((pos < curline.Length) && (curline[pos] == '='))
                         {
-                            token = new tAmpEqual();
+                            token = new Token(TokenType.tAMPEQUAL);
                             pos++;
                         }
                         else
                         {
-                            token = new tAmpersand();                            
+                            token = new Token(TokenType.tAMPERSAND);
                         }
                         break;
 
                     case '*':
-                        if ((pos < curline.Length) && (curline[pos] == '&'))
+                        if ((pos < curline.Length) && (curline[pos] == '='))
                         {
-                            token = new tDoubleAmp();
-                            pos++;
-                        }
-                        else if ((pos < curline.Length) && (curline[pos] == '='))
-                        {
-                            token = new tAmpEqual();
+                            token = new Token(TokenType.tMULTEQUAL);
                             pos++;
                         }
                         else
                         {
-                            token = new tAsterisk();
+                            token = new Token(TokenType.tASTERISK);
                         }
                         break;
 
                     case '~':
-                        token = new tTilde();
+                        token = new Token(TokenType.tTILDE);
                         break;
 
                     case '!':
                         if ((pos < curline.Length) && (curline[pos] == '='))
                         {
-                            token = new tNotEqual();
+                            token = new Token(TokenType.tNOTEQUAL);
                             pos++;
                         }
                         else
                         {
-                            token = new tExclaim();
+                            token = new Token(TokenType.tEXCLAIM);
                         }
                         break;
 
                     case '/':
                         if ((pos < curline.Length) && (curline[pos] == '='))
                         {
-                            token = new tSlashEqual();
+                            token = new Token(TokenType.tSLASHEQUAL);
                             pos++;
                         }
                         else
                         {
-                            token = new tSlash();
+                            token = new Token(TokenType.tSLASH);
                         }
                         break;
 
                     case '%':
                         if ((pos < curline.Length) && (curline[pos] == '='))
                         {
-                            token = new tPercentEqual();
+                            token = new Token(TokenType.tPERCENTEQUAL);
                             pos++;
                         }
                         else
                         {
-                            token = new tPercent();
+                            token = new Token(TokenType.tPERCENT);
                         }
                         break;
 
@@ -712,23 +705,23 @@ namespace BlackC
                         {
                             if ((pos < curline.Length - 1) && (curline[pos + 1] == '='))
                             {
-                                token = new tLShiftEqual();
+                                token = new Token(TokenType.tLSHIFTEQUAL);
                                 pos += 2;
                             }
                             else
                             {
-                                token = new tLeftShift();
+                                token = new Token(TokenType.tLEFTSHIFT);
                                 pos++;
                             }
                         }
                         else if ((pos < curline.Length) && (curline[pos] == '='))
                         {
-                            token = new tLessEqual();
+                            token = new Token(TokenType.tLESSEQUAL);
                             pos++;
                         }
                         else
                         {
-                            token = new tLessThan();
+                            token = new Token(TokenType.tLESSTHAN);
                         }
                         break;
 
@@ -737,91 +730,90 @@ namespace BlackC
                         {
                             if ((pos < curline.Length - 1) && (curline[pos + 1] == '='))
                             {
-                                token = new tRShiftEqual();
+                                token = new Token(TokenType.tRSHIFTEQUAL);
                                 pos += 2;
                             }
                             else
                             {
-                                token = new tRightShift();
+                                token = new Token(TokenType.tRIGHTSHIFT);
                                 pos++;
                             }
                         }
                         else if ((pos < curline.Length) && (curline[pos] == '='))
                         {
-                            token = new tGtrEqual();
+                            token = new Token(TokenType.tGTREQUAL);
                             pos++;
                         }
                         else
                         {
-                            token = new tGtrThan();
+                            token = new Token(TokenType.tGTRTHAN);
                         }
                         break;
 
                     case '=':
                         if ((pos < curline.Length) && (curline[pos] == '='))
                         {
-                            token = new tEqualEqual();
+                            token = new Token(TokenType.tEQUALEQUAL);
                             pos++;
                         }
                         else
                         {
-                            token = new tEqual();
+                            token = new Token(TokenType.tEQUAL);
                         }
                         break;
 
                     case '^':
                         if ((pos < curline.Length) && (curline[pos] == '='))
                         {
-                            token = new tCaretEqual();
+                            token = new Token(TokenType.tCARETEQUAL);
                             pos++;
                         }
                         else
                         {
-                            token = new tCaret();
+                            token = new Token(TokenType.tCARET);
                         }
                         break;
 
                     case '|':
                         if ((pos < curline.Length) && (curline[pos] == '|'))
                         {
-                            token = new tDoubleBar();
+                            token = new Token(TokenType.tDOUBLEBAR);
                             pos++;
                         }
                         else if ((pos < curline.Length) && (curline[pos] == '='))
                         {
-                            token = new tBarEqual();
+                            token = new Token(TokenType.tBAREQUAL);
                             pos++;
                         }
                         else
                         {
-                            token = new tBar();
+                            token = new Token(TokenType.tBAR);
                         }
                         break;
 
                     case '?':
-                        token = new tQuestion();
+                        token = new Token(TokenType.tQUESTION);
                         break;
 
                     case ':':
-                        token = new tColon();
+                        token = new Token(TokenType.tCOLON);
                         break;
 
                     case ';':
-                        token = new tSemicolon();
+                        token = new Token(TokenType.tSEMICOLON);
                         break;
 
                     case ',':
-                        token = new tComma();
+                        token = new Token(TokenType.tCOMMA);
                         break;
 
                     default:
                         break;
                 }
             }
-
-            if (atEOF)
+            else
             {
-                token = new tEOF();
+                token = new Token(TokenType.tEOF);
             }
 
             if (recpos == replay.Count)

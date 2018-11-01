@@ -123,11 +123,16 @@ namespace BlackC
     public class Token
     {
         public TokenType type;
-        public String ident;
+        public String chars;
 
-        public Token(TokenType _type)
+        public Token(TokenType _type) : this(_type, "")
+        {
+        }
+
+        public Token(TokenType _type, String _chars)
         {
             type = _type;
+            chars = _chars;
         }
     }
 }
