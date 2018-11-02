@@ -34,7 +34,7 @@ namespace BlackC
         tBREAK,
         tCASE,
         tCHAR,
-        TCONST,
+        tCONST,
         tCONTINUE,
         tDEFAULT,
         tDO,
