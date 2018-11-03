@@ -1177,7 +1177,7 @@ namespace BlackC
         {
             DeclarationNode node = null;
             int cuepoint = scanner.record();
-            List<DeclarSpecNode> declarspecs = parseDeclarationSpecs();
+            DeclarSpecNode declarspecs = parseDeclarationSpecs();
             bool result = (declarspecs != null);
             if (result)
             {
@@ -1201,157 +1201,17 @@ namespace BlackC
             storage-class-specifier declaration-specifiers[opt]
             type-specifier declaration-specifiers[opt]
             type-qualifier declaration-specifiers[opt]
-            function-specifier declaration-specifiers[opt]
-         */
-        public List<DeclarSpecNode> parseDeclarationSpecs()
-        {
-            List<DeclarSpecNode> specs = null;
-            int cuepoint = scanner.record();
-            DeclarSpecNode node = parseStorageClassSpec();
-            if (node == null)
-            {
-                node = parseTypeSpec();
-            }
-            if (node == null)
-            {
-                node = parseTypeQual();
-            }
-            if (node == null)
-            {
-                node = parseFunctionSpec();
-            }
-            if (node != null)
-            {
-                specs = new List<DeclarSpecNode>();
-                specs.Add(node);
-                List<DeclarSpecNode> tail = parseDeclarationSpecs();
-                if (tail != null)
-                {
-                    specs.AddRange(tail);
-                }
-            }
-            else
-            {
-                scanner.rewind(cuepoint);
-            }
-            return specs;
-        }
+            function-specifier declaration-specifiers[opt]      
 
-        /*(6.7) 
-         init-declarator-list:
-            init-declarator
-            init-declarator-list , init-declarator
-         */
-        public List<InitDeclaratorNode> parseInitDeclaratorList()
-        {
-            List<InitDeclaratorNode> nodelist = null;
-            InitDeclaratorNode node = parseInitDeclarator();
-            bool result = (node != null);
-            if (result)
-            {
-                nodelist = new List<InitDeclaratorNode>();
-                nodelist.Add(node);
-            }
-            while (result)
-            {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
-                result = (token.type == TokenType.tCOMMA);
-                if (result)
-                {
-                    node = parseInitDeclarator();
-                    if (result)
-                    {
-                        nodelist.Add(node);
-                    }
-                }
-                if (!result)
-                {
-                    scanner.rewind(cuepoint2);
-                }
-            }
-            return nodelist;
-        }
-
-        /*(6.7) 
-         init-declarator:
-            declarator
-            declarator = initializer
-         */
-        public InitDeclaratorNode parseInitDeclarator()
-        {
-            InitDeclaratorNode node = null;
-            DeclaratorNode declarnode = parseDeclarator();
-            bool result = (declarnode != null);
-            if (result)
-            {
-                int cuepoint = scanner.record();
-                Token token = scanner.getToken();
-                bool result2 = (token.type == TokenType.tEQUAL);
-                if (!result2)
-                {
-                    node = arbor.makeInitDeclaratorNode(declarnode, null);          //declarator
-                }
-                if (result2)
-                {
-                    InitializerNode initialnode = parseInitializer();
-                    result2 = (initialnode != null);
-                    if (!result2)
-                    {
-                        node = arbor.makeInitDeclaratorNode(declarnode, initialnode);       //declarator = initializer
-                    }
-                }
-                if (!result2)
-                {
-                    scanner.rewind(cuepoint);
-                }
-            }
-            return node;
-        }
-
-        /*(6.7.1) 
+         (6.7.1) 
          storage-class-specifier:
             typedef
             extern
             static
             auto
             register
-         */
-        public StorageClassNode parseStorageClassSpec()
-        {
-            StorageClassNode node = null;
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
-            switch (token.ToString())
-            {
-                case "TYPEDEF":
-                    node = new StorageClassNode(StorageClassNode.STORAGE.TYPEDEF);
-                    break;
-
-                case "EXTERN":
-                    node = new StorageClassNode(StorageClassNode.STORAGE.EXTERN);
-                    break;
-
-                case "STATIC":
-                    node = new StorageClassNode(StorageClassNode.STORAGE.STATIC);
-                    break;
-
-                case "AUTO":
-                    node = new StorageClassNode(StorageClassNode.STORAGE.AUTO);
-                    break;
-
-                case "REGISTER":
-                    node = new StorageClassNode(StorageClassNode.STORAGE.REGISTER);
-                    break;
-            }
-            if (node == null)
-            {
-                scanner.rewind(cuepoint);
-            }
-            return node;
-        }
-
-        /*(6.7.2) 
+         
+         (6.7.2) 
          type-specifier:
             void
             char
@@ -1367,81 +1227,103 @@ namespace BlackC
             struct-or-union-specifier
             enum-specifier
             typedef-name
-         */
-        public TypeSpecNode parseTypeSpec()
+
+         (6.7.3) 
+         type-qualifier:
+            const
+            restrict
+            volatile
+         
+         (6.7.4) 
+         function-specifier:
+            inline
+        */
+        public DeclarSpecNode parseDeclarationSpecs()
         {
-            int cuepoint = scanner.record();
-            TypeSpecNode typespec = parseBaseClassSpec();
-            if (typespec == null)
+            DeclarSpecNode specs = new DeclarSpecNode();
+            bool done = false;
+            while (!done)
             {
-                scanner.rewind(cuepoint);
-                typespec = parseStructOrUnionSpec();
-            }
-            if (typespec == null)
-            {
-                typespec = parseEnumeratorSpec();
-            }
-            if (typespec == null)
-            {
-                typespec = parseTypedefName();
-            }
-            if (typespec == null)
-            {
-                scanner.rewind(cuepoint);
-            }
-            return typespec;
-        }
+                int cuepoint = scanner.record();
+                Token token = scanner.getToken();
+                switch (token.type)
+                {
+                    case TokenType.tTYPEDEF:
+                    case TokenType.tEXTERN:
+                    case TokenType.tSTATIC:
+                    case TokenType.tAUTO:
+                    case TokenType.tREGISTER:
+                        specs.parseStorageClassSpec(token);
+                        break;
 
-        public BaseTypeSpecNode parseBaseClassSpec()
+                    case TokenType.tVOID:
+                    case TokenType.tCHAR:
+                    case TokenType.tINT:
+                    case TokenType.tFLOAT:
+                    case TokenType.tDOUBLE:
+                        specs.parseBaseClassSpec(token);
+                        break;
+
+                    case TokenType.tSHORT:
+                    case TokenType.tLONG:
+                    case TokenType.tSIGNED:
+                    case TokenType.tUNSIGNED:
+                        specs.parseBaseClassModifier(token);
+                        break;
+
+                    case TokenType.tSTRUCT:
+                    case TokenType.tUNION:
+                        specs.typeSpec = parseStructOrUnionSpec(token);
+                        break;
+
+                    case TokenType.tENUM:
+                        specs.typeSpec = parseEnumeratorSpec();
+                        break;
+
+                    case TokenType.tIDENTIFIER:
+                        specs.typeSpec = parseTypedefName(token);
+                        break;
+
+                    case TokenType.tCONST:
+                    case TokenType.tRESTRICT:
+                    case TokenType.tVOLATILE:
+                        specs.parseTypeQual(token);
+                        break;
+
+                    case TokenType.tINLINE:
+                        specs.parseFunctionSpec(token);
+                        break;
+
+                    default:
+                        scanner.rewind(cuepoint);
+                        done = true;
+                        break;
+                }
+            }
+            specs.setBaseClassModifier();
+            return specs;
+        }                
+
+        /*(6.7.7) 
+         typedef-name:
+            identifier
+        */
+        public TypeSpecNode parseTypedefName(Token token)
         {
-            BaseTypeSpecNode node = null;
+            TypeSpecNode node = null;
             int cuepoint = scanner.record();
-            Token token = scanner.getToken();
-            switch (token.ToString())
+            //Token token = scanner.getToken();
+            TypedefNode tdnode = arbor.getTypedefNode(token);
+            if (tdnode != null)
             {
-                case "VOID":
-                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.VOID);
-                    break;
-
-                case "CHAR":
-                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.CHAR);
-                    break;
-
-                case "SHORT":
-                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.SHORT);
-                    break;
-
-                case "INT":
-                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.INT);
-                    break;
-
-                case "LONG":
-                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.LONG);
-                    break;
-
-                case "FLOAT":
-                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.FLOAT);
-                    break;
-
-                case "DOUBLE":
-                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.DOUBLE);
-                    break;
-
-                case "SIGNED":
-                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.SIGNED);
-                    break;
-
-                case "UNSIGNED":
-                    node = new BaseTypeSpecNode(BaseTypeSpecNode.BASE.UNSIGNED);
-                    break;
+                node = tdnode.typedef;
             }
-            if (node == null)
+            else
             {
                 scanner.rewind(cuepoint);
             }
             return node;
-        }
-
+        }         
 
         // stuctures/unions -----------------------------------------
 
@@ -1453,7 +1335,7 @@ namespace BlackC
         */
         // struct w/o ident is for anonymous struct (possibly part of a typedef)
         // struct w/o {list} is for a already defined struct type
-        public StructSpecNode parseStructOrUnionSpec()
+        public StructSpecNode parseStructOrUnionSpec(Token token)
         {
             StructSpecNode node = null;
             int cuepoint = scanner.record();
@@ -1461,7 +1343,7 @@ namespace BlackC
             bool result = (tag != null);
             if (result)
             {
-                Token token = scanner.getToken();
+                //Token token = scanner.getToken();
                 IdentNode name = arbor.getStructIdentNode(token);
                 result = (name != null);
                 if (result)
@@ -1612,21 +1494,21 @@ namespace BlackC
         public List<DeclarSpecNode> parseSpecQualList()
         {
             List<DeclarSpecNode> speclist = null;
-            DeclarSpecNode specnode = parseTypeSpec();
-            if (specnode == null)
-            {
-                specnode = parseTypeQual();
-            }
-            if (specnode != null)
-            {
-                speclist = new List<DeclarSpecNode>();
-                speclist.Add(specnode);
-                List<DeclarSpecNode> taillist = parseSpecQualList();
-                if (taillist != null)
-                {
-                    speclist.AddRange(taillist);
-                }
-            }
+            //DeclarSpecNode specnode = parseTypeSpec();
+            //if (specnode == null)
+            //{
+            //    specnode = parseTypeQual();
+            //}
+            //if (specnode != null)
+            //{
+            //    speclist = new List<DeclarSpecNode>();
+            //    speclist.Add(specnode);
+            //    List<DeclarSpecNode> taillist = parseSpecQualList();
+            //    if (taillist != null)
+            //    {
+            //        speclist.AddRange(taillist);
+            //    }
+            //}
             return speclist;
         }
 
@@ -1904,79 +1786,74 @@ namespace BlackC
             return node;
         }
 
-        //- end of enumerations -------------------------------------
-
-        /*(6.7.7) 
-         typedef-name:
-            identifier
+        /*(6.7) 
+         init-declarator-list:
+            init-declarator
+            init-declarator-list , init-declarator
          */
-        public TypeSpecNode parseTypedefName()
+        public List<InitDeclaratorNode> parseInitDeclaratorList()
         {
-            TypeSpecNode node = null;
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
-            TypedefNode tdnode = arbor.getTypedefNode(token);
-            if (tdnode != null)
+            List<InitDeclaratorNode> nodelist = null;
+            InitDeclaratorNode node = parseInitDeclarator();
+            bool result = (node != null);
+            if (result)
             {
-                node = tdnode.typedef;
+                nodelist = new List<InitDeclaratorNode>();
+                nodelist.Add(node);
             }
-            else 
+            while (result)
             {
-                scanner.rewind(cuepoint);
+                int cuepoint2 = scanner.record();
+                Token token = scanner.getToken();
+                result = (token.type == TokenType.tCOMMA);
+                if (result)
+                {
+                    node = parseInitDeclarator();
+                    if (result)
+                    {
+                        nodelist.Add(node);
+                    }
+                }
+                if (!result)
+                {
+                    scanner.rewind(cuepoint2);
+                }
             }
-            return node;
+            return nodelist;
         }
 
-        /*(6.7.3) 
-         type-qualifier:
-            const
-            restrict
-            volatile
+        /*(6.7) 
+         init-declarator:
+            declarator
+            declarator = initializer
          */
-        public TypeQualNode parseTypeQual()
+        public InitDeclaratorNode parseInitDeclarator()
         {
-            TypeQualNode node = null;
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
-            switch (token.ToString())
+            InitDeclaratorNode node = null;
+            DeclaratorNode declarnode = parseDeclarator();
+            bool result = (declarnode != null);
+            if (result)
             {
-                case "CONST":
-                    node = new TypeQualNode(TypeQualNode.QUAL.CONST);
-                    break;
-
-                case "RESTRICT":
-                    node = new TypeQualNode(TypeQualNode.QUAL.RESTRICT);
-                    break;
-
-                case "VOLATILE":
-                    node = new TypeQualNode(TypeQualNode.QUAL.VOLATILE);
-                    break;
-            }
-            if (node == null)
-            {
-                scanner.rewind(cuepoint);
-            }
-            return node;
-        }
-
-        /*(6.7.4) 
-         function-specifier:
-            inline
-         */
-        public FuncSpecNode parseFunctionSpec()
-        {
-            FuncSpecNode node = null;
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
-            switch (token.ToString())
-            {
-                case "INLINE":
-                    node = new FuncSpecNode(FuncSpecNode.FUNC.INLINE);
-                    break;
-            }
-            if (node == null)
-            {
-                scanner.rewind(cuepoint);
+                int cuepoint = scanner.record();
+                Token token = scanner.getToken();
+                bool result2 = (token.type == TokenType.tEQUAL);
+                if (!result2)
+                {
+                    node = arbor.makeInitDeclaratorNode(declarnode, null);          //declarator
+                }
+                if (result2)
+                {
+                    InitializerNode initialnode = parseInitializer();
+                    result2 = (initialnode != null);
+                    if (!result2)
+                    {
+                        node = arbor.makeInitDeclaratorNode(declarnode, initialnode);       //declarator = initializer
+                    }
+                }
+                if (!result2)
+                {
+                    scanner.rewind(cuepoint);
+                }
             }
             return node;
         }
@@ -2226,23 +2103,23 @@ namespace BlackC
         public List<TypeQualNode> parseTypeQualList()
         {
             List<TypeQualNode> list = null;
-            TypeQualNode node = parseTypeQual();
-            bool result = (node != null);
-            if (result)
-            {
-                list = new List<TypeQualNode>();
-                list.Add(node);
-            }
-            bool notEmpty = result;
-            while (result)
-            {
-                node = parseTypeQual();
-                result = (node != null);
-                if (result)
-                {
-                    list.Add(node);
-                }
-            }
+            //TypeQualNode node = parseTypeQual();
+            //bool result = (node != null);
+            //if (result)
+            //{
+            //    list = new List<TypeQualNode>();
+            //    list.Add(node);
+            //}
+            //bool notEmpty = result;
+            //while (result)
+            //{
+            //    node = parseTypeQual();
+            //    result = (node != null);
+            //    if (result)
+            //    {
+            //        list.Add(node);
+            //    }
+            //}
             return list;
         }
 
@@ -2330,7 +2207,7 @@ namespace BlackC
             ParamDeclarNode node = null;
             AbstractDeclaratorNode absdeclar = null;
             int cuepoint = scanner.record();
-            List<DeclarSpecNode> declarspecs = parseDeclarationSpecs();
+            DeclarSpecNode declarspecs = parseDeclarationSpecs();
             bool result = (declarspecs != null);
             if (result)
             {
@@ -3383,7 +3260,7 @@ namespace BlackC
         {
             FunctionDefNode node = null;
             int cuepoint = scanner.record();
-            List<DeclarSpecNode> specs = parseDeclarationSpecs();
+            DeclarSpecNode specs = parseDeclarationSpecs();
             bool result = (specs != null);
             if (result)
             {

@@ -114,7 +114,7 @@ namespace BlackC
                     break;
 
                 case "const":
-                    token = new Token(TokenType.TCONST);
+                    token = new Token(TokenType.tCONST);
                     break;
 
                 case "continue":

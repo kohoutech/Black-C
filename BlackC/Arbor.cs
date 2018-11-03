@@ -361,7 +361,7 @@ namespace BlackC
 
         //- declarations --------------------------------------------------------
 
-        public DeclarationNode makeDeclaration(List<DeclarSpecNode> specs, List<InitDeclaratorNode> list)
+        public DeclarationNode makeDeclaration(DeclarSpecNode specs, List<InitDeclaratorNode> list)
         {
             return new DeclarationNode(specs, list);
         }
@@ -458,7 +458,7 @@ namespace BlackC
             return new ParamTypeListNode(list, hasElipsis);
         }
 
-        public ParamDeclarNode makeParamDeclarNode(List<DeclarSpecNode> declarspecs, DeclaratorNode declar, AbstractDeclaratorNode absdeclar)
+        public ParamDeclarNode makeParamDeclarNode(DeclarSpecNode declarspecs, DeclaratorNode declar, AbstractDeclaratorNode absdeclar)
         {
             return new ParamDeclarNode(declarspecs, declar, absdeclar);
         }
@@ -597,7 +597,7 @@ namespace BlackC
             return null;
         }
 
-        public FunctionDefNode makeFunctionDefNode(List<DeclarSpecNode> specs, DeclaratorNode signature, 
+        public FunctionDefNode makeFunctionDefNode(DeclarSpecNode specs, DeclaratorNode signature, 
             List<DeclarationNode> oldparamlist, StatementNode block)
         {
             return new FunctionDefNode(specs, signature, oldparamlist, block);
@@ -605,32 +605,32 @@ namespace BlackC
 
         public bool handleTypeDef(DeclarationNode declar)
         {
-            List<DeclarSpecNode> specs = declar.declarspecs;
+            DeclarSpecNode specs = declar.declarspecs;
             bool isTypedef = false;
-            foreach (DeclarSpecNode spec in specs)
-            {
-                if (spec is StorageClassNode)
-                {
-                    StorageClassNode storspec = (StorageClassNode)spec;
-                    if (storspec.storage == StorageClassNode.STORAGE.TYPEDEF)
-                    {
-                        isTypedef = true;
-                        break;
-                    }
-                }
-            }
-            if (isTypedef)
-            {
-                TypeSpecNode def = getTypeSpec(declar.declarspecs);
-                TypedefNode tdnode = new TypedefNode(def);
-                IdentNode idnode = declar.declarlist[0].declarnode.declar.ident;
-                if (idnode == null)
-                {
-                    idnode = declar.declarlist[0].declarnode.declar.chain.declar.declar.ident;
-                }
-                idnode.symtype = SYMTYPE.TYPEDEF;
-                idnode.def = tdnode;                
-            }
+            //foreach (DeclarSpecNode spec in specs)
+            //{
+            //    if (spec is StorageClassNode)
+            //    {
+            //        StorageClassNode storspec = (StorageClassNode)spec;
+            //        if (storspec.storage == StorageClassNode.STORAGE.TYPEDEF)
+            //        {
+            //            isTypedef = true;
+            //            break;
+            //        }
+            //    }
+            //}
+            //if (isTypedef)
+            //{
+            //    TypeSpecNode def = getTypeSpec(declar.declarspecs);
+            //    TypedefNode tdnode = new TypedefNode(def);
+            //    IdentNode idnode = declar.declarlist[0].declarnode.declar.ident;
+            //    if (idnode == null)
+            //    {
+            //        idnode = declar.declarlist[0].declarnode.declar.chain.declar.declar.ident;
+            //    }
+            //    idnode.symtype = SYMTYPE.TYPEDEF;
+            //    idnode.def = tdnode;                
+            //}
             return isTypedef;
         }
 
@@ -653,7 +653,7 @@ namespace BlackC
                 BaseTypeSpecNode basespec = (BaseTypeSpecNode)typespecs[0];
                 for (int i = 1; i < typespecs.Count; i++)
                 {
-                    basespec.setModifer(((BaseTypeSpecNode)typespecs[1]).baseclass);
+                    //basespec.setModifer(((BaseTypeSpecNode)typespecs[1]).baseclass);
                 }
                 return basespec;
             }

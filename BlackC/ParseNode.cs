@@ -381,10 +381,10 @@ namespace BlackC
 
     public class DeclarationNode : BlockItemNode
     {
-        public List<DeclarSpecNode> declarspecs;
+        public DeclarSpecNode declarspecs;
         public List<InitDeclaratorNode> declarlist;
 
-        public DeclarationNode(List<DeclarSpecNode> specs, List<InitDeclaratorNode> list)
+        public DeclarationNode(DeclarSpecNode specs, List<InitDeclaratorNode> list)
         {
             declarspecs = specs;
             declarlist = list;
@@ -405,76 +405,105 @@ namespace BlackC
 
     public class DeclarSpecNode : ParseNode
     {
-    }
-
-    public class StorageClassNode : DeclarSpecNode
-    {
-        public enum STORAGE { TYPEDEF, EXTERN, STATIC, AUTO, REGISTER };
+        public enum STORAGE { TYPEDEF, EXTERN, STATIC, AUTO, REGISTER, NONE };
         public STORAGE storage;
 
-        public StorageClassNode(STORAGE _storage)
-        {
-            storage = _storage;
-        }
-    }
-
-    public class TypeSpecNode : DeclarSpecNode
-    {
-    }
-
-    public class BaseTypeSpecNode : TypeSpecNode
-    {
-        public enum BASE { VOID, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE, SIGNED, UNSIGNED }
-        public BASE baseclass;
-
-        public bool isVoid;
-        public bool isChar;
         public bool isShort;
-        public bool isInt;
         public bool isLong;
         public bool isLongLong;
-        public bool isFloat;
-        public bool isDouble;
         public bool isSigned;
         public bool isUnsigned;
 
-        public BaseTypeSpecNode(BASE _base)
+        public bool isConst;
+        public bool isRestrict;
+        public bool isVolatile;
+
+        public bool isInline;
+
+        public TypeSpecNode typeSpec;
+
+        public DeclarSpecNode()
         {
-            isVoid = false;
-            isChar = false;
+            storage = STORAGE.NONE;
+
             isShort = false;
-            isInt = false;
             isLong = false;
             isLongLong = false;
-            isFloat = false;
-            isDouble = false;
             isSigned = false;
             isUnsigned = false;
-            baseclass = _base;
-            setModifer(_base);
+
+            isConst = false;
+            isRestrict = false;
+            isVolatile = false;
+
+            isInline = false;
+
+            typeSpec = null;
         }
 
-        internal void setModifer(BASE bass)
+        public void parseStorageClassSpec(Token token)
         {
-            switch (bass) 
+            switch (token.type)
             {
-                case BASE.VOID:
-                    isVoid = true;
+                case TokenType.tTYPEDEF:
+                    storage = DeclarSpecNode.STORAGE.TYPEDEF;
                     break;
 
-                case BASE.CHAR:
-                    isVoid = true;
+                case TokenType.tEXTERN:
+                    storage = DeclarSpecNode.STORAGE.EXTERN;
                     break;
 
-                case BASE.SHORT:
+                case TokenType.tSTATIC:
+                    storage = DeclarSpecNode.STORAGE.STATIC;
+                    break;
+
+                case TokenType.tAUTO:
+                    storage = DeclarSpecNode.STORAGE.AUTO;
+                    break;
+
+                case TokenType.tREGISTER:
+                    storage = DeclarSpecNode.STORAGE.REGISTER;
+                    break;
+            }        
+        }
+
+        public void parseBaseClassSpec(Token token)
+        {
+            BaseTypeSpecNode basespec = new BaseTypeSpecNode();
+            switch (token.type)
+            {
+                case TokenType.tVOID:
+                    basespec.baseclass = BaseTypeSpecNode.BASE.VOID;
+                    break;
+
+                case TokenType.tCHAR:
+                    basespec.baseclass = BaseTypeSpecNode.BASE.CHAR;
+                    break;
+
+                case TokenType.tINT:
+                    basespec.baseclass = BaseTypeSpecNode.BASE.INT;
+                    break;
+
+                case TokenType.tFLOAT:
+                    basespec.baseclass = BaseTypeSpecNode.BASE.FLOAT;
+                    break;
+
+                case TokenType.tDOUBLE:
+                    basespec.baseclass = BaseTypeSpecNode.BASE.DOUBLE;
+                    break;                    
+            }
+            typeSpec = basespec;
+        }
+
+        public void parseBaseClassModifier(Token token)
+        {
+            switch (token.type)
+            {
+                case TokenType.tSHORT:
                     isShort = true;
                     break;
 
-                case BASE.INT:
-                    isInt = true;
-                    break;
-
-                case BASE.LONG:
+                case TokenType.tLONG:
                     if (isLong)
                     {
                         isLongLong = true;
@@ -485,23 +514,77 @@ namespace BlackC
                     }
                     break;
 
-                case BASE.FLOAT:
-                    isFloat = true;
-                    break;
-
-                case BASE.DOUBLE:
-                    isDouble = true;
-                    break;
-
-                case BASE.SIGNED:
+                case TokenType.tSIGNED:
                     isSigned = true;
                     break;
-                case BASE.UNSIGNED:
+
+                case TokenType.tUNSIGNED:
                     isUnsigned = true;
                     break;
-
             }
+        }
 
+        public void setBaseClassModifier()
+        {
+            if ((typeSpec != null) && (typeSpec is BaseTypeSpecNode))
+            {
+                BaseTypeSpecNode spec = (BaseTypeSpecNode)typeSpec;
+                spec.isShort = isShort;
+                spec.isLong = isLong;
+                spec.isLongLong = isLongLong;
+                spec.isSigned = isSigned;
+                spec.isUnsigned = isUnsigned;
+            }
+        }
+
+        public void parseTypeQual(Token token)
+        {
+            switch (token.type)
+            {
+                case TokenType.tCONST:
+                    isConst = true;
+                    break;
+
+                case TokenType.tRESTRICT:
+                    isRestrict = true;
+                    break;
+
+                case TokenType.tVOLATILE:
+                    isVolatile = true;
+                    break;
+            }
+        }
+
+        public void parseFunctionSpec(Token token)
+        {
+            isInline = true;
+        }
+    }
+
+
+    public class TypeSpecNode : DeclarSpecNode
+    {
+    }
+
+    public class BaseTypeSpecNode : TypeSpecNode
+    {
+        public enum BASE { VOID, CHAR, INT, FLOAT, DOUBLE, NONE }
+        public BASE baseclass;
+
+        public bool isShort;
+        public bool isLong;
+        public bool isLongLong;
+        public bool isSigned;
+        public bool isUnsigned;
+
+        public BaseTypeSpecNode()
+        {
+            isShort = false;
+            isLong = false;
+            isLongLong = false;
+            isSigned = false;
+            isUnsigned = false;
+            baseclass = BASE.NONE;
         }
     }
 
@@ -574,25 +657,13 @@ namespace BlackC
 
     public class TypeQualNode : DeclarSpecNode
     {
-        public enum QUAL {CONST, RESTRICT, VOLATILE};
+        public enum QUAL { CONST, RESTRICT, VOLATILE };
         QUAL qual;
 
         public TypeQualNode(QUAL _qual)
         {
             qual = _qual;
         }
-    }
-
-    public class FuncSpecNode : DeclarSpecNode
-    {
-        public enum FUNC { INLINE };
-        FUNC func;
-
-        public FuncSpecNode(FUNC _func)
-        {
-            func = _func;
-        }
-
     }
 
     public class DeclaratorNode : ParseNode
@@ -660,11 +731,11 @@ namespace BlackC
 
     public class ParamDeclarNode : ParseNode
     {
-        List<DeclarSpecNode> specs;
+        DeclarSpecNode specs;
         DeclaratorNode declar;
         AbstractDeclaratorNode absdeclar;
 
-        public ParamDeclarNode(List<DeclarSpecNode> _specs, DeclaratorNode _declar, AbstractDeclaratorNode _absdeclar)
+        public ParamDeclarNode(DeclarSpecNode _specs, DeclaratorNode _declar, AbstractDeclaratorNode _absdeclar)
         {
             specs = _specs;
             declar = _declar;
@@ -822,12 +893,12 @@ namespace BlackC
 
     public class FunctionDefNode : ParseNode
     {
-        public List<DeclarSpecNode> specs;
+        public DeclarSpecNode specs;
         public DeclaratorNode signature;
         public List<DeclarationNode> oldparamlist;
         public StatementNode block;
 
-        public FunctionDefNode(List<DeclarSpecNode> _specs, DeclaratorNode _sig, List<DeclarationNode> _oldparams, StatementNode _block)
+        public FunctionDefNode(DeclarSpecNode _specs, DeclaratorNode _sig, List<DeclarationNode> _oldparams, StatementNode _block)
         {
             specs = _specs;
             signature = _sig;
