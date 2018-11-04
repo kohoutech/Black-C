@@ -42,6 +42,13 @@ namespace BlackC
 
         //- symbol table ------------------------------------------------------------
 
+        public IdentNode findIdent(Token token)
+        {
+            String id = token.chars;
+            IdentNode node = SymbolTable.findSymbol(curSymbolTable, id, SYMTYPE.DECLAR);
+            return node;
+        }
+
         public SymbolTable pushSymbolTable()
         {
             SymbolTable newtbl = new SymbolTable(curSymbolTable);
@@ -416,10 +423,10 @@ namespace BlackC
             return new DeclaratorNode(ptr, declar);
         }
 
-        public DirectDeclaratorNode makeDirectIdentNode(IdentNode ident)
+        public DeclaratorNode makeDirectIdentNode(IdentNode ident)
         {
-            DirectDeclaratorNode node = new DirectDeclaratorNode();
-            node.ident = ident;
+            DeclaratorNode node = new DeclaratorNode();
+            //node.ident = ident;
             return node;
         }
 
@@ -448,9 +455,10 @@ namespace BlackC
             return null;
         }
 
-        public PointerNode makePointerNode(List<TypeQualNode> qualList, PointerNode ptr)
+        public DeclaratorNode makePointerNode(DeclarSpecNode qualList, DeclaratorNode declar)
         {
-            return new PointerNode(qualList, ptr);
+            //return new DeclaratorNode(qualList, declar);
+            return null;
         }
 
         public ParamTypeListNode ParamTypeListNode(List<ParamDeclarNode> list, bool hasElipsis)
@@ -657,6 +665,17 @@ namespace BlackC
                 }
                 return basespec;
             }
+        }
+
+        internal DeclarationNode makeTypeDefNode(DeclarSpecNode declarspecs)
+        {
+            return null;
+        }
+
+
+        internal DeclarationNode makeDeclaration(DeclarSpecNode declarspecs, DeclaratorNode declarnode, InitializerNode initialnode, DeclarationNode node)
+        {
+            throw new NotImplementedException();
         }
     }
 }

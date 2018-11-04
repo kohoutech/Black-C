@@ -42,20 +42,51 @@ namespace BlackC
             curline = lines[linenum];
             pos = 0;
             atEOF = false;
+
             replay = new List<Token>();
             recpos = 0;
         }
 
-        //- token lookahead ---------------------------------------------------
+        //- token stream handling ------------------------------------------
+
+        public Token getToken()
+        {
+            Token token = null;
+            if (recpos < replay.Count)
+            {
+                token = replay[recpos];
+            }
+            else
+            {
+                token = scanToken();
+                replay.Add(token);                
+            }
+            return token;
+        }
 
         public int record()
         {
             return recpos;
         }
 
+        //rewind one token
+        public void rewind()
+        {
+            if (recpos > 0)
+            {
+                recpos--;
+            }
+        }
+
+        //rewind tokens to cuepoint
         public void rewind(int cuepoint)
         {
             recpos = cuepoint;
+        }
+
+        public void next()
+        {
+            recpos++;
         }
 
         public void reset()
@@ -63,7 +94,12 @@ namespace BlackC
             recpos = 0;
         }
 
-        //---------------------------------------------------------------------
+        public bool isNextToken(TokenType ttype)
+        {
+            return (getToken().type == ttype);            
+        }
+
+        //- token scanning ----------------------------------------------------
 
         public void gotoNextLine()
         {
@@ -467,15 +503,9 @@ namespace BlackC
             return strconst;            
         }
 
-        public Token getToken()
+        public Token scanToken()
         {
             Token token = null;
-
-            if (recpos < replay.Count)
-            {
-                token = replay[recpos++];
-                return token;
-            }
 
             //goto start of next token in source file
             skipWhitespace();
@@ -656,7 +686,7 @@ namespace BlackC
                         }
                         else
                         {
-                            token = new Token(TokenType.tASTERISK);
+                            token = new Token(TokenType.tSTAR);
                         }
                         break;
 
@@ -814,12 +844,6 @@ namespace BlackC
             else
             {
                 token = new Token(TokenType.tEOF);
-            }
-
-            if (recpos == replay.Count)
-            {
-                replay.Add(token);
-                recpos++;
             }
 
             return token;

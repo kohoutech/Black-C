@@ -74,20 +74,20 @@ namespace BlackC
         //punctuation
         tLPAREN,
         tRPAREN,
-        tLBRACE,
-        tRBRACE,
-        tLBRACKET,
-        tRBRACKET,
+        tLBRACE,            //{
+        tRBRACE,            //}
+        tLBRACKET,          //[
+        tRBRACKET,          //]
         tPERIOD,
         tCOMMA,
         tCOLON,
         tSEMICOLON,
-        tASTERISK,
-        tELLIPSIS,
-        tARROW,
+        tSTAR,              //*
+        tELLIPSIS,          //...
+        tARROW,             //->
         tAMPERSAND,
         tTILDE,
-        tEXCLAIM,
+        tEXCLAIM,           //!
         tQUESTION,
         tPLUS,
         tMINUS,
@@ -95,8 +95,8 @@ namespace BlackC
         tMINUSMINUS,
         tSLASH,
         tPERCENT,
-        tLEFTSHIFT,
-        tRIGHTSHIFT,
+        tLEFTSHIFT,         //<<
+        tRIGHTSHIFT,        //>>
         tLESSTHAN,
         tGTRTHAN,
         tLESSEQUAL,

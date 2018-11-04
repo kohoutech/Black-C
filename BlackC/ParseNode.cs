@@ -383,11 +383,13 @@ namespace BlackC
     {
         public DeclarSpecNode declarspecs;
         public List<InitDeclaratorNode> declarlist;
+        public bool isFuncDef;
 
         public DeclarationNode(DeclarSpecNode specs, List<InitDeclaratorNode> list)
         {
             declarspecs = specs;
             declarlist = list;
+            isFuncDef = false;
         }
     }
 
@@ -408,18 +410,22 @@ namespace BlackC
         public enum STORAGE { TYPEDEF, EXTERN, STATIC, AUTO, REGISTER, NONE };
         public STORAGE storage;
 
+        //type modifiers
         public bool isShort;
         public bool isLong;
         public bool isLongLong;
         public bool isSigned;
         public bool isUnsigned;
 
+        //type qualifiers
         public bool isConst;
         public bool isRestrict;
         public bool isVolatile;
 
+        //function specifier
         public bool isInline;
 
+        //type specifier
         public TypeSpecNode typeSpec;
 
         public DeclarSpecNode()
@@ -441,7 +447,7 @@ namespace BlackC
             typeSpec = null;
         }
 
-        public void parseStorageClassSpec(Token token)
+        public void setStorageClassSpec(Token token)
         {
             switch (token.type)
             {
@@ -467,7 +473,7 @@ namespace BlackC
             }        
         }
 
-        public void parseBaseClassSpec(Token token)
+        public void setBaseClassSpec(Token token)
         {
             BaseTypeSpecNode basespec = new BaseTypeSpecNode();
             switch (token.type)
@@ -495,7 +501,7 @@ namespace BlackC
             typeSpec = basespec;
         }
 
-        public void parseBaseClassModifier(Token token)
+        public void setBaseClassModifier(Token token)
         {
             switch (token.type)
             {
@@ -524,20 +530,7 @@ namespace BlackC
             }
         }
 
-        public void setBaseClassModifier()
-        {
-            if ((typeSpec != null) && (typeSpec is BaseTypeSpecNode))
-            {
-                BaseTypeSpecNode spec = (BaseTypeSpecNode)typeSpec;
-                spec.isShort = isShort;
-                spec.isLong = isLong;
-                spec.isLongLong = isLongLong;
-                spec.isSigned = isSigned;
-                spec.isUnsigned = isUnsigned;
-            }
-        }
-
-        public void parseTypeQual(Token token)
+        public void setTypeQual(Token token)
         {
             switch (token.type)
             {
@@ -555,9 +548,22 @@ namespace BlackC
             }
         }
 
-        public void parseFunctionSpec(Token token)
+        public void setFunctionSpec(Token token)
         {
             isInline = true;
+        }
+
+        public void complete()
+        {
+            if ((typeSpec != null) && (typeSpec is BaseTypeSpecNode))
+            {
+                BaseTypeSpecNode spec = (BaseTypeSpecNode)typeSpec;
+                spec.isShort = isShort;
+                spec.isLong = isLong;
+                spec.isLongLong = isLongLong;
+                spec.isSigned = isSigned;
+                spec.isUnsigned = isUnsigned;
+            }
         }
     }
 
@@ -676,6 +682,11 @@ namespace BlackC
             ptr = _ptr;
             declar = _declar;
         }
+
+        public DeclaratorNode()
+        {
+            // TODO: Complete member initialization
+        }
     }
 
     public class DirectDeclaratorNode : ParseNode
@@ -707,13 +718,13 @@ namespace BlackC
 
     public class PointerNode : ParseNode
     {
-        public List<TypeQualNode> qualList;
-        public PointerNode chain;
+        public DeclarSpecNode qualList;
+        public DeclaratorNode chain;
 
-        public PointerNode(List<TypeQualNode> list, PointerNode ptr)
+        public PointerNode(DeclarSpecNode list, DeclaratorNode declar)
         {
             qualList = list;
-            chain = ptr;
+            chain = declar;
         }
     }
 
@@ -897,6 +908,7 @@ namespace BlackC
         public DeclaratorNode signature;
         public List<DeclarationNode> oldparamlist;
         public StatementNode block;
+        private DeclarationNode declars;
 
         public FunctionDefNode(DeclarSpecNode _specs, DeclaratorNode _sig, List<DeclarationNode> _oldparams, StatementNode _block)
         {
@@ -904,6 +916,22 @@ namespace BlackC
             signature = _sig;
             oldparamlist = _oldparams;
             block = _block;
+        }
+
+        public FunctionDefNode(DeclarationNode declars)
+        {
+            // TODO: Complete member initialization
+            this.declars = declars;
+        }
+
+        internal void setOldParams(List<DeclarationNode> oldparamlist)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal void setFuncBody(StatementNode block)
+        {
+            throw new NotImplementedException();
         }
     }
 }
