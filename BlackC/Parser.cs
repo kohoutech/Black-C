@@ -38,7 +38,7 @@ namespace BlackC
         Arbor arbor;
 
         public Parser()
-        {            
+        {
         }
 
         //- expressions ------------------------------------------------------
@@ -58,7 +58,7 @@ namespace BlackC
             bool result = (node != null);
             if (!result)
             {
-                result = (token.type == TokenType.tINTCONST);                    
+                result = (token.type == TokenType.tINTCONST);
                 if (result)
                 {
                     node = arbor.makeIntegerConstantNode(token);
@@ -66,7 +66,7 @@ namespace BlackC
             }
             if (!result)
             {
-                result = (token.type == TokenType.tFLOATCONST);                    
+                result = (token.type == TokenType.tFLOATCONST);
                 if (result)
                 {
                     node = arbor.makeFloatConstantNode(token);
@@ -1219,7 +1219,7 @@ namespace BlackC
                 {
                     isFuncDef = false;
                     scanner.next();
-                } 
+                }
                 else if (scanner.getToken().type == TokenType.tSEMICOLON)
                 {
                     isFuncDef = false;
@@ -1349,7 +1349,7 @@ namespace BlackC
             }
             specs.complete();
             return specs;
-        }                
+        }
 
         /*(6.7.7) 
          typedef-name:
@@ -1365,7 +1365,7 @@ namespace BlackC
                 return (TypeSpecNode)tdnode.def;
             }
             return null;
-        }         
+        }
 
         // stuctures/unions -----------------------------------------
 
@@ -1827,9 +1827,9 @@ namespace BlackC
                 scanner.rewind(cuepoint);
             }
             return node;
-        }         
+        }
 
-        //- declarator ----------------------------------------------
+        //- declarators -------------------------------------------------------
 
         /*
          (6.7.5) 
@@ -1851,7 +1851,7 @@ namespace BlackC
             if (scanner.getToken().type == TokenType.tSTAR)
             {
                 scanner.next();
-                DeclarSpecNode qualList = parseTypeQualList();
+                TypeQualNode qualList = parseTypeQualList();
                 DeclaratorNode declar = parseDeclarator(isAbstract);
                 DeclaratorNode node = arbor.makePointerNode(qualList, declar);
                 return node;
@@ -1880,208 +1880,113 @@ namespace BlackC
             direct-abstract-declarator[opt] ( parameter-type-list[opt] )
          */
         //this handles the base cases of both direct-declarator and direct-abstract-declarator
+        //the trailing clauses are handled in <parseDirectDeclaratorTail>
         public DeclaratorNode parseDirectDeclarator(bool isAbstract)
         {
             DeclaratorNode node = null;
-            int cuepoint = scanner.record();
-            bool result = true;
             Token token = scanner.getToken();
-            DeclaratorNode declar = null;
 
             //identifier
-            if (!isAbstract && (token.type == TokenType.tIDENTIFIER))         
+            if (!isAbstract && (token.type == TokenType.tIDENTIFIER))
             {
                 scanner.next();
-                IdentNode id = arbor.makeDeclarIdentNode(token);
-                node = arbor.makeDirectIdentNode(id);
+                IdentDeclaratorNode idnode = new IdentDeclaratorNode(token);
+                node = parseDirectDeclaratorTail(idnode, isAbstract);
                 return node;
             }
 
             //in direct-abstract-declarator[opt] [...] if the direct-abstract-declarator is omitted, the first token
             //we see is the '[' of the declarator tail, so call parseDirectDeclaratorTail() with no base declarator
-            if (isAbstract && (token.type == TokenType.tLBRACKET))            
+            if (isAbstract && (token.type == TokenType.tLBRACKET))
             {
                 node = parseDirectDeclaratorTail(null, isAbstract);
                 return node;
             }
 
             //similarly, in direct-abstract-declarator[opt] ( parameter-type-list[opt] ), we see the '(' if the 
-            //direct-abstract-declarator is omitted, BUT this also be ( declarator ) or ( abstract-declarator )
+            //direct-abstract-declarator is omitted, BUT this also may be ( declarator ) or ( abstract-declarator )
             //so test for param list or '()' first and if not, then its a parenthesized declarator
-            ParamTypeListNode list = parseParameterTypeList();
-            if (!result)
+            if (token.type == TokenType.tLPAREN)
             {
-                scanner.rewind(cuepoint);
-                token = scanner.getToken();
-                result = (token.type == TokenType.tLPAREN);                    //( declarator )
-                if (result)
+                scanner.next();
+                if (isAbstract)
                 {
-                    declar = parseDeclarator(false);
-                    result = (declar != null);
-                    if (result)
+                    ParamTypeListNode paramlist = parseParameterTypeList();
+                    if ((paramlist != null) || (scanner.getToken().type == TokenType.tRPAREN))
                     {
-                        token = scanner.getToken();
-                        result = (token.type == TokenType.tRPAREN);
-                        if (result)
-                        {
-                            //node = arbor.makeDirectDeclarNode(declar);
-                        }
+                        DeclaratorNode funcDeclar = arbor.makeFuncDeclarNode(null, paramlist);
+                        node = parseDirectDeclaratorTail(funcDeclar, isAbstract);
+                        return node;
                     }
                 }
+
+                //( declarator ) or ( abstract-declarator )
+                DeclaratorNode declar = parseDeclarator(isAbstract);
+                if (scanner.getToken().type == TokenType.tRPAREN)
+                {
+                    scanner.next();
+                    node = parseDirectDeclaratorTail(declar, isAbstract);
+                    return node;
+                }
             }
+
             return node;
         }
 
-        public DeclaratorNode parseDirectDeclaratorTail(DeclaratorNode declar, bool isAbstract)
+        //parse one or more declarator clauses recursively
+        public DeclaratorNode parseDirectDeclaratorTail(DeclaratorNode head, bool isAbstract)
         {
             DeclaratorNode node = null;
             Token token = scanner.getToken();
-            int cuepoint = scanner.record();
-            bool result = true;
-            bool empty = !result;
-            while (result)
+
+            //array index declarator clause
+            //mode 1: [ type-qualifier-list[opt] assignment-expression[opt] ]
+            //mode 2: [ static type-qualifier-list[opt] assignment-expression ]
+            //mode 3: [ type-qualifier-list static assignment-expression ]
+            //mode 4: [ * ]
+            if (scanner.getToken().type == TokenType.tLBRACKET)
             {
-                int cuepoint2 = scanner.record();           //direct-declarator [ type-qualifier-list[opt] assignment-expression[opt] ]
-                token = scanner.getToken();
-                result = (token.type == TokenType.tLBRACKET);
-                if (result)
+                int mode = 1;
+                TypeQualNode qualList = parseTypeQualList();
+                AssignExpressionNode assign = null;
+                bool isStatic = (scanner.getToken().type == TokenType.tSTATIC);
+                if (isStatic)
                 {
-                    DeclarSpecNode list = parseTypeQualList();
-                    AssignExpressionNode assign = parseAssignExpression();
-                    token = scanner.getToken();
-                    result = (token.type == TokenType.tRBRACKET);
-                    if (result)
+                    scanner.next();
+                    mode = 3;
+                    if (qualList.isEmpty)
                     {
-                        //node = arbor.makeDirectIndexNode(node, false, list, false, assign);
+                        qualList = parseTypeQualList();
+                        mode = 2;
                     }
                 }
-                if (!result)
+                if ((mode == 1) && (scanner.getToken().type == TokenType.tSTAR))
                 {
-                    scanner.rewind(cuepoint2);              //direct-declarator [ static type-qualifier-list[opt] assignment-expression ]
-                    token = scanner.getToken();
-                    result = (token.type == TokenType.tLBRACKET);
-                    if (result)
-                    {
-                        token = scanner.getToken();
-                        result = (token.type == TokenType.tSTATIC);
-                        if (result)
-                        {
-                            DeclarSpecNode list = parseTypeQualList();
-                            AssignExpressionNode assign = parseAssignExpression();
-                            result = (assign != null);
-                            if (result)
-                            {
-                                token = scanner.getToken();
-                                result = (token.type == TokenType.tRBRACKET);
-                                if (result)
-                                {
-                                    //node = arbor.makeDirectIndexNode(node, true, list, false, assign);
-                                }
-                            }
-                        }
-                    }
+                    scanner.next();
+                    mode = 4;
                 }
-                if (!result)
+                else
                 {
-                    scanner.rewind(cuepoint2);                  //direct-declarator [ type-qualifier-list static assignment-expression ]
-                    token = scanner.getToken();
-                    result = (token.type == TokenType.tLBRACKET);
-                    if (result)
-                    {
-                        DeclarSpecNode list = parseTypeQualList();
-                        result = (list != null);
-                        if (result)
-                        {
-                            token = scanner.getToken();
-                            result = (token.type == TokenType.tSTATIC);
-                            if (result)
-                            {
-                                AssignExpressionNode assign = parseAssignExpression();
-                                result = (assign != null);
-                                if (result)
-                                {
-                                    token = scanner.getToken();
-                                    result = (token.type == TokenType.tRBRACKET);
-                                    if (result)
-                                    {
-                                        //node = arbor.makeDirectIndexNode(node, false, list, true, assign);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    assign = parseAssignExpression();
                 }
-                if (!result)
+                if (scanner.getToken().type == TokenType.tRBRACKET)
                 {
-                    scanner.rewind(cuepoint2);                      //direct-declarator [ type-qualifier-list[opt] * ]
-                    token = scanner.getToken();
-                    result = (token.type == TokenType.tLBRACKET);
-                    if (result)
-                    {
-                        DeclarSpecNode list = parseTypeQualList();
-                        token = scanner.getToken();
-                        result = (token.type == TokenType.tSTAR);
-                        if (result)
-                        {
-                            token = scanner.getToken();
-                            result = (token.type == TokenType.tRBRACE);
-                            if (result)
-                            {
-                                //node = arbor.makeDirectIndexNode(node, false, list, true, null);
-                            }
-                        }
-                    }
+                    scanner.next();
                 }
-                if (!result)
-                {
-                    scanner.rewind(cuepoint2);                      //direct-declarator ( parameter-type-list )
-                    token = scanner.getToken();
-                    result = (token.type == TokenType.tLPAREN);
-                    if (result)
-                    {
-                        ParamTypeListNode list = parseParameterTypeList();
-                        result = (list != null);
-                        if (result)
-                        {
-                            token = scanner.getToken();
-                            result = (token.type == TokenType.tRPAREN);
-                            if (result)
-                            {
-                                //node = arbor.makeDirectParamNode(node, list);
-                            }
-                        }
-                    }
-                }
-                if (!result)
-                {
-                    scanner.rewind(cuepoint2);                  //direct-declarator ( identifier-list[opt] )
-                    token = scanner.getToken();
-                    result = (token.type == TokenType.tLPAREN);
-                    if (result)
-                    {
-                        List<IdentNode> list = parseIdentifierList();
-                        result = (list != null);
-                        if (result)
-                        {
-                            token = scanner.getToken();
-                            result = (token.type == TokenType.tRPAREN);
-                            if (result)
-                            {
-                                //node = arbor.makeDirectArgumentNode(node, list);
-                            }
-                        }
-                    }
-                    if (!result)
-                    {
-                        scanner.rewind(cuepoint2);
-                    }
-                }
+                DeclaratorNode index = arbor.makeDirectIndexNode(head, mode, qualList, assign);
+                node = parseDirectDeclaratorTail(index, isAbstract);
+                return node;
             }
-            if (empty)
+
+            //parameter list declarator clause
+            else if (scanner.getToken().type == TokenType.tLPAREN)
             {
-                scanner.rewind(cuepoint);
+                ParamTypeListNode paramlist = parseParameterTypeList();
+                DeclaratorNode funcDeclar = arbor.makeFuncDeclarNode(head, paramlist);
+                node = parseDirectDeclaratorTail(funcDeclar, isAbstract);
+                return node;
             }
-            return node;
+            return head;
         }
 
         /*(6.7.5) 
@@ -2089,9 +1994,9 @@ namespace BlackC
             type-qualifier
             type-qualifier-list type-qualifier
          */
-        public DeclarSpecNode parseTypeQualList()
+        public TypeQualNode parseTypeQualList()
         {
-            DeclarSpecNode specs = new DeclarSpecNode();
+            TypeQualNode specs = new TypeQualNode();
             bool done = false;
             while (!done)
             {
@@ -2101,7 +2006,7 @@ namespace BlackC
                     case TokenType.tCONST:
                     case TokenType.tRESTRICT:
                     case TokenType.tVOLATILE:
-                        specs.setTypeQual(token);
+                        specs.setQualifer(token);
                         scanner.next();
                         break;
 
@@ -2110,7 +2015,6 @@ namespace BlackC
                         break;
                 }
             }
-            specs.complete();
             return specs;
         }
 
@@ -2284,154 +2188,6 @@ namespace BlackC
                     //Console.WriteLine("parsed spec-qual abstractor-declarator type-name");
                     //node = arbor.makeTypeNameNode(list, declar);
                 }
-            }
-            return node;
-        }
-
-        public DirectAbstractNode parseDirectAbstractDeclarator()
-        {
-            DirectAbstractNode node = null;
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
-            bool result = (token.type == TokenType.tLPAREN);
-            if (result)
-            {
-                DeclaratorNode declar = parseDeclarator(true);         //( abstract-declarator )
-                result = (declar != null);
-                if (result)
-                {
-                    token = scanner.getToken();
-                    result = (token.type == TokenType.tRPAREN);
-                    if (result)
-                    {
-                        //node = arbor.makeDirectAbstractDeclarNode(declar);
-                    }
-                }
-            }
-            bool empty = !result;
-            result = true;                  //the base is optional, so we parse for the clauses, even if we didn't match the base
-            if (empty)                      //but if the base didn't match, need to roll that back
-            {
-                scanner.rewind(cuepoint);
-            }
-            while (result)
-            {
-                int cuepoint2 = scanner.record();     //direct-abstract-declarator[opt] [ type-qualifier-list[opt] assignment-expression[opt] ]
-                token = scanner.getToken();
-                result = (token.type == TokenType.tLBRACKET);
-                if (result)
-                {
-                    DeclarSpecNode list = parseTypeQualList();
-                    AssignExpressionNode assign = parseAssignExpression();
-                    token = scanner.getToken();
-                    result = (token.type == TokenType.tRBRACKET);
-                    if (result)
-                    {
-                        //node = arbor.makeDirectAbstractIndexNode(node, false, list, false, assign);
-                    }
-                }
-
-                if (!result)
-                {
-                    scanner.rewind(cuepoint2);        //direct-abstract-declarator[opt] [ static type-qualifier-list[opt] assignment-expression ]
-                    token = scanner.getToken();
-                    result = (token.type == TokenType.tLBRACKET);
-                    if (result)
-                    {
-                        token = scanner.getToken();
-                        result = (token.type == TokenType.tSTATIC);
-                        if (result)
-                        {
-                            DeclarSpecNode list = parseTypeQualList();
-                            AssignExpressionNode assign = parseAssignExpression();
-                            result = (assign != null);
-                            if (result)
-                            {
-                                token = scanner.getToken();
-                                result = (token.type == TokenType.tRBRACKET);
-                                if (result)
-                                {
-                                    //node = arbor.makeDirectAbstractIndexNode(node, true, list, false, assign);
-                                }
-                            }
-                        }
-                    }
-                }
-                if (!result)
-                {
-                    scanner.rewind(cuepoint2);        //direct-abstract-declarator[opt] [ type-qualifier-list static assignment-expression ]
-                    token = scanner.getToken();
-                    result = (token.type == TokenType.tLBRACKET);
-                    if (result)
-                    {
-                        DeclarSpecNode list = parseTypeQualList();
-                        result = (list != null);
-                        if (result)
-                        {
-                            token = scanner.getToken();
-                            result = (token.type == TokenType.tSTATIC);
-                            if (result)
-                            {
-                                AssignExpressionNode assign = parseAssignExpression();
-                                result = (assign != null);
-                                if (result)
-                                {
-                                    token = scanner.getToken();
-                                    result = (token.type == TokenType.tRBRACKET);
-                                    if (result)
-                                    {
-                                        //node = arbor.makeDirectAbstractIndexNode(node, false, list, true, assign);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                if (!result)
-                {
-                    scanner.rewind(cuepoint2);        //direct-abstract-declarator[opt] [ * ]
-                    token = scanner.getToken();
-                    result = (token.type == TokenType.tLBRACKET);
-                    if (result)
-                    {
-                        token = scanner.getToken();
-                        result = (token.type == TokenType.tSTAR);
-                        if (result)
-                        {
-                            token = scanner.getToken();
-                            result = (token.type == TokenType.tRBRACKET);
-                            if (result)
-                            {
-                                node = arbor.makeDirectAbstractIndexNode(node, false, null, true, null);
-                            }
-                        }
-                    }
-                }
-                if (!result)
-                {
-                    scanner.rewind(cuepoint2);               //direct-abstract-declarator[opt] ( parameter-type-list[opt] )
-                    token = scanner.getToken();
-                    result = (token.type == TokenType.tLPAREN);
-                    if (result)
-                    {
-                        ParamTypeListNode list = parseParameterTypeList();
-                        token = scanner.getToken();
-                        result = (token.type == TokenType.tRPAREN);
-                        if (result)
-                        {
-                            //Console.WriteLine("parsed param type list direct-abstractor-declarator");
-                            node = arbor.makeDirectAbstractParamNode(node, list);
-                        }
-                    }
-                    if (!result)
-                    {
-                        scanner.rewind(cuepoint2);
-                    }
-                }
-            }
-            if (empty)
-            {
-                scanner.rewind(cuepoint);
             }
             return node;
         }
@@ -2611,7 +2367,7 @@ namespace BlackC
                 if (result)
                 {
                     token = scanner.getToken();
-                    IdentNode ident = arbor.getFieldInitializerNode(token);         
+                    IdentNode ident = arbor.getFieldInitializerNode(token);
                     result = (ident != null);
                     if (result)
                     {
@@ -2687,7 +2443,7 @@ namespace BlackC
                     if (result)
                     {
                         node = arbor.makeLabelStatement(labelId);
-                    }                            
+                    }
                 }
             }
             if (!result)
@@ -2804,7 +2560,7 @@ namespace BlackC
          */
         public BlockItemNode parseBlockItem()
         {
-            BlockItemNode item = parseDeclaration();            
+            BlockItemNode item = parseDeclaration();
             if (item == null)
             {
                 item = parseStatement();
@@ -3183,7 +2939,7 @@ namespace BlackC
             while (scanner.getToken().type != TokenType.tEOF)
             {
                 parseExternalDef();
-            }            
+            }
             return unit;
         }
 
@@ -3251,7 +3007,7 @@ namespace BlackC
             arbor = new Arbor();
 
             TranslationUnit unit = parseTranslationUnit();
-            unit.write();            
+            unit.write();
         }
     }
 }

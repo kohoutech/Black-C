@@ -661,14 +661,38 @@ namespace BlackC
         }
     }
 
-    public class TypeQualNode : DeclarSpecNode
+    public class TypeQualNode : ParseNode
     {
-        public enum QUAL { CONST, RESTRICT, VOLATILE };
-        QUAL qual;
+        public bool isConst;
+        public bool isRestrict;
+        public bool isVolatile;
+        public bool isEmpty;
 
-        public TypeQualNode(QUAL _qual)
+        public TypeQualNode()
         {
-            qual = _qual;
+            isConst = false;
+            isRestrict = false;
+            isVolatile = false;
+            isEmpty = true;
+        }
+
+        public void setQualifer(Token token)
+        {
+            switch (token.type)
+            {
+                case TokenType.tCONST:
+                    isConst = true;
+                    break;
+
+                case TokenType.tRESTRICT:
+                    isRestrict = true;
+                    break;
+
+                case TokenType.tVOLATILE:
+                    isVolatile = true;
+                    break;
+            }
+            isEmpty = false;
         }
     }
 
@@ -677,15 +701,26 @@ namespace BlackC
         public PointerNode ptr;
         public DirectDeclaratorNode declar;
 
+        public DeclaratorNode()
+        {
+            ptr = null;
+            declar = null;
+        }
+
         public DeclaratorNode(PointerNode _ptr, DirectDeclaratorNode _declar)
         {
             ptr = _ptr;
             declar = _declar;
         }
+    }
 
-        public DeclaratorNode()
+    public class IdentDeclaratorNode : DeclaratorNode
+    {
+        public String ident;
+
+        public IdentDeclaratorNode(Token token) : base()
         {
-            // TODO: Complete member initialization
+            ident = token.chars;
         }
     }
 
@@ -900,6 +935,10 @@ namespace BlackC
         {
             Console.WriteLine("done parsing");
         }
+    }
+
+    class FunctionDeclarNode : ParseNode
+    {
     }
 
     public class FunctionDefNode : ParseNode

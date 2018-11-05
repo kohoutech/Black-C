@@ -423,13 +423,6 @@ namespace BlackC
             return new DeclaratorNode(ptr, declar);
         }
 
-        public DeclaratorNode makeDirectIdentNode(IdentNode ident)
-        {
-            DeclaratorNode node = new DeclaratorNode();
-            //node.ident = ident;
-            return node;
-        }
-
         public DirectDeclaratorNode makeDirectDeclarNode(DeclaratorNode declar)
         {
             DirectDeclaratorNode node = new DirectDeclaratorNode();
@@ -455,7 +448,7 @@ namespace BlackC
             return null;
         }
 
-        public DeclaratorNode makePointerNode(DeclarSpecNode qualList, DeclaratorNode declar)
+        public DeclaratorNode makePointerNode(TypeQualNode qualList, DeclaratorNode declar)
         {
             //return new DeclaratorNode(qualList, declar);
             return null;
@@ -674,6 +667,16 @@ namespace BlackC
 
 
         internal DeclarationNode makeDeclaration(DeclarSpecNode declarspecs, DeclaratorNode declarnode, InitializerNode initialnode, DeclarationNode node)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal DeclaratorNode makeFuncDeclarNode(DeclaratorNode head, ParamTypeListNode paramlist)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal DeclaratorNode makeDirectIndexNode(DeclaratorNode head, int mode, TypeQualNode qualList, AssignExpressionNode assign)
         {
             throw new NotImplementedException();
         }
