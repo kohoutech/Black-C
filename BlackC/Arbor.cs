@@ -469,26 +469,6 @@ namespace BlackC
             return null;
         }
 
-        public AbstractDeclaratorNode makeAbstractDeclaratorNode(PointerNode ptr, DirectAbstractNode direct)
-        {
-            return new AbstractDeclaratorNode(ptr, direct);
-        }
-
-        public DirectAbstractNode makeDirectAbstractDeclarNode(AbstractDeclaratorNode declar)
-        {
-            return null; 
-        }
-
-        public DirectAbstractNode makeDirectAbstractParamNode(DirectAbstractNode node, ParamTypeListNode list)
-        {
-            return null;
-        }
-
-        public DirectAbstractNode makeDirectAbstractIndexNode(DirectAbstractNode node, bool p, List<TypeQualNode> list, bool p_2, AssignExpressionNode assign)
-        {
-            return null;
-        }
-
         //- declaration initializers ------------------------------------
 
         public InitializerNode makeInitializerNode(AssignExpressionNode expr)
