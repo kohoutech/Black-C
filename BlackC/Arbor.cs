@@ -418,36 +418,6 @@ namespace BlackC
 
         //- declarators -------------------------------------------------------
 
-        public DeclaratorNode makeDeclaratorNode(PointerNode ptr, DirectDeclaratorNode declar)
-        {
-            return new DeclaratorNode(ptr, declar);
-        }
-
-        public DirectDeclaratorNode makeDirectDeclarNode(DeclaratorNode declar)
-        {
-            DirectDeclaratorNode node = new DirectDeclaratorNode();
-            node.declar = declar;
-            return node;
-        }
-
-        public DirectDeclaratorNode makeDirectIndexNode(DirectDeclaratorNode node, bool p, List<TypeQualNode> list, bool p_2, AssignExpressionNode assign)
-        {
-            return null;
-        }
-
-        public DirectDeclaratorNode makeDirectParamNode(DirectDeclaratorNode chain, ParamTypeListNode list)
-        {
-            DirectDeclaratorNode node = new DirectDeclaratorNode();
-            node.chain = chain;
-            node.paramList = list;
-            return node;
-        }
-
-        public DirectDeclaratorNode makeDirectArgumentNode(DirectDeclaratorNode node, List<IdentNode> list)
-        {
-            return null;
-        }
-
         public DeclaratorNode makePointerNode(TypeQualNode qualList, DeclaratorNode declar)
         {
             //return new DeclaratorNode(qualList, declar);
