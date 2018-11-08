@@ -33,12 +33,14 @@ namespace BlackC
 {
     class Parser
     {
+        Options options;
         Preprocessor preprocessor;
         Scanner scanner;
         Arbor arbor;
 
-        public Parser()
+        public Parser(Options _options)
         {
+            options = _options;
         }
 
         //- expressions ------------------------------------------------------
@@ -2996,9 +2998,9 @@ namespace BlackC
 
         //-----------------------------------------------------------------------------
 
-        public void parseFile(string filename)
+        public void parseFile()
         {
-            string[] lines = File.ReadAllLines(filename);
+            string[] lines = File.ReadAllLines(options.filename);
 
             preprocessor = new Preprocessor(lines);
             preprocessor.process();

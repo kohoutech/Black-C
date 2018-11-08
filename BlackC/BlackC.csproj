@@ -49,6 +49,7 @@
     <Compile Include="Arbor.cs" />
     <Compile Include="AST\Node.cs" />
     <Compile Include="BlackC.cs" />
+    <Compile Include="Options.cs" />
     <Compile Include="ParseNode.cs" />
     <Compile Include="Parser.cs" />
     <Compile Include="Preprocessor.cs" />

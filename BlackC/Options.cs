@@ -24,14 +24,17 @@ using System.Text;
 
 namespace BlackC
 {
-    class BlackC
+    class Options
     {
-        static void Main(string[] args)
-        {
-            Options options = new Options(args);
+        public String filename;
 
-            Parser parser = new Parser(options);
-            parser.parseFile();
-        }
+        public Options(string[] args)
+        {
+            foreach (String arg in args)
+            {
+            }
+
+            filename = "test.c";
+        }        
     }
 }
