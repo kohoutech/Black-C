@@ -24,7 +24,7 @@ using System.Text;
 
 namespace BlackC
 {
-    class Preprocessor
+    public class Preprocessor
     {
         public string[] lines;
 
@@ -116,5 +116,9 @@ namespace BlackC
                 lines[i] = newline;
             }
         }
+    }
+
+    public class Macro
+    {
     }
 }
