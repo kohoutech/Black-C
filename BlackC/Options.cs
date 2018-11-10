@@ -32,9 +32,15 @@ namespace BlackC
         {
             foreach (String arg in args)
             {
-            }
-
-            filename = "test.c";
+                if (arg.StartsWith("/"))
+                {
+                    //handle options
+                }
+                else
+                {
+                    filename = arg;
+                }
+            }            
         }        
     }
 }
