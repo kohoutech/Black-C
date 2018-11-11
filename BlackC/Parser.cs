@@ -3005,11 +3005,15 @@ namespace BlackC
             preprocessor = new Preprocessor(lines);
             preprocessor.process();
 
-            scanner = new Scanner(lines);
-            arbor = new Arbor();
+            if (!options.preProcessOnly)
+            {
 
-            TranslationUnit unit = parseTranslationUnit();
-            unit.write();
+                scanner = new Scanner(lines);
+                arbor = new Arbor();
+
+                TranslationUnit unit = parseTranslationUnit();
+                unit.write();
+            }
         }
     }
 }

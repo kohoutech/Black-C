@@ -27,9 +27,12 @@ namespace BlackC
     class Options
     {
         public String filename;
+        public bool preProcessOnly;
 
         public Options(string[] args)
         {
+            preProcessOnly = false;
+
             foreach (String arg in args)
             {
                 if (arg.StartsWith("/"))
