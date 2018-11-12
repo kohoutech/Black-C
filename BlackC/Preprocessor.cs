@@ -35,9 +35,15 @@ namespace BlackC
 
         public void process()
         {
-            handleDirectives();
-            removeBlockComments();
-            removeLineComments();
+            //handleDirectives();
+            //removeBlockComments();
+            //removeLineComments();
+
+            bool atEOF = false;
+
+            while (!atEOF)
+            {
+            }
 
             //for (int i = 0; i < lines.Length; i++)
             //{
