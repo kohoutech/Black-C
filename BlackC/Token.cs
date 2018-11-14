@@ -117,7 +117,13 @@ namespace BlackC
         tRSHIFTEQUAL,
         tAMPEQUAL,
         tCARETEQUAL,
-        tBAREQUAL
+        tBAREQUAL,
+
+        //proprocessing
+        tHASH,              //#
+        tDOUBLEHASH,        //##
+
+        tOTHER
     }
 
     public class Token

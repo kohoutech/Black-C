@@ -31,11 +31,14 @@ namespace BlackC
 {
     public class Arbor
     {
+        public Parser parser;
+
         Dictionary<string, int> typepdefids;
         public SymbolTable curSymbolTable;
 
-        public Arbor()
+        public Arbor(Parser _parser)
         {
+            parser = _parser;
             typepdefids = new Dictionary<string, int>();
             curSymbolTable = null;
         }

@@ -28,10 +28,10 @@ namespace BlackC
     {
         static void Main(string[] args)
         {
-            Options options = new Options(args);
+            Options options = new Options(args);        //parse the cmd line args
 
-            Parser parser = new Parser(options);
-            parser.parseFile();
+            Parser parser = new Parser(options);        //create a parser
+            parser.parseFile();                         //and parse the source file
         }
     }
 }

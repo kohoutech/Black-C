@@ -26,103 +26,108 @@ namespace BlackC
 {
     public class Preprocessor
     {
-        public string[] lines;
+        public Parser parser;
+        public Scanner scanner;
+        public List<SourceBuffer> bufferStack;
 
-        public Preprocessor(string[] _lines)
+        Token lookahead;
+        List<Token> replay;
+        int recpos;
+
+        public Preprocessor(Parser _parser)
         {
-            lines = _lines;
+            parser = _parser;
+            scanner = new Scanner();
+            bufferStack = new List<SourceBuffer>();
+
+            lookahead = null;
+            replay = new List<Token>();
+            recpos = 0;
         }
 
-        public void process()
+        public void setMainSourceFile(string filename)
         {
-            //handleDirectives();
-            //removeBlockComments();
-            //removeLineComments();
+            SourceBuffer srcbuf = new SourceBuffer(filename);
+            scanner.setSource(srcbuf);
+        }
 
-            bool atEOF = false;
+        //- token stream handling ------------------------------------------
 
-            while (!atEOF)
+        public Token getToken()
+        {
+            Token token = null;
+
+            if (recpos < replay.Count)
             {
+                token = replay[recpos++];
+            }
+            else if (lookahead != null)
+            {
+                token = lookahead;
+            }
+            else
+            {
+                token = scanner.scanToken();
+                lookahead = token;
+                replay.Add(token);
+                recpos++;
             }
 
+            return token;
+        }
+
+        public void next()
+        {
+            lookahead = null;
+            recpos++;
+        }
+
+        public int record()
+        {
+            return recpos;
+        }
+
+        //rewind one token
+        public void rewind()
+        {
+            if (recpos > 0)
+            {
+                recpos--;
+            }
+        }
+
+        //rewind tokens to cuepoint
+        public void rewind(int cuepoint)
+        {
+            recpos = cuepoint;
+        }
+
+        public void reset()
+        {
+            recpos = 0;
+        }
+
+        public bool isNextToken(TokenType ttype)
+        {
+            return (getToken().type == ttype);
+        }
+
+        //- directive handling ------------------------------------------------
+
+        public void handleDirective()
+        {
             //for (int i = 0; i < lines.Length; i++)
             //{
-            //    Console.WriteLine(lines[i]);
+            //    string line = lines[i];
+            //    if ((line.Length > 0) && (line[0] == '#'))
+            //    {
+            //        lines[i] = "";
+            //    }
             //}
         }
-
-        public void handleDirectives()
-        {
-            for (int i = 0; i < lines.Length; i++)
-            {
-                string line = lines[i];
-                if ((line.Length > 0) && (line[0] == '#'))
-                {
-                    lines[i] = "";
-                }
-            }
-        }
-
-        public void removeLineComments()
-        {
-            for (int i = 0; i < lines.Length; i++)
-            {
-                string line = lines[i];
-                int cpos = line.IndexOf("//");
-                if (cpos >= 0)
-                {
-                    line = line.Remove(cpos);
-                    lines[i] = line + ' ';
-                }
-            }
-        }
-
-        public void removeBlockComments()
-        {
-            int startpos;
-            int endpos;
-            bool found;
-            bool incomment = false;
-            List<string> newlines = new List<string>();
-
-            for (int i = 0; i < lines.Length; i++)
-            {
-                string line = lines[i];
-                string newline = "";
-
-                do
-                {
-                    found = false;
-                    if (!incomment)
-                    {
-                        startpos = line.IndexOf("/*");
-                        if (startpos >= 0)
-                        {
-                            newline = newline + line.Substring(0, startpos);
-                            line = line.Substring(startpos);
-                            incomment = true;
-                            found = true;
-                        }
-                    }
-                    else
-                    {
-                        endpos = line.IndexOf("*/");
-                        if (endpos >= 0)
-                        {
-                            line = line.Substring(endpos);
-                            incomment = false;
-                            found = true;
-                        }
-                    }
-                } while (found);
-                if (!incomment)
-                {
-                    newline = newline + line;
-                }
-                lines[i] = newline;
-            }
-        }
     }
+
+    //-------------------------------------------------------------------------
 
     public class Macro
     {

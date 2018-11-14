@@ -21,7 +21,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.IO;
 
 using Origami.AST;
 
@@ -31,16 +30,35 @@ using Origami.AST;
 
 namespace BlackC
 {
-    class Parser
+    public class Parser
     {
         Options options;
-        Preprocessor preprocessor;
-        Scanner scanner;
+        Preprocessor prep;
         Arbor arbor;
 
         public Parser(Options _options)
         {
             options = _options;
+            prep = new Preprocessor(this);
+            arbor = new Arbor(this);
+        }
+
+        //---------------------------------------------------------------------
+
+        public void parseFile()
+        {
+            prep.setMainSourceFile(options.filename);
+
+            Token token = null;
+            do
+            {
+                token = prep.getToken();
+                prep.next();
+                Console.WriteLine(token.chars);
+            } while (token.type != TokenType.tEOF);
+
+            TranslationUnit unit = parseTranslationUnit();
+            unit.write();
         }
 
         //- expressions ------------------------------------------------------
@@ -54,8 +72,8 @@ namespace BlackC
          */
         public ExprNode parsePrimaryExpression()
         {
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
+            int cuepoint = prep.record();
+            Token token = prep.getToken();
             ExprNode node = arbor.getExprIdentNode(token);
             bool result = (node != null);
             if (!result)
@@ -97,15 +115,15 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);                   //( expression )
-                token = scanner.getToken();
+                prep.rewind(cuepoint);                   //( expression )
+                token = prep.getToken();
                 result = (token.type == TokenType.tLPAREN);
                 if (result)
                 {
                     ExpressionNode expr = parseExpression();
                     if (result)
                     {
-                        token = scanner.getToken();
+                        token = prep.getToken();
                         result = (token.type == TokenType.tRPAREN);
                         if (result)
                         {
@@ -116,7 +134,7 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -135,13 +153,13 @@ namespace BlackC
          */
         public ExprNode parsePostfixExpression()
         {
-            int cuepoint = scanner.record();
+            int cuepoint = prep.record();
             ExprNode node = parsePrimaryExpression();         //primary-expression
             bool result = (node != null);
             if (!result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();           //( type-name ) { initializer-list }
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();           //( type-name ) { initializer-list }
                 result = (token.type == TokenType.tLPAREN);
                 if (result)
                 {
@@ -149,11 +167,11 @@ namespace BlackC
                     result = (name != null);
                     if (result)
                     {
-                        token = scanner.getToken();
+                        token = prep.getToken();
                         result = (token.type == TokenType.tRPAREN);
                         if (result)
                         {
-                            token = scanner.getToken();
+                            token = prep.getToken();
                             result = (token.type == TokenType.tLBRACE);
                             if (result)
                             {
@@ -161,14 +179,14 @@ namespace BlackC
                                 result = (initList != null);
                                 if (result)
                                 {
-                                    token = scanner.getToken();
+                                    token = prep.getToken();
                                     result = (token.type == TokenType.tRBRACE);
                                     if (!result)
                                     {
                                         result = (token.type == TokenType.tCOMMA);             //the comma is optional
                                         if (result)
                                         {
-                                            token = scanner.getToken();
+                                            token = prep.getToken();
                                             result = (token.type == TokenType.tRBRACE);
                                             if (result)
                                             {
@@ -185,14 +203,14 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             bool notEmpty = result;
             while (result)
             {
-                int cuepoint2 = scanner.record();           //postfix-expression [ expression ]
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();           //postfix-expression [ expression ]
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tLBRACKET);
                 if (result)
                 {
@@ -200,7 +218,7 @@ namespace BlackC
                     result = (expr != null);
                     if (result)
                     {
-                        token = scanner.getToken();
+                        token = prep.getToken();
                         result = (token.type == TokenType.tRBRACKET);
                         if (result)
                         {
@@ -211,13 +229,13 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);                  //postfix-expression ( argument-expression-list[opt] )
-                    token = scanner.getToken();
+                    prep.rewind(cuepoint2);                  //postfix-expression ( argument-expression-list[opt] )
+                    token = prep.getToken();
                     result = (token.type == TokenType.tLPAREN);
                     if (result)
                     {
                         List<AssignExpressionNode> argList = parseArgExpressionList();
-                        token = scanner.getToken();
+                        token = prep.getToken();
                         result = (token.type == TokenType.tRPAREN);
                         if (result)
                         {
@@ -229,12 +247,12 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);                  //postfix-expression . identifier
-                    token = scanner.getToken();
+                    prep.rewind(cuepoint2);                  //postfix-expression . identifier
+                    token = prep.getToken();
                     result = (token.type == TokenType.tPERIOD);
                     if (result)
                     {
-                        token = scanner.getToken();
+                        token = prep.getToken();
                         IdentNode idNode = arbor.getFieldIdentNode(token);
                         result = (idNode != null);
                         if (result)
@@ -246,12 +264,12 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);                  //postfix-expression -> identifier
-                    token = scanner.getToken();
+                    prep.rewind(cuepoint2);                  //postfix-expression -> identifier
+                    token = prep.getToken();
                     result = (token.type == TokenType.tARROW);
                     if (result)
                     {
-                        token = scanner.getToken();
+                        token = prep.getToken();
                         IdentNode idNode = arbor.getFieldIdentNode(token);
                         result = (idNode != null);
                         if (result)
@@ -263,8 +281,8 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);                  //postfix-expression ++
-                    token = scanner.getToken();
+                    prep.rewind(cuepoint2);                  //postfix-expression ++
+                    token = prep.getToken();
                     result = (token.type == TokenType.tPLUSPLUS);
                     result = (node != null);
                     if (result)
@@ -275,8 +293,8 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);                  //postfix-expression --
-                    token = scanner.getToken();
+                    prep.rewind(cuepoint2);                  //postfix-expression --
+                    token = prep.getToken();
                     result = (token.type == TokenType.tMINUSMINUS);
                     result = (node != null);
                     if (result)
@@ -286,13 +304,13 @@ namespace BlackC
                     }
                     if (!result)
                     {
-                        scanner.rewind(cuepoint2);
+                        prep.rewind(cuepoint2);
                     }
                 }
             }
             if (!notEmpty)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -314,8 +332,8 @@ namespace BlackC
             }
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tCOMMA);
                 if (result)
                 {
@@ -328,7 +346,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             return list;
@@ -345,12 +363,12 @@ namespace BlackC
          */
         public ExprNode parseUnaryExpression()
         {
-            int cuepoint = scanner.record();
+            int cuepoint = prep.record();
             ExprNode node = parsePostfixExpression();         //postfix-expression
             bool result = (node != null);
             if (!result)
             {
-                Token token = scanner.getToken();           //++ unary-expression
+                Token token = prep.getToken();           //++ unary-expression
                 result = (token.type == TokenType.tPLUSPLUS);
                 if (result)
                 {
@@ -365,8 +383,8 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);
-                Token token = scanner.getToken();           //-- unary-expression
+                prep.rewind(cuepoint);
+                Token token = prep.getToken();           //-- unary-expression
                 result = (token.type == TokenType.tMINUSMINUS);
                 if (result)
                 {
@@ -381,7 +399,7 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);                   //unary-operator cast-expression
+                prep.rewind(cuepoint);                   //unary-operator cast-expression
                 UnaryOperatorNode uniOp = parseUnaryOperator();
                 result = (uniOp != null);
                 if (result)
@@ -398,8 +416,8 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);
-                Token token = scanner.getToken();           //sizeof unary-expression
+                prep.rewind(cuepoint);
+                Token token = prep.getToken();           //sizeof unary-expression
                 result = (token.type == TokenType.tSIZEOF);
                 if (result)
                 {
@@ -414,19 +432,19 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);
-                Token token = scanner.getToken();           //sizeof ( type-name )
+                prep.rewind(cuepoint);
+                Token token = prep.getToken();           //sizeof ( type-name )
                 result = (token.type == TokenType.tSIZEOF);
                 if (result)
                 {
-                    token = scanner.getToken();
+                    token = prep.getToken();
                     result = (token.type == TokenType.tLPAREN);
                     if (result)
                     {
                         TypeNameNode name = parseTypeName();
                         if (result)
                         {
-                            token = scanner.getToken();
+                            token = prep.getToken();
                             result = (token.type == TokenType.tRPAREN);
                             result = (node != null);
                             if (result)
@@ -440,7 +458,7 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -452,8 +470,8 @@ namespace BlackC
         public UnaryOperatorNode parseUnaryOperator()
         {
             UnaryOperatorNode node = null;
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
+            int cuepoint = prep.record();
+            Token token = prep.getToken();
             switch (token.ToString())
             {
                 case "AMPERSAND":
@@ -482,7 +500,7 @@ namespace BlackC
             }
             if (node == null)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -498,8 +516,8 @@ namespace BlackC
             bool result = (node != null);
             if (!result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tLPAREN);
                 if (result)
                 {
@@ -507,7 +525,7 @@ namespace BlackC
                     result = (name != null);
                     if (result)
                     {
-                        token = scanner.getToken();
+                        token = prep.getToken();
                         result = (token.type == TokenType.tRPAREN);
                         if (result)
                         {
@@ -523,7 +541,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             return node;
@@ -542,8 +560,8 @@ namespace BlackC
             bool result = (lhs != null);
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tSTAR);
                 if (result)
                 {
@@ -557,8 +575,8 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
-                    token = scanner.getToken();
+                    prep.rewind(cuepoint2);
+                    token = prep.getToken();
                     result = (token.type == TokenType.tSLASH);
                     if (result)
                     {
@@ -573,8 +591,8 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
-                    token = scanner.getToken();
+                    prep.rewind(cuepoint2);
+                    token = prep.getToken();
                     result = (token.type == TokenType.tPERCENT);
                     if (result)
                     {
@@ -589,7 +607,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             return lhs;
@@ -607,8 +625,8 @@ namespace BlackC
             bool result = (lhs != null);
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tPLUS);
                 if (result)
                 {
@@ -622,8 +640,8 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
-                    token = scanner.getToken();
+                    prep.rewind(cuepoint2);
+                    token = prep.getToken();
                     result = (token.type == TokenType.tMINUS);
                     if (result)
                     {
@@ -638,7 +656,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             return lhs;
@@ -657,8 +675,8 @@ namespace BlackC
             bool empty = result;
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tLEFTSHIFT);
                 if (result)
                 {
@@ -672,8 +690,8 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
-                    token = scanner.getToken();
+                    prep.rewind(cuepoint2);
+                    token = prep.getToken();
                     result = (token.type == TokenType.tRIGHTSHIFT);
                     if (result)
                     {
@@ -688,7 +706,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             return lhs;
@@ -708,8 +726,8 @@ namespace BlackC
             bool result = (lhs != null);
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tLESSTHAN);
                 if (result)
                 {
@@ -723,8 +741,8 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
-                    token = scanner.getToken();
+                    prep.rewind(cuepoint2);
+                    token = prep.getToken();
                     result = (token.type == TokenType.tGTRTHAN);
                     if (result)
                     {
@@ -739,8 +757,8 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
-                    token = scanner.getToken();
+                    prep.rewind(cuepoint2);
+                    token = prep.getToken();
                     result = (token.type == TokenType.tLESSEQUAL);
                     if (result)
                     {
@@ -755,8 +773,8 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
-                    token = scanner.getToken();
+                    prep.rewind(cuepoint2);
+                    token = prep.getToken();
                     result = (token.type == TokenType.tGTREQUAL);
                     if (result)
                     {
@@ -771,7 +789,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             return lhs;
@@ -789,8 +807,8 @@ namespace BlackC
             bool result = (lhs != null);
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tEQUALEQUAL);
                 if (result)
                 {
@@ -804,8 +822,8 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
-                    token = scanner.getToken();
+                    prep.rewind(cuepoint2);
+                    token = prep.getToken();
                     result = (token.type == TokenType.tNOTEQUAL);
                     if (result)
                     {
@@ -820,7 +838,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             return lhs;
@@ -837,8 +855,8 @@ namespace BlackC
             bool result = (lhs != null);
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tAMPERSAND);
                 if (result)
                 {
@@ -852,7 +870,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             return lhs;
@@ -869,8 +887,8 @@ namespace BlackC
             bool result = (lhs != null);
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tCARET);
                 if (result)
                 {
@@ -884,7 +902,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             return lhs;
@@ -901,8 +919,8 @@ namespace BlackC
             bool result = (lhs != null);
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tBAR);
                 if (result)
                 {
@@ -916,7 +934,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             return lhs;
@@ -933,8 +951,8 @@ namespace BlackC
             bool result = (lhs != null);
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tDOUBLEAMP);
                 if (result)
                 {
@@ -948,7 +966,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             return lhs;
@@ -965,8 +983,8 @@ namespace BlackC
             bool result = (lhs != null);
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tDOUBLEBAR);
                 if (result)
                 {
@@ -980,7 +998,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             return lhs;
@@ -997,8 +1015,8 @@ namespace BlackC
             bool result = (lhs != null);
             if (result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 bool result2 = (token.type == TokenType.tQUESTION);
                 if (result2)
                 {
@@ -1006,7 +1024,7 @@ namespace BlackC
                     result = (expr != null);
                     if (result2)
                     {
-                        token = scanner.getToken();
+                        token = prep.getToken();
                         result2 = (token.type == TokenType.tCOLON);
                         if (result2)
                         {
@@ -1022,7 +1040,7 @@ namespace BlackC
                 }
                 if (!result2)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             return lhs;
@@ -1046,7 +1064,7 @@ namespace BlackC
             bool result = (lhs != null);
             if (result)
             {
-                int cuepoint = scanner.record();
+                int cuepoint = prep.record();
                 oper = parseAssignOperator();
                 bool result2 = (oper != null);
                 if (result2)
@@ -1056,7 +1074,7 @@ namespace BlackC
                 }
                 if (!result2)
                 {
-                    scanner.rewind(cuepoint);
+                    prep.rewind(cuepoint);
                 }
             }
             return arbor.makeAssignExpressionNode(lhs, oper, rhs);
@@ -1069,8 +1087,8 @@ namespace BlackC
         public AssignOperatorNode parseAssignOperator()
         {
             AssignOperatorNode node = null;
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
+            int cuepoint = prep.record();
+            Token token = prep.getToken();
             switch (token.ToString())
             {
                 case "EQUAL":
@@ -1119,7 +1137,7 @@ namespace BlackC
             }
             if (node == null)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -1140,8 +1158,8 @@ namespace BlackC
             }
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tCOMMA);
                 if (result)
                 {
@@ -1153,7 +1171,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             return node;
@@ -1192,9 +1210,9 @@ namespace BlackC
             DeclarSpecNode declarspecs = parseDeclarationSpecs();
 
             //type definition, like struct foo {...}; or enum bar {...};
-            if (scanner.getToken().type == TokenType.tSEMICOLON)
+            if (prep.getToken().type == TokenType.tSEMICOLON)
             {
-                scanner.next();
+                prep.next();
                 node = arbor.makeTypeDefNode(declarspecs);
                 node.isFuncDef = false;
                 return node;
@@ -1205,9 +1223,9 @@ namespace BlackC
             while (!done)
             {
                 DeclaratorNode declarnode = parseDeclarator(false);
-                if (scanner.getToken().type == TokenType.tEQUAL)
+                if (prep.getToken().type == TokenType.tEQUAL)
                 {
-                    scanner.next();
+                    prep.next();
                     isFuncDef = false;
                     InitializerNode initialnode = parseInitializer();
                     node = arbor.makeDeclaration(declarspecs, declarnode, initialnode, node);       //declarator = initializer
@@ -1217,15 +1235,15 @@ namespace BlackC
                     node = arbor.makeDeclaration(declarspecs, declarnode, null, node);      //declarator
                 }
 
-                if (scanner.getToken().type == TokenType.tCOMMA)
+                if (prep.getToken().type == TokenType.tCOMMA)
                 {
                     isFuncDef = false;
-                    scanner.next();
+                    prep.next();
                 }
-                else if (scanner.getToken().type == TokenType.tSEMICOLON)
+                else if (prep.getToken().type == TokenType.tSEMICOLON)
                 {
                     isFuncDef = false;
-                    scanner.next();
+                    prep.next();
                     done = true;
                 }
             }
@@ -1281,7 +1299,7 @@ namespace BlackC
             bool done = false;
             while (!done)
             {
-                Token token = scanner.getToken();
+                Token token = prep.getToken();
                 switch (token.type)
                 {
                     case TokenType.tTYPEDEF:
@@ -1290,7 +1308,7 @@ namespace BlackC
                     case TokenType.tAUTO:
                     case TokenType.tREGISTER:
                         specs.setStorageClassSpec(token);
-                        scanner.next();
+                        prep.next();
                         break;
 
                     case TokenType.tVOID:
@@ -1299,7 +1317,7 @@ namespace BlackC
                     case TokenType.tFLOAT:
                     case TokenType.tDOUBLE:
                         specs.setBaseClassSpec(token);
-                        scanner.next();
+                        prep.next();
                         break;
 
                     case TokenType.tSHORT:
@@ -1307,7 +1325,7 @@ namespace BlackC
                     case TokenType.tSIGNED:
                     case TokenType.tUNSIGNED:
                         specs.setBaseClassModifier(token);
-                        scanner.next();
+                        prep.next();
                         break;
 
                     case TokenType.tSTRUCT:
@@ -1317,7 +1335,7 @@ namespace BlackC
 
                     case TokenType.tENUM:
                         specs.typeSpec = parseEnumeratorSpec();
-                        scanner.next();
+                        prep.next();
                         break;
 
                     case TokenType.tIDENTIFIER:
@@ -1336,12 +1354,12 @@ namespace BlackC
                     case TokenType.tRESTRICT:
                     case TokenType.tVOLATILE:
                         specs.setTypeQual(token);
-                        scanner.next();
+                        prep.next();
                         break;
 
                     case TokenType.tINLINE:
                         specs.setFunctionSpec(token);
-                        scanner.next();
+                        prep.next();
                         break;
 
                     default:
@@ -1359,11 +1377,11 @@ namespace BlackC
         */
         public TypeSpecNode parseTypedefName()
         {
-            Token token = scanner.getToken();
+            Token token = prep.getToken();
             IdentNode tdnode = arbor.findIdent(token);
             if ((tdnode != null) && (tdnode.def != null) && (tdnode.def is TypeSpecNode))
             {
-                scanner.next();
+                prep.next();
                 return (TypeSpecNode)tdnode.def;
             }
             return null;
@@ -1381,20 +1399,20 @@ namespace BlackC
         // struct w/o {list} is for a already defined struct type
         public StructSpecNode parseStructOrUnionSpec()
         {
-            Token token = scanner.getToken();
+            Token token = prep.getToken();
             StructSpecNode node = null;
-            int cuepoint = scanner.record();
+            int cuepoint = prep.record();
             StructUnionNode tag = parseStuctOrUnion();
             bool result = (tag != null);
             if (result)
             {
-                //Token token = scanner.getToken();
+                //Token token = prep.getToken();
                 IdentNode name = arbor.getStructIdentNode(token);
                 result = (name != null);
                 if (result)
                 {
-                    int cuepoint2 = scanner.record();
-                    token = scanner.getToken();
+                    int cuepoint2 = prep.record();
+                    token = prep.getToken();
                     bool result2 = (token.type == TokenType.tLBRACE);
                     if (!result2)
                     {
@@ -1406,7 +1424,7 @@ namespace BlackC
                         result2 = (declarList != null);
                         if (result2)
                         {
-                            token = scanner.getToken();
+                            token = prep.getToken();
                             result2 = (token.type == TokenType.tRBRACE);
                             if (result2)
                             {
@@ -1416,7 +1434,7 @@ namespace BlackC
                     }
                     if (!result2)
                     {
-                        scanner.rewind(cuepoint2);
+                        prep.rewind(cuepoint2);
                     }
                 }
                 else
@@ -1428,7 +1446,7 @@ namespace BlackC
                         result = (declarList != null);
                         if (result)
                         {
-                            token = scanner.getToken();
+                            token = prep.getToken();
                             result = (token.type == TokenType.tRBRACE);
                             if (result)
                             {
@@ -1440,7 +1458,7 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -1453,8 +1471,8 @@ namespace BlackC
         public StructUnionNode parseStuctOrUnion()
         {
             StructUnionNode node = null;
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
+            int cuepoint = prep.record();
+            Token token = prep.getToken();
             switch (token.ToString())
             {
                 case "STRUCT":
@@ -1467,7 +1485,7 @@ namespace BlackC
             }
             if (node == null)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -1506,7 +1524,7 @@ namespace BlackC
         public StructDeclarationNode parseStructDeclaration()
         {
             StructDeclarationNode node = null;
-            int cuepoint = scanner.record();
+            int cuepoint = prep.record();
             List<DeclarSpecNode> specqual = parseSpecQualList();          //field type
             bool result = (specqual != null);
             if (result)
@@ -1515,7 +1533,7 @@ namespace BlackC
                 result = (fieldnames != null);
                 if (result)
                 {
-                    Token token = scanner.getToken();
+                    Token token = prep.getToken();
                     result = (token.type == TokenType.tSEMICOLON);
                     if (result)
                     {
@@ -1525,7 +1543,7 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -1575,8 +1593,8 @@ namespace BlackC
             }
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tCOMMA);
                 if (result)
                 {
@@ -1589,7 +1607,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             return fieldlist;
@@ -1604,13 +1622,13 @@ namespace BlackC
         public StructDeclaratorNode parseStructDeclarator()
         {
             StructDeclaratorNode node = null;
-            int cuepoint = scanner.record();
+            int cuepoint = prep.record();
             DeclaratorNode declarnode = parseDeclarator(false);
             bool result = (declarnode != null);
             if (result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 bool result2 = (token.type == TokenType.tCOLON);
                 if (result2)
                 {
@@ -1627,12 +1645,12 @@ namespace BlackC
                 }
                 if (!result2)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             if (!result)
             {
-                Token token = scanner.getToken();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tCOLON);
                 if (result)
                 {
@@ -1647,7 +1665,7 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -1663,18 +1681,18 @@ namespace BlackC
         public EnumSpecNode parseEnumeratorSpec()
         {
             EnumSpecNode node = null;
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
+            int cuepoint = prep.record();
+            Token token = prep.getToken();
             bool result = (token.type == TokenType.tENUM);
             if (result)
             {
-                token = scanner.getToken();
+                token = prep.getToken();
                 IdentNode idNode = arbor.getEnumIdentNode(token);
                 result = (idNode != null);
                 if (result)
                 {
-                    int cuepoint2 = scanner.record();
-                    token = scanner.getToken();
+                    int cuepoint2 = prep.record();
+                    token = prep.getToken();
                     bool result2 = (token.type == TokenType.tLBRACE);             //enum identifier { enumerator-list }
                     if (result2)
                     {
@@ -1682,14 +1700,14 @@ namespace BlackC
                         result2 = (enumList != null);
                         if (result2)
                         {
-                            token = scanner.getToken();
+                            token = prep.getToken();
                             result2 = (token.type == TokenType.tRBRACE);
                             if (!result2)
                             {
                                 result2 = (token.type == TokenType.tCOMMA);            //enum identifier { enumerator-list , }
                                 if (result2)
                                 {
-                                    token = scanner.getToken();
+                                    token = prep.getToken();
                                     result2 = (token.type == TokenType.tRBRACE);
                                 }
                             }
@@ -1705,12 +1723,12 @@ namespace BlackC
                     }
                     if (!result2)
                     {
-                        scanner.rewind(cuepoint2);
+                        prep.rewind(cuepoint2);
                     }
                 }
                 else
                 {
-                    token = scanner.getToken();
+                    token = prep.getToken();
                     result = (token.type == TokenType.tLBRACE);             //enum { enumerator-list }
                     if (result)
                     {
@@ -1718,14 +1736,14 @@ namespace BlackC
                         result = (enumList != null);
                         if (result)
                         {
-                            token = scanner.getToken();
+                            token = prep.getToken();
                             result = (token.type == TokenType.tRBRACE);
                             if (!result)
                             {
                                 result = (token.type == TokenType.tCOMMA);            //enum { enumerator-list , }
                                 if (result)
                                 {
-                                    token = scanner.getToken();
+                                    token = prep.getToken();
                                     result = (token.type == TokenType.tRBRACE);
                                 }
                             }
@@ -1739,7 +1757,7 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -1761,8 +1779,8 @@ namespace BlackC
             }
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tCOMMA);
                 if (result)
                 {
@@ -1775,7 +1793,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             return enumlistnode;
@@ -1794,8 +1812,8 @@ namespace BlackC
             bool result = (enumconst != null);
             if (result)
             {
-                int cuepoint = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint = prep.record();
+                Token token = prep.getToken();
                 bool result2 = (token.type == TokenType.tEQUAL);
                 if (result2)
                 {
@@ -1804,7 +1822,7 @@ namespace BlackC
                 }
                 if (!result2)
                 {
-                    scanner.rewind(cuepoint);
+                    prep.rewind(cuepoint);
                 }
                 node = arbor.makeEnumeratorNode(enumconst, constexpr);
             }
@@ -1818,15 +1836,15 @@ namespace BlackC
         public EnumConstantNode parseEnumerationConstant()
         {
             EnumConstantNode node = null;
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
+            int cuepoint = prep.record();
+            Token token = prep.getToken();
             if (token != null)
             {
                 node = arbor.makeEnumConstNode(token);
             }
             if (node == null)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -1850,9 +1868,9 @@ namespace BlackC
         */
         public DeclaratorNode parseDeclarator(bool isAbstract)
         {
-            if (scanner.getToken().type == TokenType.tSTAR)
+            if (prep.getToken().type == TokenType.tSTAR)
             {
-                scanner.next();
+                prep.next();
                 TypeQualNode qualList = parseTypeQualList();
                 DeclaratorNode declar = parseDeclarator(isAbstract);
                 DeclaratorNode node = arbor.makePointerNode(qualList, declar);
@@ -1886,12 +1904,12 @@ namespace BlackC
         public DeclaratorNode parseDirectDeclarator(bool isAbstract)
         {
             DeclaratorNode node = null;
-            Token token = scanner.getToken();
+            Token token = prep.getToken();
 
             //identifier
             if (!isAbstract && (token.type == TokenType.tIDENTIFIER))
             {
-                scanner.next();
+                prep.next();
                 IdentDeclaratorNode idnode = new IdentDeclaratorNode(token);
                 node = parseDirectDeclaratorTail(idnode, isAbstract);
                 return node;
@@ -1910,11 +1928,11 @@ namespace BlackC
             //so test for param list or '()' first and if not, then its a parenthesized declarator
             if (token.type == TokenType.tLPAREN)
             {
-                scanner.next();
+                prep.next();
                 if (isAbstract)
                 {
                     ParamTypeListNode paramlist = parseParameterTypeList();
-                    if ((paramlist != null) || (scanner.getToken().type == TokenType.tRPAREN))
+                    if ((paramlist != null) || (prep.getToken().type == TokenType.tRPAREN))
                     {
                         DeclaratorNode funcDeclar = arbor.makeFuncDeclarNode(null, paramlist);
                         node = parseDirectDeclaratorTail(funcDeclar, isAbstract);
@@ -1924,9 +1942,9 @@ namespace BlackC
 
                 //( declarator ) or ( abstract-declarator )
                 DeclaratorNode declar = parseDeclarator(isAbstract);
-                if (scanner.getToken().type == TokenType.tRPAREN)
+                if (prep.getToken().type == TokenType.tRPAREN)
                 {
-                    scanner.next();
+                    prep.next();
                     node = parseDirectDeclaratorTail(declar, isAbstract);
                     return node;
                 }
@@ -1939,22 +1957,22 @@ namespace BlackC
         public DeclaratorNode parseDirectDeclaratorTail(DeclaratorNode head, bool isAbstract)
         {
             DeclaratorNode node = null;
-            Token token = scanner.getToken();
+            Token token = prep.getToken();
 
             //array index declarator clause
             //mode 1: [ type-qualifier-list[opt] assignment-expression[opt] ]
             //mode 2: [ static type-qualifier-list[opt] assignment-expression ]
             //mode 3: [ type-qualifier-list static assignment-expression ]
             //mode 4: [ * ]
-            if (scanner.getToken().type == TokenType.tLBRACKET)
+            if (prep.getToken().type == TokenType.tLBRACKET)
             {
                 int mode = 1;
                 TypeQualNode qualList = parseTypeQualList();
                 AssignExpressionNode assign = null;
-                bool isStatic = (scanner.getToken().type == TokenType.tSTATIC);
+                bool isStatic = (prep.getToken().type == TokenType.tSTATIC);
                 if (isStatic)
                 {
-                    scanner.next();
+                    prep.next();
                     mode = 3;
                     if (qualList.isEmpty)
                     {
@@ -1962,18 +1980,18 @@ namespace BlackC
                         mode = 2;
                     }
                 }
-                if ((mode == 1) && (scanner.getToken().type == TokenType.tSTAR))
+                if ((mode == 1) && (prep.getToken().type == TokenType.tSTAR))
                 {
-                    scanner.next();
+                    prep.next();
                     mode = 4;
                 }
                 else
                 {
                     assign = parseAssignExpression();
                 }
-                if (scanner.getToken().type == TokenType.tRBRACKET)
+                if (prep.getToken().type == TokenType.tRBRACKET)
                 {
-                    scanner.next();
+                    prep.next();
                 }
                 DeclaratorNode index = arbor.makeDirectIndexNode(head, mode, qualList, assign);
                 node = parseDirectDeclaratorTail(index, isAbstract);
@@ -1981,7 +1999,7 @@ namespace BlackC
             }
 
             //parameter list declarator clause
-            else if (scanner.getToken().type == TokenType.tLPAREN)
+            else if (prep.getToken().type == TokenType.tLPAREN)
             {
                 ParamTypeListNode paramlist = parseParameterTypeList();
                 DeclaratorNode funcDeclar = arbor.makeFuncDeclarNode(head, paramlist);
@@ -2002,14 +2020,14 @@ namespace BlackC
             bool done = false;
             while (!done)
             {
-                Token token = scanner.getToken();
+                Token token = prep.getToken();
                 switch (token.type)
                 {
                     case TokenType.tCONST:
                     case TokenType.tRESTRICT:
                     case TokenType.tVOLATILE:
                         specs.setQualifer(token);
-                        scanner.next();
+                        prep.next();
                         break;
 
                     default:
@@ -2032,12 +2050,12 @@ namespace BlackC
             bool result = (list != null);
             if (result)
             {
-                int cuepoint = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint = prep.record();
+                Token token = prep.getToken();
                 bool result2 = (token.type == TokenType.tCOMMA);
                 if (result2)
                 {
-                    token = scanner.getToken();
+                    token = prep.getToken();
                     result2 = (token.type == TokenType.tELLIPSIS);
                     if (result2)
                     {
@@ -2050,7 +2068,7 @@ namespace BlackC
                 }
                 if (!result2)
                 {
-                    scanner.rewind(cuepoint);
+                    prep.rewind(cuepoint);
                 }
             }
             return node;
@@ -2074,8 +2092,8 @@ namespace BlackC
             bool notEmpty = result;
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tCOMMA);
                 if (result)
                 {
@@ -2088,7 +2106,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             return list;
@@ -2103,7 +2121,7 @@ namespace BlackC
         {
             ParamDeclarNode node = null;
             DeclaratorNode absdeclar = null;
-            int cuepoint = scanner.record();
+            int cuepoint = prep.record();
             DeclarSpecNode declarspecs = parseDeclarationSpecs();
             bool result = (declarspecs != null);
             if (result)
@@ -2122,7 +2140,7 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -2135,8 +2153,8 @@ namespace BlackC
         public List<IdentNode> parseIdentifierList()
         {
             List<IdentNode> list = null;
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
+            int cuepoint = prep.record();
+            Token token = prep.getToken();
             IdentNode id = arbor.getArgIdentNode(token);
             bool result = (id != null);
             if (result)
@@ -2147,12 +2165,12 @@ namespace BlackC
             bool empty = !result;
             while (result)
             {
-                int cuepoint2 = scanner.record();
-                token = scanner.getToken();
+                int cuepoint2 = prep.record();
+                token = prep.getToken();
                 result = (token.type == TokenType.tCOMMA);
                 if (!result)
                 {
-                    token = scanner.getToken();
+                    token = prep.getToken();
                     id = arbor.getArgIdentNode(token);
                     result = (id != null);
                     if (result)
@@ -2162,12 +2180,12 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint2);
+                    prep.rewind(cuepoint2);
                 }
             }
             if (empty)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return list;
         }
@@ -2213,8 +2231,8 @@ namespace BlackC
             }
             else
             {
-                int cuepoint = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tLBRACE);
                 if (result)
                 {
@@ -2222,14 +2240,14 @@ namespace BlackC
                     result = (list != null);
                     if (result)
                     {
-                        token = scanner.getToken();
+                        token = prep.getToken();
                         result = (token.type == TokenType.tRBRACE);
                         if (!result)
                         {
                             result = (token.type == TokenType.tCOMMA);
                             if (result)
                             {
-                                token = scanner.getToken();
+                                token = prep.getToken();
                                 result = (token.type == TokenType.tRBRACE);
                             }
                         }
@@ -2241,7 +2259,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint);
+                    prep.rewind(cuepoint);
                 }
             }
             return node;
@@ -2266,8 +2284,8 @@ namespace BlackC
             }
             while (result)
             {
-                int cuepoint = scanner.record();
-                Token token = scanner.getToken();
+                int cuepoint = prep.record();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tCOMMA);
                 if (result)
                 {
@@ -2282,7 +2300,7 @@ namespace BlackC
                 }
                 if (!result)
                 {
-                    scanner.rewind(cuepoint);
+                    prep.rewind(cuepoint);
                 }
             }
             return list;
@@ -2295,12 +2313,12 @@ namespace BlackC
         public DesignationNode parseDesignation()
         {
             DesignationNode node = null;
-            int cuepoint = scanner.record();
+            int cuepoint = prep.record();
             List<DesignatorNode> list = parseDesignatorList();
             bool result = (list != null);
             if (result)
             {
-                Token token = scanner.getToken();
+                Token token = prep.getToken();
                 result = (token.type == TokenType.tEQUAL);
                 if (result)
                 {
@@ -2309,7 +2327,7 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -2347,15 +2365,15 @@ namespace BlackC
         public DesignatorNode parseDesignator()
         {
             DesignatorNode node = null;
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
+            int cuepoint = prep.record();
+            Token token = prep.getToken();
             bool result = (token.type == TokenType.tLBRACKET);
             if (result)
             {
                 ConstExpressionNode expr = parseConstantExpression();
                 if (result)
                 {
-                    token = scanner.getToken();
+                    token = prep.getToken();
                     result = (token.type == TokenType.tRBRACKET);
                     if (result)
                     {
@@ -2368,7 +2386,7 @@ namespace BlackC
                 result = (token.type == TokenType.tPERIOD);
                 if (result)
                 {
-                    token = scanner.getToken();
+                    token = prep.getToken();
                     IdentNode ident = arbor.getFieldInitializerNode(token);
                     result = (ident != null);
                     if (result)
@@ -2379,7 +2397,7 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -2430,13 +2448,13 @@ namespace BlackC
         public StatementNode parseLabeledStatement()
         {
             StatementNode node = null;
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
+            int cuepoint = prep.record();
+            Token token = prep.getToken();
             IdentNode labelId = arbor.makeLabelIdentNode(token);         //identifier : statement
             bool result = (labelId != null);
             if (result)
             {
-                token = scanner.getToken();
+                token = prep.getToken();
                 result = (token.type == TokenType.tCOLON);
                 if (result)
                 {
@@ -2450,8 +2468,8 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);        //case constant-expression : statement
-                token = scanner.getToken();
+                prep.rewind(cuepoint);        //case constant-expression : statement
+                token = prep.getToken();
                 result = (token.type == TokenType.tCASE);
                 if (result)
                 {
@@ -2459,7 +2477,7 @@ namespace BlackC
                     result = (expr != null);
                     if (result)
                     {
-                        token = scanner.getToken();
+                        token = prep.getToken();
                         result = (token.type == TokenType.tCOLON);
                         if (result)
                         {
@@ -2475,12 +2493,12 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);        //default : statement
-                token = scanner.getToken();
+                prep.rewind(cuepoint);        //default : statement
+                token = prep.getToken();
                 result = (token.type == TokenType.tDEFAULT);
                 if (result)
                 {
-                    token = scanner.getToken();
+                    token = prep.getToken();
                     result = (token.type == TokenType.tCOLON);
                     if (result)
                     {
@@ -2495,7 +2513,7 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -2508,13 +2526,13 @@ namespace BlackC
         {
             StatementNode node = null;
             List<BlockItemNode> list = null;
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
+            int cuepoint = prep.record();
+            Token token = prep.getToken();
             bool result = (token.type == TokenType.tLBRACE);
             if (result)
             {
                 list = parseBlockItemList();
-                token = scanner.getToken();
+                token = prep.getToken();
                 result = (token.type == TokenType.tRBRACE);
             }
             if (result)
@@ -2523,7 +2541,7 @@ namespace BlackC
             }
             else
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -2577,9 +2595,9 @@ namespace BlackC
         public StatementNode parseExpressionStatement()
         {
             StatementNode node = null;
-            int cuepoint = scanner.record();
+            int cuepoint = prep.record();
             ExpressionNode expr = parseExpression();
-            Token token = scanner.getToken();
+            Token token = prep.getToken();
             bool result = (token.type == TokenType.tSEMICOLON);
             if (result)
             {
@@ -2594,7 +2612,7 @@ namespace BlackC
             }
             else
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -2608,12 +2626,12 @@ namespace BlackC
         public StatementNode parseSelectionStatement()
         {
             StatementNode node = null;
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
+            int cuepoint = prep.record();
+            Token token = prep.getToken();
             bool result = (token.type == TokenType.tIF);             //if ( expression ) statement
             if (result)
             {
-                token = scanner.getToken();
+                token = prep.getToken();
                 result = (token.type == TokenType.tLPAREN);
                 if (result)
                 {
@@ -2621,7 +2639,7 @@ namespace BlackC
                     result = (expr != null);
                     if (result)
                     {
-                        token = scanner.getToken();
+                        token = prep.getToken();
                         result = (token.type == TokenType.tRPAREN);
                         if (result)
                         {
@@ -2629,9 +2647,9 @@ namespace BlackC
                             result = (thenstmt != null);
                             if (result)
                             {
-                                int cuepoint2 = scanner.record();     //if ( expression ) statement else statement
+                                int cuepoint2 = prep.record();     //if ( expression ) statement else statement
                                 StatementNode elsestmt = null;
-                                token = scanner.getToken();
+                                token = prep.getToken();
                                 bool result2 = (token.type == TokenType.tELSE);
                                 if (result2)
                                 {
@@ -2640,7 +2658,7 @@ namespace BlackC
                                 }
                                 if (!result2)
                                 {
-                                    scanner.rewind(cuepoint2);
+                                    prep.rewind(cuepoint2);
                                 }
                                 node = arbor.makeIfStatementNode(expr, thenstmt, elsestmt);
                             }
@@ -2650,12 +2668,12 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);            //switch ( expression ) statement
-                token = scanner.getToken();
+                prep.rewind(cuepoint);            //switch ( expression ) statement
+                token = prep.getToken();
                 result = (token.type == TokenType.tSWITCH);
                 if (result)
                 {
-                    token = scanner.getToken();
+                    token = prep.getToken();
                     result = (token.type == TokenType.tLPAREN);
 
                     if (result)
@@ -2664,7 +2682,7 @@ namespace BlackC
                         result = (expr != null);
                         if (result)
                         {
-                            token = scanner.getToken();
+                            token = prep.getToken();
                             result = (token.type == TokenType.tRPAREN);
                             if (result)
                             {
@@ -2681,7 +2699,7 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -2696,12 +2714,12 @@ namespace BlackC
         public StatementNode parseIterationStatement()
         {
             StatementNode node = null;
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
+            int cuepoint = prep.record();
+            Token token = prep.getToken();
             bool result = (token.type == TokenType.tWHILE);             //while ( expression ) statement
             if (result)
             {
-                token = scanner.getToken();
+                token = prep.getToken();
                 result = (token.type == TokenType.tLPAREN);
                 if (result)
                 {
@@ -2709,7 +2727,7 @@ namespace BlackC
                     result = (expr != null);
                     if (result)
                     {
-                        token = scanner.getToken();
+                        token = prep.getToken();
                         result = (token.type == TokenType.tRPAREN);
                         if (result)
                         {
@@ -2725,8 +2743,8 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);               //do statement while ( expression ) ;
-                token = scanner.getToken();
+                prep.rewind(cuepoint);               //do statement while ( expression ) ;
+                token = prep.getToken();
                 result = (token.type == TokenType.tDO);
                 if (result)
                 {
@@ -2734,11 +2752,11 @@ namespace BlackC
                     result = (stmt != null);
                     if (result)
                     {
-                        token = scanner.getToken();
+                        token = prep.getToken();
                         result = (token.type == TokenType.tWHILE);
                         if (result)
                         {
-                            token = scanner.getToken();
+                            token = prep.getToken();
                             result = (token.type == TokenType.tLPAREN);
                             if (result)
                             {
@@ -2746,11 +2764,11 @@ namespace BlackC
                                 result = (expr != null);
                                 if (result)
                                 {
-                                    token = scanner.getToken();
+                                    token = prep.getToken();
                                     result = (token.type == TokenType.tRPAREN);
                                     if (result)
                                     {
-                                        token = scanner.getToken();
+                                        token = prep.getToken();
                                         result = (token.type == TokenType.tSEMICOLON);
                                         if (result)
                                         {
@@ -2765,27 +2783,27 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);           //for ( expression[opt] ; expression[opt] ; expression[opt] ) statement
-                token = scanner.getToken();
+                prep.rewind(cuepoint);           //for ( expression[opt] ; expression[opt] ; expression[opt] ) statement
+                token = prep.getToken();
                 result = (token.type == TokenType.tFOR);
                 if (result)
                 {
-                    token = scanner.getToken();
+                    token = prep.getToken();
                     result = (token.type == TokenType.tLPAREN);
                     if (result)
                     {
                         ExpressionNode expr1 = parseExpression();
-                        token = scanner.getToken();
+                        token = prep.getToken();
                         result = (token.type == TokenType.tSEMICOLON);
                         if (result)
                         {
                             ExpressionNode expr2 = parseExpression();
-                            token = scanner.getToken();
+                            token = prep.getToken();
                             result = (token.type == TokenType.tSEMICOLON);
                             if (result)
                             {
                                 ExpressionNode expr3 = parseExpression();
-                                token = scanner.getToken();
+                                token = prep.getToken();
                                 result = (token.type == TokenType.tRPAREN);
                                 if (result)
                                 {
@@ -2804,12 +2822,12 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);           //for ( declaration expression[opt] ; expression[opt] ) statement
-                token = scanner.getToken();
+                prep.rewind(cuepoint);           //for ( declaration expression[opt] ; expression[opt] ) statement
+                token = prep.getToken();
                 result = (token.type == TokenType.tFOR);
                 if (result)
                 {
-                    token = scanner.getToken();
+                    token = prep.getToken();
                     result = (token.type == TokenType.tLPAREN);
                     if (result)
                     {
@@ -2818,12 +2836,12 @@ namespace BlackC
                         if (result)
                         {
                             ExpressionNode expr2 = parseExpression();
-                            token = scanner.getToken();
+                            token = prep.getToken();
                             result = (token.type == TokenType.tSEMICOLON);
                             if (result)
                             {
                                 ExpressionNode expr3 = parseExpression();
-                                token = scanner.getToken();
+                                token = prep.getToken();
                                 result = (token.type == TokenType.tRPAREN);
                                 if (result)
                                 {
@@ -2841,7 +2859,7 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -2856,17 +2874,17 @@ namespace BlackC
         public StatementNode parseJumpStatement()
         {
             StatementNode node = null;
-            int cuepoint = scanner.record();
-            Token token = scanner.getToken();
+            int cuepoint = prep.record();
+            Token token = prep.getToken();
             bool result = (token.type == TokenType.tGOTO);             //goto identifier ;
             if (result)
             {
-                token = scanner.getToken();
+                token = prep.getToken();
                 IdentNode idNode = arbor.getLabelIdentNode(token);
                 result = (idNode != null);
                 if (result)
                 {
-                    token = scanner.getToken();
+                    token = prep.getToken();
                     result = (token.type == TokenType.tSEMICOLON);
                     if (result)
                     {
@@ -2876,12 +2894,12 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);        //continue ;
-                token = scanner.getToken();
+                prep.rewind(cuepoint);        //continue ;
+                token = prep.getToken();
                 result = (token.type == TokenType.tCONTINUE);
                 if (result)
                 {
-                    token = scanner.getToken();
+                    token = prep.getToken();
                     result = (token.type == TokenType.tSEMICOLON);
                     if (result)
                     {
@@ -2891,12 +2909,12 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);        //break ;
-                token = scanner.getToken();
+                prep.rewind(cuepoint);        //break ;
+                token = prep.getToken();
                 result = (token.type == TokenType.tBREAK);
                 if (result)
                 {
-                    token = scanner.getToken();
+                    token = prep.getToken();
                     result = (token.type == TokenType.tSEMICOLON);
                     if (result)
                     {
@@ -2906,13 +2924,13 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);        //return expression[opt] ;
-                token = scanner.getToken();
+                prep.rewind(cuepoint);        //return expression[opt] ;
+                token = prep.getToken();
                 result = (token.type == TokenType.tRETURN);
                 if (result)
                 {
                     ExpressionNode expr = parseExpression();
-                    token = scanner.getToken();
+                    token = prep.getToken();
                     result = (token.type == TokenType.tSEMICOLON);
                     if (result)
                     {
@@ -2922,7 +2940,7 @@ namespace BlackC
             }
             if (!result)
             {
-                scanner.rewind(cuepoint);
+                prep.rewind(cuepoint);
             }
             return node;
         }
@@ -2938,7 +2956,7 @@ namespace BlackC
         public TranslationUnit parseTranslationUnit()
         {
             TranslationUnit unit = new TranslationUnit(arbor);
-            while (scanner.getToken().type != TokenType.tEOF)
+            while (prep.getToken().type != TokenType.tEOF)
             {
                 parseExternalDef();
             }
@@ -2961,7 +2979,7 @@ namespace BlackC
         public void parseExternalDef()
         {
             FunctionDefNode funcDef = null;
-            int cuepoint = scanner.record();
+            int cuepoint = prep.record();
             DeclarationNode declars = parseDeclaration();
             if (declars.isFuncDef)
             {
@@ -2996,25 +3014,6 @@ namespace BlackC
             return declarList;
         }
 
-        //-----------------------------------------------------------------------------
-
-        public void parseFile()
-        {
-            string[] lines = File.ReadAllLines(options.filename);
-
-            preprocessor = new Preprocessor(lines);
-            preprocessor.process();
-
-            if (!options.preProcessOnly)
-            {
-
-                scanner = new Scanner(lines);
-                arbor = new Arbor();
-
-                TranslationUnit unit = parseTranslationUnit();
-                unit.write();
-            }
-        }
     }
 }
 

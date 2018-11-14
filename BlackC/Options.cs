@@ -24,7 +24,7 @@ using System.Text;
 
 namespace BlackC
 {
-    class Options
+    public class Options
     {
         public String filename;
         public bool preProcessOnly;

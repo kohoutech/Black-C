@@ -33,7 +33,7 @@ namespace BlackC
 
         public SourceBuffer(String filename)
         {
-            string[] lines = File.ReadAllLines(filename);
+            lines = File.ReadAllLines(filename);
             curline = 0;
             curpos = 0;
         }
