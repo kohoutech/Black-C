@@ -30,12 +30,14 @@ namespace BlackC
         public string[] lines;
         public int curline;
         public int curpos;
+        public bool atBOL;
 
         public SourceBuffer(String filename)
         {
             lines = File.ReadAllLines(filename);
             curline = 0;
             curpos = 0;
+            atBOL = true;
         }
     }
 }

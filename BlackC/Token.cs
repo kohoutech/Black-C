@@ -130,9 +130,13 @@ namespace BlackC
     {
         public TokenType type;
         public String chars;
+        public bool atBOL;
+        public bool sawWS;
 
         public Token(TokenType _type) : this(_type, "")
         {
+            atBOL = false;
+            sawWS = false;
         }
 
         public Token(TokenType _type, String _chars)

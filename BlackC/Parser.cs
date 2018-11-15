@@ -54,8 +54,11 @@ namespace BlackC
             {
                 token = prep.getToken();
                 prep.next();
-                Console.WriteLine(token.chars);
-            } while (token.type != TokenType.tEOF);
+                if (token.atBOL) Console.WriteLine();
+                if (token.sawWS) Console.Write(" ");
+                Console.Write(token.chars);
+            }
+            while (token.type != TokenType.tEOF);
 
             TranslationUnit unit = parseTranslationUnit();
             unit.write();

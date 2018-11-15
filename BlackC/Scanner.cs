@@ -33,6 +33,8 @@ namespace BlackC
 
         string curline;
         bool atEOF;
+        bool atBOL;                 //token was at beginning of line
+        bool sawWS;                 //token was preceeded by whitespace (including comments)
 
         public Scanner()
         {
@@ -44,6 +46,8 @@ namespace BlackC
             lines = srcbuf.lines;
             linenum = srcbuf.curline;
             pos = srcbuf.curpos;
+            atBOL = srcbuf.atBOL;
+
             getCurrentLine();
             atEOF = false;
         }
@@ -56,7 +60,7 @@ namespace BlackC
         {
             String newline = lines[linenum].Trim();
 
-            //concat continued lines
+            //concatenate continued lines
             while ((linenum < lines.Length-1) && (newline.EndsWith("\\")))
             {
                 newline = newline.Remove(newline.Length - 1, 1);
@@ -79,24 +83,31 @@ namespace BlackC
 
         public void gotoNextLine()
         {
-            linenum++;
-            pos = 0;
-
-            atEOF = (linenum == lines.Length);
-            if (!atEOF)
+            do
             {
-                getCurrentLine();
+                linenum++;
+                atEOF = (linenum == lines.Length);
+                if (!atEOF)
+                {
+                    getCurrentLine();
+                }
             }
+            while ((!atEOF) && (curline.Length == 0));      //skip empty lines
+
+            pos = 0;                    //at start of line
+            atBOL = true;               
+            sawWS = false;              //any whitespace has been removed from line start
         }
 
+        //skip remainder of current line
         public void skipLineComment()
         {
-            gotoNextLine();
+            gotoNextLine();             
         }
 
         public void skipBlockComment()
         {
-            pos += 2;
+            pos += 2;                           //skip opening "/*"
             if (pos >= curline.Length)
             {
                 gotoNextLine();
@@ -113,30 +124,43 @@ namespace BlackC
 
         public void skipWhitespace()
         {
-            while (!atEOF && ((pos >= curline.Length) || curline[pos] == ' ' || curline[pos] == '\t'
-                || curline[pos] == '\v' || curline[pos] == '\f'))
+            sawWS = false;
+            bool done = false;
+            while (!done)
             {
-                if (pos >= curline.Length)      //if at eoln
+                //first skip any whitespace
+                while (!atEOF && ((pos >= curline.Length) || curline[pos] == ' ' || curline[pos] == '\t'
+                    || curline[pos] == '\v' || curline[pos] == '\f'))
                 {
-                    gotoNextLine();
+                    if (pos >= curline.Length)      //if at eoln
+                    {
+                        gotoNextLine();                        
+                    }
+                    else
+                    {
+                        pos++;
+                        sawWS = true;
+                    }                    
                 }
-                else if (curline[pos] == '/' && pos < curline.Length-1 && curline[pos+1] == '/')
+
+                //then skip any following comments, if we found a comment, then we're not done yet
+                done = true;
+                if (curline[pos] == '/' && pos < curline.Length - 1 && curline[pos + 1] == '/')
                 {
-                    skipLineComment();                    
+                    skipLineComment();
+                    done = false;
                 }
-                else if (curline[pos] == '/' && pos < curline.Length - 1 && curline[pos + 1] == '*')
+                if (curline[pos] == '/' && pos < curline.Length - 1 && curline[pos + 1] == '*')
                 {
                     skipBlockComment();
-                }
-                else 
-                {
-                    pos++;
+                    done = false;
                 }
             }
         }
 
         //- token scanning ------------------------------------------------
 
+        //(6.4.1) is identifier a keyword?
         public Token findKeyword(String id)
         {
             Token token = null;
@@ -281,10 +305,32 @@ namespace BlackC
             return token;
         }
 
+        /*(6.4.2.1) 
+         identifier:
+            identifier-nondigit
+            identifier identifier-nondigit
+            identifier digit
+         
+          (6.4.2.1) 
+         identifier-nondigit:
+            nondigit
+         
+          (6.4.2.1) 
+         nondigit: one of
+            _ 
+            a ... z
+            A ... Z
+         
+          (6.4.2.1) 
+         digit: one of
+            0 ... 9
+         */
         public Token scanIdentifier(char c)
         {
             String id = "" + c;
-            bool atend = !(pos < curline.Length);
+
+            //get ident chars
+            bool atend = !(pos < curline.Length);       //ident delimited by eoln & non-ident chars
             while (!atend)
             {
                 char c1 = curline[pos++];
@@ -299,15 +345,49 @@ namespace BlackC
                     atend = true;
                 }
             }
-            Token token = findKeyword(id);
+
+            Token token = findKeyword(id);                      //check if ident is a keyword
             if (token == null) 
             {
-                token = new Token(TokenType.tIDENTIFIER, id);
+                token = new Token(TokenType.tIDENTIFIER);
             }
+            token.chars = id;
             return token;
-
         }
 
+        /*
+          (6.4.4.2) 
+         floating-constant:
+            decimal-floating-constant
+         
+          (6.4.4.2) 
+         decimal-floating-constant:
+            fractional-constant exponent-part[opt] floating-suffix[opt]
+            digit-sequence exponent-part floating-suffix[opt]
+
+          (6.4.4.2) 
+         fractional-constant:
+            digit-sequence[opt] . digit-sequence
+            digit-sequence .
+        
+          (6.4.4.2) 
+         exponent-part:
+            e sign[opt] digit-sequence
+            E sign[opt] digit-sequence
+        
+          (6.4.4.2) 
+         sign: one of
+            + -
+        
+          (6.4.4.2) 
+         digit-sequence:
+            digit
+            digit-sequence digit
+       
+          (6.4.4.2) 
+         floating-suffix: one of
+            f l F L
+        */
         public Token scanFloatConst(String num)
         {
             bool atend;
@@ -328,11 +408,11 @@ namespace BlackC
                         atend = true;
                     }
                 }
-                if (num.EndsWith("."))      //if no decimal part, we add one anywat
+                if (num.EndsWith("."))      //if we didn't have a decimal part above, we add one anyway
                 {
                     num = num + '0';
                 }
-                if ((pos < curline.Length) && ((curline[pos] == 'e') || (curline[pos] == 'E')))
+                if ((pos < curline.Length) && ((curline[pos] == 'e') || (curline[pos] == 'E')))     //then check for exponent part
                 {
                     num = num + 'E';
                     pos++;
@@ -362,28 +442,85 @@ namespace BlackC
                 }
             }
             bool fsuffix = false;
-            bool lsuffix = false;
             if ((pos < curline.Length) && ((curline[pos] == 'f') || (curline[pos] == 'F')))
             {
                 fsuffix = true;
+                num = num + "F";
                 pos++;
             }
-            if ((pos < curline.Length) && ((curline[pos] == 'l') || (curline[pos] == 'L')))
+            if ((!fsuffix) && (pos < curline.Length) && ((curline[pos] == 'l') || (curline[pos] == 'L')))
             {
-                lsuffix = true;
+                num = num + "L";
                 pos++;
             }
 
-            //double val = Convert.ToDouble(num);
             return new Token(TokenType.tFLOATCONST, num);
         }
 
+        /*(6.4.4.1) 
+         integer-constant:
+            decimal-constant integer-suffix[opt]
+            octal-constant integer-suffix[opt]
+            hexadecimal-constant integer-suffix[opt]
+         
+          (6.4.4.1) 
+         decimal-constant:
+            nonzero-digit
+            decimal-constant digit
+
+          (6.4.4.1) 
+         octal-constant:
+            0
+            octal-constant octal-digit
+         
+          (6.4.4.1) 
+         hexadecimal-constant:
+            hexadecimal-prefix hexadecimal-digit
+            hexadecimal-constant hexadecimal-digit
+         
+          (6.4.4.1) 
+         hexadecimal-prefix: one of
+            0x 0X
+         
+          (6.4.4.1) 
+         nonzero-digit: one of
+            1 ... 9
+        
+          (6.4.4.1) 
+         octal-digit: one of
+            0 ... 7
+        
+          (6.4.4.1) 
+         hexadecimal-digit: one of
+            0 ... 9
+            a ... f
+            A ... F
+        
+          (6.4.4.1) 
+         integer-suffix:
+            unsigned-suffix long-suffix[opt]
+            unsigned-suffix long-long-suffix
+            long-suffix unsigned-suffix[opt]
+            long-long-suffix unsigned-suffix[opt]
+        
+          (6.4.4.1) 
+         unsigned-suffix: one of
+            u U
+        
+          (6.4.4.1) 
+         long-suffix: one of
+            l L
+        
+          (6.4.4.1) 
+         long-long-suffix: one of
+            ll LL
+        */
         public Token scanNumber(char c)
         {
             Token token;
-            String num = "0";
-            int bass = 10;
-            bool floatpt = false;
+            String num = "";
+            int bass = 10;                  //number base
+            bool floatpt = false;           //haven't seen '.' yet
 
             //float const can start with '.' followed by digits, check this first
             //handle '...' and '.' tokens here
@@ -402,12 +539,16 @@ namespace BlackC
                     token.chars = ".";
                     return token;
                 }
-                else floatpt = true;
+                else
+                {
+                    num = "0.";             //normalize float from '.nnn' to '0.nnn'
+                    floatpt = true;
+                }
             }
 
             if (!floatpt)       //get mantissa
             {
-                num = "" + c;
+                num += c;
                 if (c == '0')             //set base
                 {
                     if ((pos < curline.Length) && (curline[pos] == 'X' || curline[pos] == 'x'))
@@ -442,79 +583,130 @@ namespace BlackC
             //got the mantissa, if the next char is decimal point or exponent, then it's a float const
             if ((pos < curline.Length) && ((curline[pos] == '.') || (curline[pos] == 'E') || (curline[pos] == 'e')))
             {
-                floatpt = true;
-                char c2 = curline[pos++];
+                char c2 = curline[pos++];           //get '.' or 'E' or 'e'
                 num = num + Char.ToUpper(c2);
-                return scanFloatConst(num);
+                return scanFloatConst(num);         //get floating point constant token
             }
             else
             {
                 bool usuffix = false;
                 bool lsuffix = false;
-                bool llsuffix = false;
                 for (int i = 0; i < 2; i++)     //check for int const suffixes
                 {
                     if ((pos < curline.Length) && (!usuffix) && ((curline[pos] == 'u') || (curline[pos] == 'U')))
                     {
                         usuffix = true;
+                        num = num + "U";
                         pos++;
                     }
 
                     if ((pos < curline.Length) && (!lsuffix) && ((curline[pos] == 'l') || (curline[pos] == 'L')))
                     {
                         lsuffix = true;
+                        num = num + "L";
                         pos++;
                         if ((pos < curline.Length) && ((curline[pos] == 'l') || (curline[pos] == 'L')))
                         {
-                            llsuffix = true;
+                            num = num + "L";
                             pos++;
                         }
                     }
                 }
-                //int value = Convert.ToInt32(num, bass);
                 return new Token(TokenType.tINTCONST, num);
             }
         }
 
-        //works for now, needs improvement
+        /*(6.4.4.4) 
+         character-constant:
+            ' c-char-sequence '
+            L' c-char-sequence '
+
+          (6.4.4.4) 
+         c-char-sequence:
+            c-char
+            c-char-sequence c-char
+         
+          (6.4.4.4)
+         c-char:
+            any member of the source character set except the single-quote ', backslash \, or new-line character
+            escape-sequence
+         
+          (6.4.4.4) 
+         escape-sequence:
+            simple-escape-sequence
+            octal-escape-sequence
+            hexadecimal-escape-sequence
+
+          (6.4.4.4) 
+         simple-escape-sequence: one of
+                \' \" \? \\ \a \b \f \n \r \t \v
+         
+          (6.4.4.4) 
+         octal-escape-sequence:
+            \ octal-digit
+            \ octal-digit octal-digit
+            \ octal-digit octal-digit octal-digit
+         
+          (6.4.4.4) 
+         hexadecimal-escape-sequence:
+            \x hexadecimal-digit
+            hexadecimal-escape-sequence hexadecimal-digit
+          */
         private Token scanCharLiteral(char c)
         {
-            char ch = (char)0;
-            if ((pos < curline.Length - 1) && (curline[pos] != '\\'))
-            {
-                ch = curline[pos];
-                pos += 2;
-            }
-            else
-            {
-                ch = curline[pos+1];
-                ch = (char)((int)ch - (int)'0');
-                pos += 3;
-            }
-            return new Token(TokenType.tCHARCONST, ("" + ch));
-        }
+            String cstr = (c == 'L') ? "L\'" : "";
+            pos++;
 
-        public Token scanString(char c)
-        {
-            String str = "";
-            char endchar = c;
-            bool atend = !(pos < curline.Length);
-            while (!atend)
+            while ((pos < curline.Length) && (curline[pos] != '\''))
             {
-                char c1 = curline[pos++];
-                if (c1 != endchar)
+                if ((curline[pos] == '\\') && (pos < curline.Length - 1) && (curline[pos+1] == '\''))
                 {
-                    str = str + c1;
-                    atend = !(pos < curline.Length);
+                    cstr = cstr + "\\\'";
+                    pos += 2;                   //skip over escaped single quotes
                 }
                 else
                 {
-                    //pos--;
-                    atend = true;
+                    cstr = cstr + curline[pos];
+                    pos++;
                 }
             }
-            Token strconst = new Token(TokenType.tSTRINGCONST, str);
-            return strconst;            
+            return new Token(TokenType.tCHARCONST, cstr);
+        }
+
+        /*(6.4.5) 
+         string-literal:
+            " s-char-sequenceopt "
+            L" s-char-sequenceopt "
+         
+          (6.4.5) 
+         s-char-sequence:
+            s-char
+            s-char-sequence s-char
+         
+          (6.4.5) 
+         s-char:
+            any member of the source character set except the double-quote ", backslash \, or new-line character
+            escape-sequence
+         */
+        public Token scanString(char c)
+        {
+            String str = (c == 'L') ? "L\"" : "";
+            pos++;
+
+            while ((pos < curline.Length) && (curline[pos] != '\"'))
+            {
+                if ((curline[pos] == '\\') && (pos < curline.Length - 1) && (curline[pos + 1] == '\"'))
+                {
+                    str = str + "\\\"";
+                    pos += 2;                   //skip over escaped single quotes
+                }
+                else
+                {
+                    str = str + curline[pos];
+                    pos++;
+                }
+            }
+            return new Token(TokenType.tSTRINGCONST, str);           
         }
 
         //- main scanning method ----------------------------------------------
@@ -922,6 +1114,10 @@ namespace BlackC
             {
                 token = new Token(TokenType.tEOF);
             }
+
+            token.sawWS = sawWS;
+            token.atBOL = atBOL;
+            atBOL = false;          //if we've read a token, then we're not at the beginning of the line anymore
 
             return token;
         }
