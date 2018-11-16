@@ -21,29 +21,97 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 
 namespace BlackC
 {
     public class Options
     {
-        public String filename;
+        public List<String> filenames;
         public bool preProcessOnly;
 
-        public Options(string[] args)
-        {
-            preProcessOnly = false;
+        public List<String> includePaths;
 
-            foreach (String arg in args)
+        public Options(string[] cmdArgs)
+        {
+
+            setDefaultValues();
+
+            //first merge any response file contents into arg list
+            List<String> args = new List<string>();
+            foreach (String arg in cmdArgs)
             {
-                if (arg.StartsWith("/"))
+                if (arg[0] == '@')
                 {
-                    //handle options
+                    List<String> responseArgs = parseResponseFile(arg.Substring(1));
+                    args.AddRange(responseArgs);
                 }
                 else
                 {
-                    filename = arg;
+                    args.Add(arg);
                 }
-            }            
-        }        
+            }
+
+            //now parse all options & filenames
+            parseOptions(args);
+
+        }
+
+        public void setDefaultValues()
+        {
+            filenames = new List<string>();
+            includePaths = new List<string>();
+
+            preProcessOnly = false;
+        }
+
+        public List<String> parseResponseFile(String filename)
+        {
+            List<String> args = new List<string>();
+            char[] sep = { ' ' };
+
+            String[] lines = File.ReadAllLines(filename);
+            foreach (String line in lines)
+            {
+                String[] lineargs = line.Split(sep);
+                args.AddRange(lineargs);
+            }
+            return args;
+        }
+
+        public void parseOptions(List<String> args)
+        {
+            for (int i = 0; i < args.Count; i++)
+            {
+                if ((args[i].StartsWith("/")) || (args[i].StartsWith("-")))
+                {
+                    String arg = args[i].Substring(1);
+                    if (arg.Length > 0)
+                    {
+                        switch (arg[0])
+                        {
+                            case 'I':
+                                {
+                                    String path = null;
+                                    if (arg.Length > 1)
+                                    {
+                                        path = arg.Substring(1);       //for /Ixxx form
+                                    }
+                                    else
+                                    {
+                                        path = args[++i];              //for /I xxx form
+                                    }
+                                    includePaths.Add(path);
+                                    break;
+                                }
+                        }
+                    }
+                }
+                else
+                {
+                    filenames.Add(args[i]);
+                }
+            }
+        }
     }
 }

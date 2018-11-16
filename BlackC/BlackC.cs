@@ -30,8 +30,11 @@ namespace BlackC
         {
             Options options = new Options(args);        //parse the cmd line args
 
-            Parser parser = new Parser(options);        //create a parser
-            parser.parseFile();                         //and parse the source file
+            foreach (String filename in options.filenames)
+            {
+                Parser parser = new Parser(options);        //create a parser
+                parser.parseFile(filename);                         //and parse the source file
+            }
         }
     }
 }

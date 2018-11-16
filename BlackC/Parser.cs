@@ -32,31 +32,43 @@ namespace BlackC
 {
     public class Parser
     {
-        Options options;
-        Preprocessor prep;
-        Arbor arbor;
+        public Options options;
+        public Preprocessor prep;
+        public Arbor arbor;
+
+        public List<String> includePaths;
 
         public Parser(Options _options)
         {
             options = _options;
             prep = new Preprocessor(this);
             arbor = new Arbor(this);
+
+            includePaths = options.includePaths;
         }
 
         //---------------------------------------------------------------------
 
-        public void parseFile()
+        public void parseFile(String filename)
         {
-            prep.setMainSourceFile(options.filename);
+            prep.setMainSourceFile(filename);
 
             Token token = null;
             do
             {
+                //dump token stream from input file for testing purposes
+                //to be removed
                 token = prep.getToken();
                 prep.next();
-                if (token.atBOL) Console.WriteLine();
-                if (token.sawWS) Console.Write(" ");
-                Console.Write(token.chars);
+                if (token.type == TokenType.tEOLN)
+                {
+                    Console.WriteLine();
+                }
+                else
+                {
+                    if (token.sawWS) Console.Write(" ");
+                    Console.Write(token.chars);
+                }
             }
             while (token.type != TokenType.tEOF);
 
