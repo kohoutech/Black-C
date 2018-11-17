@@ -48,6 +48,7 @@ namespace BlackC
         public void setMainSourceFile(string filename)
         {
             SourceBuffer srcbuf = new SourceBuffer(filename);
+            bufferStack.Add(srcbuf);
             scanner.setSource(srcbuf);
         }
 
@@ -68,6 +69,65 @@ namespace BlackC
             else
             {
                 token = scanner.scanToken();
+                if ((token.type == TokenType.tHASH) && (token.atBOL))
+                {
+                    token = scanner.scanToken();        //get directive name
+                    switch (token.chars)
+                    {
+                        case "include" :
+                            handleIncludeDirective();
+                            break;
+
+                        case "define":
+                            handleDefineDirective();
+                            break;
+
+                        case "undef":
+                            handleUndefDirective();
+                            break;
+
+                        case "if":
+                            handleIfDirective();
+                            break;
+
+                        case "ifdef":
+                            handleIfdefDirective();
+                            break;
+
+                        case "ifndef":
+                            handleIfndefDirective();
+                            break;
+
+                        case "elif":
+                            handleElifDirective();
+                            break;
+
+                        case "else":
+                            handleElseDirective();
+                            break;
+
+                        case "endif":
+                            handleEndifDirective();
+                            break;
+
+                        case "line":
+                            handleLineDirective();
+                            break;
+
+                        case "error":
+                            handleErrorDirective();
+                            break;
+
+                        case "pragma ":
+                            handlePragmaDirective();
+                            break;
+
+                        default:
+                            handleUnknownDirective();
+                            break;
+                    }
+                    token = scanner.scanToken();        //get token following directive's eoln
+                }
                 lookahead = token;
                 replay.Add(token);
                 recpos++;
@@ -114,16 +174,87 @@ namespace BlackC
 
         //- directive handling ------------------------------------------------
 
-        public void handleDirective()
+        //(6.10) Preprocessing directives
+
+        public void handleIncludeDirective()
         {
-            //for (int i = 0; i < lines.Length; i++)
-            //{
-            //    string line = lines[i];
-            //    if ((line.Length > 0) && (line[0] == '#'))
-            //    {
-            //        lines[i] = "";
-            //    }
-            //}
+           Token token = scanner.scanToken();
+           String filename = "";
+
+           if (token.type == TokenType.tSTRINGCONST)
+           {
+               filename = token.chars;
+           }
+           else
+           {
+               token = scanner.scanToken();
+               while (token.type != TokenType.tGTRTHAN)
+               {
+                   filename += token.chars;
+                   token = scanner.scanToken();
+               }
+           }
+           SourceBuffer includeBuf = SourceBuffer.getIncludeFile(filename, parser.includePaths);
+        }
+
+        public void handleDefineDirective()
+        {
+            Console.WriteLine("saw #define");
+        }
+
+        public void handleUndefDirective()
+        {
+            Console.WriteLine("saw #undef");
+        }
+
+        public void handleIfDirective()
+        {
+            Console.WriteLine("saw #if");
+        }
+
+        public void handleIfdefDirective()
+        {
+            Console.WriteLine("saw #ifdef");
+        }
+
+        public void handleIfndefDirective()
+        {
+            Console.WriteLine("saw #ifndef");
+        }
+
+        public void handleElifDirective()
+        {
+            Console.WriteLine("saw #elif");
+        }
+
+        public void handleElseDirective()
+        {
+            Console.WriteLine("saw #else");
+        }
+
+        public void handleEndifDirective()
+        {
+            Console.WriteLine("saw #endif");
+        }
+
+        public void handleLineDirective()
+        {
+            Console.WriteLine("saw #line");
+        }
+
+        public void handleErrorDirective()
+        {
+            Console.WriteLine("saw #error");
+        }
+
+        public void handlePragmaDirective()
+        {
+            Console.WriteLine("saw #pragma");
+        }
+
+        public void handleUnknownDirective()
+        {
+            Console.WriteLine("saw unknown directive");
         }
     }
 
@@ -133,3 +264,5 @@ namespace BlackC
     {
     }
 }
+
+//Console.WriteLine("There's no sun in the shadow of the wizard");

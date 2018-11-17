@@ -32,6 +32,7 @@ namespace BlackC
         int pos;
 
         string curline;
+        int eolnCount;
         bool atEOF;
         bool atBOL;                 //token was at beginning of line
         bool sawWS;                 //token was preceeded by whitespace (including comments)
@@ -39,6 +40,7 @@ namespace BlackC
         public Scanner()
         {
             lines = null;
+            eolnCount = 0;
         }
 
         public void setSource(SourceBuffer srcbuf)
@@ -86,6 +88,7 @@ namespace BlackC
             do
             {
                 linenum++;
+                eolnCount++;
                 atEOF = (linenum == lines.Length);
                 if (!atEOF)
                 {
@@ -655,7 +658,6 @@ namespace BlackC
         private Token scanCharLiteral(char c)
         {
             String cstr = (c == 'L') ? "L\'" : "";
-            pos++;
 
             while ((pos < curline.Length) && (curline[pos] != '\''))
             {
@@ -669,6 +671,10 @@ namespace BlackC
                     cstr = cstr + curline[pos];
                     pos++;
                 }
+            }
+            if ((pos < curline.Length))         //skip the closing quote if not at eoln
+            {
+                pos++;
             }
             return new Token(TokenType.tCHARCONST, cstr);
         }
@@ -691,7 +697,6 @@ namespace BlackC
         public Token scanString(char c)
         {
             String str = (c == 'L') ? "L\"" : "";
-            pos++;
 
             while ((pos < curline.Length) && (curline[pos] != '\"'))
             {
@@ -706,17 +711,32 @@ namespace BlackC
                     pos++;
                 }
             }
+            if ((pos < curline.Length))         //skip the closing quote if not at eoln
+            {
+                pos++;
+            }
             return new Token(TokenType.tSTRINGCONST, str);           
         }
 
         //- main scanning method ----------------------------------------------
 
+        //translation phase 3 : scan source line into preprocessing tokens
         public Token scanToken()
         {
             Token token = null;
 
             //goto start of next token in source file
-            skipWhitespace();
+            if (eolnCount == 0)
+            {
+                skipWhitespace();
+            }
+
+            //return any eolns we might have passed scanning for the next token
+            if (eolnCount > 0)
+            {
+                eolnCount--;
+                return new Token(TokenType.tEOLN);
+            }
 
             //scan chars until we get a token or reach end of file
             if (!atEOF)
@@ -737,7 +757,6 @@ namespace BlackC
                     case 'I':
                     case 'J':
                     case 'K':
-                    case 'L':
                     case 'M':
                     case 'N':
                     case 'O':
@@ -779,6 +798,22 @@ namespace BlackC
                     case 'y':
                     case 'z':
                         token = scanIdentifier(c);
+                        break;
+
+//L is a special case since it can start long char constants or long string literals, as well as identifiers
+                    case 'L':
+                        if ((pos < curline.Length) && (curline[pos] == '\''))
+                        {
+                            token = scanCharLiteral(c);
+                        }
+                        else if ((pos < curline.Length) && (curline[pos] == '\"'))
+                        {
+                            token = scanString(c);
+                        }
+                        else
+                        {
+                            token = scanIdentifier(c);
+                        }
                         break;
 
 //numeric constant

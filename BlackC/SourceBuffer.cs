@@ -32,6 +32,20 @@ namespace BlackC
         public int curpos;
         public bool atBOL;
 
+        public static SourceBuffer getIncludeFile(String filename, List<String> searchPaths)
+        {
+            String path = null;
+            foreach (String searchpath in searchPaths)
+            {
+                path = searchpath + filename;
+                if (File.Exists(path)) 
+                {
+                    break;
+                }
+            }
+            return new SourceBuffer(path);
+        }
+
         public SourceBuffer(String filename)
         {
             lines = File.ReadAllLines(filename);

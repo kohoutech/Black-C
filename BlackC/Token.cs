@@ -26,6 +26,7 @@ namespace BlackC
 {
     public enum TokenType
     {
+        tEOLN,
         tEOF,
         tIDENTIFIER,
 
