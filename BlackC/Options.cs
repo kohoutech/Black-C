@@ -95,7 +95,7 @@ namespace BlackC
                                     String path = null;
                                     if (arg.Length > 1)
                                     {
-                                        path = arg.Substring(1);       //for /Ixxx form
+                                        path = arg.Substring(1);       //for /Ixxx form                                        
                                     }
                                     else
                                     {

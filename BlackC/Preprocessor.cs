@@ -28,7 +28,12 @@ namespace BlackC
     {
         public Parser parser;
         public Scanner scanner;
-        public List<SourceBuffer> bufferStack;
+        public List<SourceBuffer> sourceStack;
+        public List<Macro> macroStack;
+        public bool inMacro;
+        public Macro currentMacro;
+
+        public HashSet<String> oncelerList;
 
         Token lookahead;
         List<Token> replay;
@@ -38,7 +43,13 @@ namespace BlackC
         {
             parser = _parser;
             scanner = new Scanner();
-            bufferStack = new List<SourceBuffer>();
+            sourceStack = new List<SourceBuffer>();
+            Macro.initMacros();
+            macroStack = new List<Macro>();
+            inMacro = false;
+            currentMacro = null;
+
+            oncelerList = new HashSet<string>();
 
             lookahead = null;
             replay = new List<Token>();
@@ -47,8 +58,8 @@ namespace BlackC
 
         public void setMainSourceFile(string filename)
         {
-            SourceBuffer srcbuf = new SourceBuffer(filename);
-            bufferStack.Add(srcbuf);
+            SourceBuffer srcbuf = new SourceBuffer(".", filename);
+            sourceStack.Add(srcbuf);
             scanner.setSource(srcbuf);
         }
 
@@ -56,83 +67,74 @@ namespace BlackC
 
         public Token getToken()
         {
-            Token token = null;
-
+            //return any stored token first
             if (recpos < replay.Count)
             {
-                token = replay[recpos++];
+                return replay[recpos];                
             }
-            else if (lookahead != null)
+
+            if (lookahead != null)
             {
-                token = lookahead;
+                return lookahead;
             }
-            else
+
+            //don't have a stored token, so get a new one
+            Token token = null;
+            bool done = true;
+            do
             {
-                token = scanner.scanToken();
+                if (inMacro)
+                {
+                    token = currentMacro.getToken();
+                    if (token == null)
+                    {
+                        macroStack.RemoveAt(macroStack.Count - 1);
+                        inMacro = (macroStack.Count > 0);
+                        token = scanner.scanToken();
+                    }
+                }
+                else
+                {
+                    token = scanner.scanToken();
+                }
+                done = true;
+
+                //check for a directive
                 if ((token.type == TokenType.tHASH) && (token.atBOL))
                 {
-                    token = scanner.scanToken();        //get directive name
-                    switch (token.chars)
-                    {
-                        case "include" :
-                            handleIncludeDirective();
-                            break;
-
-                        case "define":
-                            handleDefineDirective();
-                            break;
-
-                        case "undef":
-                            handleUndefDirective();
-                            break;
-
-                        case "if":
-                            handleIfDirective();
-                            break;
-
-                        case "ifdef":
-                            handleIfdefDirective();
-                            break;
-
-                        case "ifndef":
-                            handleIfndefDirective();
-                            break;
-
-                        case "elif":
-                            handleElifDirective();
-                            break;
-
-                        case "else":
-                            handleElseDirective();
-                            break;
-
-                        case "endif":
-                            handleEndifDirective();
-                            break;
-
-                        case "line":
-                            handleLineDirective();
-                            break;
-
-                        case "error":
-                            handleErrorDirective();
-                            break;
-
-                        case "pragma ":
-                            handlePragmaDirective();
-                            break;
-
-                        default:
-                            handleUnknownDirective();
-                            break;
-                    }
-                    token = scanner.scanToken();        //get token following directive's eoln
+                    handleDirective();
+                    done = false;        //get token following directive's eoln
                 }
-                lookahead = token;
-                replay.Add(token);
-                recpos++;
-            }
 
+                //check for a macro
+                else if (token.type == TokenType.tIDENTIFIER)
+                {
+                    Macro macro = Macro.lookupMacro(token);
+                    if (macro != null)
+                    {
+                        inMacro = true;
+                        macroStack.Add(macro);
+                        currentMacro = macro;
+                        macro.invokeMacro(scanner);         //start macro running
+                        done = false;                       //and get first token from macro definition
+                    }
+                }
+
+                //we've hit the end of file. if this is an include file, pull it off the stack 
+                //and resume scanning at the point we stopped in the including file
+                //we return the EOF token from the main file only
+                if ((token.type == TokenType.tEOF) && (sourceStack.Count > 1))
+                {
+                    Console.WriteLine("closing include file " + sourceStack[sourceStack.Count - 1].fullname);
+                    sourceStack.RemoveAt(sourceStack.Count - 1);
+                    scanner.setSource(sourceStack[sourceStack.Count - 1]);
+                    done = false;                                           //get next token from including source
+                }
+
+            } while (!done);
+
+            lookahead = token;
+            replay.Add(token);
             return token;
         }
 
@@ -164,6 +166,7 @@ namespace BlackC
 
         public void reset()
         {
+            replay.Clear();
             recpos = 0;
         }
 
@@ -176,35 +179,119 @@ namespace BlackC
 
         //(6.10) Preprocessing directives
 
+        //handle directive, this will read all the tokens to the eoln in the directive line
+        public void handleDirective()
+        {
+            Token token = scanner.scanToken();        //get directive name
+
+            if (token.type != TokenType.tEOLN)          //skip empty directives, ie "#  <eoln>"
+            {
+                switch (token.chars)
+                {
+                    case "include":
+                        handleIncludeDirective();
+                        break;
+
+                    case "define":
+                        handleDefineDirective();
+                        break;
+
+                    case "undef":
+                        handleUndefDirective();
+                        break;
+
+                    case "if":
+                        handleIfDirective();
+                        break;
+
+                    case "ifdef":
+                        handleIfdefDirective();
+                        break;
+
+                    case "ifndef":
+                        handleIfndefDirective();
+                        break;
+
+                    case "elif":
+                        handleElifDirective();
+                        break;
+
+                    case "else":
+                        handleElseDirective();
+                        break;
+
+                    case "endif":
+                        handleEndifDirective();
+                        break;
+
+                    case "line":
+                        handleLineDirective();
+                        break;
+
+                    case "error":
+                        handleErrorDirective();
+                        break;
+
+                    case "pragma":
+                        handlePragmaDirective();
+                        break;
+
+                    default:
+                        handleUnknownDirective(token.chars);
+                        break;
+                }
+            }
+        }
+
+        public void skipRestOfLine(Token token)
+        {
+            while (token.type != TokenType.tEOLN)
+            {
+                token = scanner.scanToken();        //skip remaining chars in source line
+            }
+        }
+
         public void handleIncludeDirective()
         {
-           Token token = scanner.scanToken();
-           String filename = "";
+            Token token = scanner.scanToken();
+            String filename = "";
 
-           if (token.type == TokenType.tSTRINGCONST)
-           {
-               filename = token.chars;
-           }
-           else
-           {
-               token = scanner.scanToken();
-               while (token.type != TokenType.tGTRTHAN)
-               {
-                   filename += token.chars;
-                   token = scanner.scanToken();
-               }
-           }
-           SourceBuffer includeBuf = SourceBuffer.getIncludeFile(filename, parser.includePaths);
+            if (token.type == TokenType.tSTRINGCONST)
+            {
+                filename = token.chars;
+            }
+            else
+            {
+                token = scanner.scanToken();
+                while (token.type != TokenType.tGTRTHAN)
+                {
+                    filename += token.chars;
+                    token = scanner.scanToken();
+                }
+            }
+            skipRestOfLine(token);
+
+            if (!oncelerList.Contains(filename))        //if file hasn't been marked with "pragma once"
+            {
+                SourceBuffer includeBuf = SourceBuffer.getIncludeFile(filename, parser.includePaths);
+                sourceStack.Add(includeBuf);
+                scanner.saveSource();
+                scanner.setSource(includeBuf);
+            }
         }
 
         public void handleDefineDirective()
         {
-            Console.WriteLine("saw #define");
+            Token token = scanner.scanToken();
+            Macro macro = Macro.defineMacro(token);
+            macro.scanMacroDefinition(scanner);
         }
 
         public void handleUndefDirective()
         {
-            Console.WriteLine("saw #undef");
+            Token token = scanner.scanToken();
+            Macro.undefineMacro(token);
+            skipRestOfLine(token);
         }
 
         public void handleIfDirective()
@@ -214,12 +301,16 @@ namespace BlackC
 
         public void handleIfdefDirective()
         {
-            Console.WriteLine("saw #ifdef");
+            Console.Write("saw #ifdef ");
+            Token token = scanner.scanToken();
+            Macro macro = Macro.lookupMacro(token);
         }
 
         public void handleIfndefDirective()
         {
-            Console.WriteLine("saw #ifndef");
+            Console.Write("saw #ifndef ");
+            Token token = scanner.scanToken();
+            Macro macro = Macro.lookupMacro(token);
         }
 
         public void handleElifDirective()
@@ -249,19 +340,21 @@ namespace BlackC
 
         public void handlePragmaDirective()
         {
-            Console.WriteLine("saw #pragma");
+            Token token = scanner.scanToken();        //get pragma name
+
+            switch (token.chars)
+            {
+                case "once" :
+                    String filename = sourceStack[sourceStack.Count - 1].filename;
+                    oncelerList.Add(filename);
+                    break;
+            }
         }
 
-        public void handleUnknownDirective()
+        public void handleUnknownDirective(String direct)
         {
-            Console.WriteLine("saw unknown directive");
+            Console.WriteLine("saw unknown directive: " + direct);
         }
-    }
-
-    //-------------------------------------------------------------------------
-
-    public class Macro
-    {
     }
 }
 

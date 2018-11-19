@@ -27,6 +27,7 @@ namespace BlackC
 {
     public class Scanner
     {
+        SourceBuffer sourceBuf;
         string[] lines;
         int linenum;
         int pos;
@@ -43,12 +44,25 @@ namespace BlackC
             eolnCount = 0;
         }
 
+        //- source file mgmt --------------------------------------------------
+
+        public void saveSource()
+        {
+            sourceBuf.curline = curline;
+            sourceBuf.linenum = linenum;
+            sourceBuf.linepos = pos;
+            sourceBuf.atBOL = atBOL;
+            sourceBuf.eolnCount = eolnCount;
+        }
+
         public void setSource(SourceBuffer srcbuf)
         {
+            sourceBuf = srcbuf;
             lines = srcbuf.lines;
-            linenum = srcbuf.curline;
-            pos = srcbuf.curpos;
+            linenum = srcbuf.linenum;
+            pos = srcbuf.linepos;
             atBOL = srcbuf.atBOL;
+            eolnCount = srcbuf.eolnCount;
 
             getCurrentLine();
             atEOF = false;
@@ -115,13 +129,18 @@ namespace BlackC
             {
                 gotoNextLine();
             }
-            while (!(curline[pos] == '*' && pos < curline.Length - 1 && curline[pos + 1] == '/'))
+            while (!((pos < curline.Length - 1) && curline[pos] == '*' && curline[pos + 1] == '/'))
             {
                 pos++;
                 if (pos >= curline.Length)
                 {
                     gotoNextLine();
                 }
+            }
+            pos += 2;                           //skip closing "*/"
+            if (pos >= curline.Length)
+            {
+                gotoNextLine();
             }
         }
 
@@ -148,12 +167,12 @@ namespace BlackC
 
                 //then skip any following comments, if we found a comment, then we're not done yet
                 done = true;
-                if (curline[pos] == '/' && pos < curline.Length - 1 && curline[pos + 1] == '/')
+                if ((pos < curline.Length - 1) && curline[pos] == '/' && curline[pos + 1] == '/')
                 {
                     skipLineComment();
                     done = false;
                 }
-                if (curline[pos] == '/' && pos < curline.Length - 1 && curline[pos + 1] == '*')
+                if ((pos < curline.Length - 1) && curline[pos] == '/' && curline[pos + 1] == '*')
                 {
                     skipBlockComment();
                     done = false;
@@ -337,7 +356,7 @@ namespace BlackC
             while (!atend)
             {
                 char c1 = curline[pos++];
-                if ((c1 >= 'A' && c1 <= 'Z') || (c1 >= 'a' && c1 <= 'z') || (c1 >= '0' && c1 <= '9') || (c1 == '_'))
+                if ((c1 >= 'A' && c1 <= 'Z') || (c1 >= 'a' && c1 <= 'z') || (c1 >= '0' && c1 <= '9') || (c1 == '_') || (c1 == '$'))
                 {
                     id = id + c1;
                     atend = !(pos < curline.Length);

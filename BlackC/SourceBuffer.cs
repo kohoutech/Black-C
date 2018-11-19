@@ -27,31 +27,49 @@ namespace BlackC
 {
     public class SourceBuffer
     {
+        public String filename;
+        public String path;
+        public String fullname;
+
         public string[] lines;
-        public int curline;
-        public int curpos;
+        public String curline;
+        public int linenum;
+        public int linepos;
         public bool atBOL;
+        public int eolnCount;
 
         public static SourceBuffer getIncludeFile(String filename, List<String> searchPaths)
         {
             String path = null;
+            String fullpath = null;
+
             foreach (String searchpath in searchPaths)
             {
-                path = searchpath + filename;
-                if (File.Exists(path)) 
+                path = searchpath;
+                fullpath = path + "\\" + filename;
+                if (File.Exists(fullpath))
                 {
                     break;
                 }
             }
-            return new SourceBuffer(path);
+            Console.WriteLine("opening include file " + fullpath);
+            return new SourceBuffer(path, filename);
         }
 
-        public SourceBuffer(String filename)
+        public SourceBuffer(String _path, String _filename)
         {
-            lines = File.ReadAllLines(filename);
-            curline = 0;
-            curpos = 0;
+            filename = _filename;
+            path = _path;
+            fullname = path + "\\" + filename;
+
+            lines = File.ReadAllLines(fullname);
+            curline = null;
+            linenum = 0;
+            linepos = 0;
             atBOL = true;
+            eolnCount = 0;
         }
     }
 }
+
+//Console.WriteLine("There's no sun in the shadow of the wizard");

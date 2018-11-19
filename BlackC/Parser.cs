@@ -44,7 +44,8 @@ namespace BlackC
             prep = new Preprocessor(this);
             arbor = new Arbor(this);
 
-            includePaths = options.includePaths;
+            includePaths = new List<string>() { "." };          //start with current dir
+            includePaths.AddRange(options.includePaths);        //add search paths from command line
         }
 
         //---------------------------------------------------------------------
@@ -54,15 +55,28 @@ namespace BlackC
             prep.setMainSourceFile(filename);
 
             Token token = null;
+            int indent = 0;
             do
             {
                 //dump token stream from input file for testing purposes
                 //to be removed
                 token = prep.getToken();
                 prep.next();
+                if (token.type == TokenType.tLBRACE)
+                {
+                    indent++;
+                }
+                if (token.type == TokenType.tRBRACE)
+                {
+                    indent--;
+                }
                 if (token.type == TokenType.tEOLN)
                 {
                     Console.WriteLine();
+                    for (int i = 0; i < indent; i++)
+                    {
+                        Console.Write("  ");
+                    }
                 }
                 else
                 {
