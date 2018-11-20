@@ -255,6 +255,11 @@ namespace BlackC
             }
             return result;
         }
+
+        internal bool atEnd()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
 

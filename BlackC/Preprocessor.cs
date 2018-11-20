@@ -29,7 +29,6 @@ namespace BlackC
         public Parser parser;
         public Scanner scanner;
         public List<SourceBuffer> sourceStack;
-        public List<Macro> macroStack;
         public bool inMacro;
         public Macro currentMacro;
 
@@ -44,8 +43,8 @@ namespace BlackC
             parser = _parser;
             scanner = new Scanner();
             sourceStack = new List<SourceBuffer>();
+
             Macro.initMacros();
-            macroStack = new List<Macro>();
             inMacro = false;
             currentMacro = null;
 
@@ -86,12 +85,7 @@ namespace BlackC
                 if (inMacro)
                 {
                     token = currentMacro.getToken();
-                    if (token == null)
-                    {
-                        macroStack.RemoveAt(macroStack.Count - 1);
-                        inMacro = (macroStack.Count > 0);
-                        token = scanner.scanToken();
-                    }
+                    inMacro = currentMacro.atEnd();
                 }
                 else
                 {
@@ -113,7 +107,6 @@ namespace BlackC
                     if (macro != null)
                     {
                         inMacro = true;
-                        macroStack.Add(macro);
                         currentMacro = macro;
                         macro.invokeMacro(scanner);         //start macro running
                         done = false;                       //and get first token from macro definition
@@ -123,7 +116,7 @@ namespace BlackC
                 //we've hit the end of file. if this is an include file, pull it off the stack 
                 //and resume scanning at the point we stopped in the including file
                 //we return the EOF token from the main file only
-                if ((token.type == TokenType.tEOF) && (sourceStack.Count > 1))
+                else if ((token.type == TokenType.tEOF) && (sourceStack.Count > 1))
                 {
                     Console.WriteLine("closing include file " + sourceStack[sourceStack.Count - 1].fullname);
                     sourceStack.RemoveAt(sourceStack.Count - 1);
