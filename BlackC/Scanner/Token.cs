@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Black C - a frontend C parser
-Copyright (C) 1997-2018  George E Greaney
+Copyright (C) 1997-2019  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,8 +24,36 @@ using System.Text;
 
 namespace BlackC
 {
+    public class Token
+    {
+        public TokenType type;
+        public String chars;
+        public bool atBOL;
+        public bool LeadingSpace;
+
+        public Token() : this(TokenType.tUNKNOWN)
+        {
+        }
+
+        public Token(TokenType _type) : this(_type, "")
+        {
+            atBOL = false;
+            LeadingSpace = false;
+        }
+
+        public Token(TokenType _type, String _chars)
+        {
+            type = _type;
+            chars = _chars;
+        }
+    }
+
+    //-------------------------------------------------------------------------
+
     public enum TokenType
     {
+        tUNKNOWN,       //not yet defined
+
         tEOLN,
         tEOF,
         tIDENTIFIER,
@@ -125,25 +153,5 @@ namespace BlackC
         tDOUBLEHASH,        //##
 
         tOTHER
-    }
-
-    public class Token
-    {
-        public TokenType type;
-        public String chars;
-        public bool atBOL;
-        public bool sawWS;
-
-        public Token(TokenType _type) : this(_type, "")
-        {
-            atBOL = false;
-            sawWS = false;
-        }
-
-        public Token(TokenType _type, String _chars)
-        {
-            type = _type;
-            chars = _chars;
-        }
     }
 }

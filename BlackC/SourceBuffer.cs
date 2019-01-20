@@ -38,6 +38,10 @@ namespace BlackC
         public bool atBOL;
         public int eolnCount;
 
+        public byte[] buf;
+        public int pos;
+        public char ch;
+
         public static SourceBuffer getIncludeFile(String filename, List<String> searchPaths)
         {
             String path = null;
@@ -56,18 +60,37 @@ namespace BlackC
             return new SourceBuffer(path, filename);
         }
 
+        //public SourceBuffer(String _path, String _filename)
+        //{
+        //    filename = _filename;
+        //    path = _path;
+        //    fullname = path + "\\" + filename;
+
+        //    lines = File.ReadAllLines(fullname);
+        //    curline = null;
+        //    linenum = 0;
+        //    linepos = 0;
+        //    atBOL = true;
+        //    eolnCount = 0;
+        //}
+
         public SourceBuffer(String _path, String _filename)
         {
             filename = _filename;
             path = _path;
             fullname = path + "\\" + filename;
 
-            lines = File.ReadAllLines(fullname);
-            curline = null;
-            linenum = 0;
-            linepos = 0;
-            atBOL = true;
-            eolnCount = 0;
+            buf = File.ReadAllBytes(fullname);
+            pos = 0;
+            ch = (char)buf[pos];
+        }
+
+        //goto next char & return cur char
+        public char nextch()
+        {
+            char result = ch;
+            ch = (char)buf[++pos];
+            return result;
         }
     }
 }

@@ -49,16 +49,16 @@
     <Compile Include="Arbor.cs" />
     <Compile Include="AST\Node.cs" />
     <Compile Include="BlackC.cs" />
-    <Compile Include="Macro.cs" />
+    <Compile Include="Scanner\Macro.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="ParseNode.cs" />
-    <Compile Include="Parser.cs" />
-    <Compile Include="Preprocessor.cs" />
+    <Compile Include="Parser\Parser.cs" />
+    <Compile Include="Scanner\Preprocessor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Scanner.cs" />
+    <Compile Include="Scanner\Scanner.cs" />
     <Compile Include="SourceBuffer.cs" />
     <Compile Include="SymbolTable.cs" />
-    <Compile Include="Token.cs" />
+    <Compile Include="Scanner\Token.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

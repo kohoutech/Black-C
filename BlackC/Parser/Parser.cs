@@ -80,7 +80,7 @@ namespace BlackC
                 }
                 else
                 {
-                    if (token.sawWS) Console.Write(" ");
+                    if (token.LeadingSpace) Console.Write(" ");
                     Console.Write(token.chars);
                 }
             }

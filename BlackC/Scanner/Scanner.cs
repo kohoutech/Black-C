@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Black C - a frontend C parser
-Copyright (C) 1997-2018  George E Greaney
+Copyright (C) 1997-2019  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -27,7 +27,7 @@ namespace BlackC
 {
     public class Scanner
     {
-        SourceBuffer sourceBuf;
+        SourceBuffer buffer;
         string[] lines;
         int linenum;
         int pos;
@@ -48,16 +48,16 @@ namespace BlackC
 
         public void saveSource()
         {
-            sourceBuf.curline = curline;
-            sourceBuf.linenum = linenum;
-            sourceBuf.linepos = pos;
-            sourceBuf.atBOL = atBOL;
-            sourceBuf.eolnCount = eolnCount;
+            buffer.curline = curline;
+            buffer.linenum = linenum;
+            buffer.linepos = pos;
+            buffer.atBOL = atBOL;
+            buffer.eolnCount = eolnCount;
         }
 
         public void setSource(SourceBuffer srcbuf)
         {
-            sourceBuf = srcbuf;
+            buffer = srcbuf;
             lines = srcbuf.lines;
             linenum = srcbuf.linenum;
             pos = srcbuf.linepos;
@@ -77,7 +77,7 @@ namespace BlackC
             String newline = lines[linenum].Trim();
 
             //concatenate continued lines
-            while ((linenum < lines.Length-1) && (newline.EndsWith("\\")))
+            while ((linenum < lines.Length - 1) && (newline.EndsWith("\\")))
             {
                 newline = newline.Remove(newline.Length - 1, 1);
                 newline += lines[++linenum].Trim();
@@ -112,14 +112,14 @@ namespace BlackC
             while ((!atEOF) && (curline.Length == 0));      //skip empty lines
 
             pos = 0;                    //at start of line
-            atBOL = true;               
+            atBOL = true;
             sawWS = false;              //any whitespace has been removed from line start
         }
 
         //skip remainder of current line
         public void skipLineComment()
         {
-            gotoNextLine();             
+            gotoNextLine();
         }
 
         public void skipBlockComment()
@@ -156,13 +156,13 @@ namespace BlackC
                 {
                     if (pos >= curline.Length)      //if at eoln
                     {
-                        gotoNextLine();                        
+                        gotoNextLine();
                     }
                     else
                     {
                         pos++;
                         sawWS = true;
-                    }                    
+                    }
                 }
 
                 //then skip any following comments, if we found a comment, then we're not done yet
@@ -240,7 +240,7 @@ namespace BlackC
                     token = new Token(TokenType.tFLOAT);
                     break;
 
-                case "for": 
+                case "for":
                     token = new Token(TokenType.tFOR);
                     break;
 
@@ -369,7 +369,7 @@ namespace BlackC
             }
 
             Token token = findKeyword(id);                      //check if ident is a keyword
-            if (token == null) 
+            if (token == null)
             {
                 token = new Token(TokenType.tIDENTIFIER);
             }
@@ -680,7 +680,7 @@ namespace BlackC
 
             while ((pos < curline.Length) && (curline[pos] != '\''))
             {
-                if ((curline[pos] == '\\') && (pos < curline.Length - 1) && (curline[pos+1] == '\''))
+                if ((curline[pos] == '\\') && (pos < curline.Length - 1) && (curline[pos + 1] == '\''))
                 {
                     cstr = cstr + "\\\'";
                     pos += 2;                   //skip over escaped single quotes
@@ -734,7 +734,7 @@ namespace BlackC
             {
                 pos++;
             }
-            return new Token(TokenType.tSTRINGCONST, str);           
+            return new Token(TokenType.tSTRINGCONST, str);
         }
 
         //- main scanning method ----------------------------------------------
@@ -742,434 +742,443 @@ namespace BlackC
         //translation phase 3 : scan source line into preprocessing tokens
         public Token scanToken()
         {
-            Token token = null;
+            Token token = new Token();
+            TokenType ttype = TokenType.tUNKNOWN;
 
             //goto start of next token in source file
-            if (eolnCount == 0)
+            if ((buffer.ch == ' ') || (buffer.ch == '\t'))
             {
-                skipWhitespace();
+                while ((buffer.ch == ' ') || (buffer.ch == '\t'))
+                    buffer.nextch();
+                token.LeadingSpace = true;
             }
 
-            //return any eolns we might have passed scanning for the next token
-            if (eolnCount > 0)
+            //scan next token
+            char c = buffer.nextch();
+            switch (c)
             {
-                eolnCount--;
-                return new Token(TokenType.tEOLN);
-            }
+                //eof
+                case '\0':
+                    break;
 
-            //scan chars until we get a token or reach end of file
-            if (!atEOF)
-            {
-                char c = curline[pos++];
-                switch (c)
-                {
-//identifier
-                    case '_':
-                    case 'A':
-                    case 'B':
-                    case 'C':
-                    case 'D':
-                    case 'E':
-                    case 'F':
-                    case 'G':
-                    case 'H':
-                    case 'I':
-                    case 'J':
-                    case 'K':
-                    case 'M':
-                    case 'N':
-                    case 'O':
-                    case 'P':
-                    case 'Q':
-                    case 'R':
-                    case 'S':
-                    case 'T':
-                    case 'U':
-                    case 'V':
-                    case 'W':
-                    case 'X':
-                    case 'Y':
-                    case 'Z':
-                    case 'a':
-                    case 'b':
-                    case 'c':
-                    case 'd':
-                    case 'e':
-                    case 'f':
-                    case 'g':
-                    case 'h':
-                    case 'i':
-                    case 'j':
-                    case 'k':
-                    case 'l':
-                    case 'm':
-                    case 'n':
-                    case 'o':
-                    case 'p':
-                    case 'q':
-                    case 'r':
-                    case 's':
-                    case 't':
-                    case 'u':
-                    case 'v':
-                    case 'w':
-                    case 'x':
-                    case 'y':
-                    case 'z':
-                        token = scanIdentifier(c);
-                        break;
+                //eoln
+                case '\r':
+                case '\n':
+                    break;
 
-//L is a special case since it can start long char constants or long string literals, as well as identifiers
-                    case 'L':
-                        if ((pos < curline.Length) && (curline[pos] == '\''))
-                        {
-                            token = scanCharLiteral(c);
-                        }
-                        else if ((pos < curline.Length) && (curline[pos] == '\"'))
-                        {
-                            token = scanString(c);
-                        }
-                        else
-                        {
-                            token = scanIdentifier(c);
-                        }
-                        break;
+                //whitespace
+                case ' ':
+                case '\t':
+                case '\f':
+                case '\v':
+                    break;
 
-//numeric constant
-                    case '0':
-                    case '1':
-                    case '2':
-                    case '3':
-                    case '4':
-                    case '5':
-                    case '6':
-                    case '7':
-                    case '8':
-                    case '9':
-                    case '.':
-                        token = scanNumber(c);
-                        break;
+                //identifier
+                case '_':
+                case 'A':
+                case 'B':
+                case 'C':
+                case 'D':
+                case 'E':
+                case 'F':
+                case 'G':
+                case 'H':
+                case 'I':
+                case 'J':
+                case 'K':
+                case 'M':
+                case 'N':
+                case 'O':
+                case 'P':
+                case 'Q':
+                case 'R':
+                case 'S':
+                case 'T':
+                case 'U':
+                case 'V':
+                case 'W':
+                case 'X':
+                case 'Y':
+                case 'Z':
+                case 'a':
+                case 'b':
+                case 'c':
+                case 'd':
+                case 'e':
+                case 'f':
+                case 'g':
+                case 'h':
+                case 'i':
+                case 'j':
+                case 'k':
+                case 'l':
+                case 'm':
+                case 'n':
+                case 'o':
+                case 'p':
+                case 'q':
+                case 'r':
+                case 's':
+                case 't':
+                case 'u':
+                case 'v':
+                case 'w':
+                case 'x':
+                case 'y':
+                case 'z':
+                    token = scanIdentifier(c);
+                    break;
 
-                    case '\'':
+                //L is a special case since it can start long char constants or long string constants, as well as identifiers
+                case 'L':
+                    if ((pos < curline.Length) && (curline[pos] == '\''))
+                    {
                         token = scanCharLiteral(c);
-                        break;
-
-                    case '"':
+                    }
+                    else if ((pos < curline.Length) && (curline[pos] == '\"'))
+                    {
                         token = scanString(c);
-                        break;
+                    }
+                    else
+                    {
+                        token = scanIdentifier(c);
+                    }
+                    break;
 
-//punctuation
-                    case '[':
-                        token = new Token(TokenType.tLBRACKET);
-                        token.chars = "[";
-                        break;
+                //numeric constant
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                    token = scanNumber(c);
+                    break;
 
-                    case ']':
-                        token = new Token(TokenType.tRBRACKET);
-                        token.chars = "]";
-                        break;
+                //char constant
+                case '\'':
+                    token = scanCharLiteral(c);
+                    break;
 
-                    case '(':
-                        token = new Token(TokenType.tLPAREN);
-                        token.chars = "(";
-                        break;
+                //string constant
+                case '"':
+                    token = scanString(c);
+                    break;
 
-                    case ')':
-                        token = new Token(TokenType.tRPAREN);
-                        token.chars = ")";
-                        break;
+                //punctuation
+                case '[':
+                    token = new Token(TokenType.tLBRACKET);
+                    token.chars = "[";
+                    break;
 
-                    case '{':
-                        token = new Token(TokenType.tLBRACE);
-                        token.chars = "{";
-                        break;
+                case ']':
+                    token = new Token(TokenType.tRBRACKET);
+                    token.chars = "]";
+                    break;
 
-                    case '}':
-                        token = new Token(TokenType.tRBRACE);
-                        token.chars = "}";
-                        break;
+                case '(':
+                    token = new Token(TokenType.tLPAREN);
+                    token.chars = "(";
+                    break;
 
-                    case '+':
-                        if ((pos < curline.Length) && (curline[pos] == '+'))
+                case ')':
+                    token = new Token(TokenType.tRPAREN);
+                    token.chars = ")";
+                    break;
+
+                case '{':
+                    token = new Token(TokenType.tLBRACE);
+                    token.chars = "{";
+                    break;
+
+                case '}':
+                    token = new Token(TokenType.tRBRACE);
+                    token.chars = "}";
+                    break;
+
+                case '.':
+                    break;
+
+                case '+':
+                    if ((pos < curline.Length) && (curline[pos] == '+'))
+                    {
+                        token = new Token(TokenType.tPLUSPLUS);
+                        token.chars = "++";
+                        pos++;
+                    }
+                    else if ((pos < curline.Length) && (curline[pos] == '='))
+                    {
+                        token = new Token(TokenType.tPLUSEQUAL);
+                        token.chars = "+=";
+                        pos++;
+                    }
+                    else
+                    {
+                        token = new Token(TokenType.tPLUS);
+                        token.chars = "+";
+                    }
+                    break;
+
+                case '-':
+                    if ((pos < curline.Length) && (curline[pos] == '-'))
+                    {
+                        token = new Token(TokenType.tMINUSMINUS);
+                        token.chars = "--";
+                        pos++;
+                    }
+                    else if ((pos < curline.Length) && (curline[pos] == '='))
+                    {
+                        token = new Token(TokenType.tMINNUSEQUAL);
+                        token.chars = "-=";
+                        pos++;
+                    }
+                    else if ((pos < curline.Length) && (curline[pos] == '>'))
+                    {
+                        token = new Token(TokenType.tARROW);
+                        token.chars = "->";
+                        pos++;
+                    }
+                    else
+                    {
+                        token = new Token(TokenType.tMINUS);
+                        token.chars = "-";
+                    }
+                    break;
+
+                case '&':
+                    if ((pos < curline.Length) && (curline[pos] == '&'))
+                    {
+                        token = new Token(TokenType.tDOUBLEAMP);
+                        token.chars = "&&";
+                        pos++;
+                    }
+                    else if ((pos < curline.Length) && (curline[pos] == '='))
+                    {
+                        token = new Token(TokenType.tAMPEQUAL);
+                        token.chars = "&=";
+                        pos++;
+                    }
+                    else
+                    {
+                        token = new Token(TokenType.tAMPERSAND);
+                        token.chars = "&";
+                    }
+                    break;
+
+                case '*':
+                    if ((pos < curline.Length) && (curline[pos] == '='))
+                    {
+                        token = new Token(TokenType.tMULTEQUAL);
+                        token.chars = "*=";
+                        pos++;
+                    }
+                    else
+                    {
+                        token = new Token(TokenType.tSTAR);
+                        token.chars = "*";
+                    }
+                    break;
+
+                case '~':
+                    token = new Token(TokenType.tTILDE);
+                    token.chars = "~";
+                    break;
+
+                case '!':
+                    if ((pos < curline.Length) && (curline[pos] == '='))
+                    {
+                        token = new Token(TokenType.tNOTEQUAL);
+                        token.chars = "!=";
+                        pos++;
+                    }
+                    else
+                    {
+                        token = new Token(TokenType.tEXCLAIM);
+                        token.chars = "!";
+                    }
+                    break;
+
+                case '/':
+                    if ((pos < curline.Length) && (curline[pos] == '='))
+                    {
+                        token = new Token(TokenType.tSLASHEQUAL);
+                        token.chars = "/=";
+                        pos++;
+                    }
+                    else
+                    {
+                        token = new Token(TokenType.tSLASH);
+                        token.chars = "/";
+                    }
+                    break;
+
+                case '%':
+                    if ((pos < curline.Length) && (curline[pos] == '='))
+                    {
+                        token = new Token(TokenType.tPERCENTEQUAL);
+                        token.chars = "%=";
+                        pos++;
+                    }
+                    else
+                    {
+                        token = new Token(TokenType.tPERCENT);
+                        token.chars = "%";
+                    }
+                    break;
+
+                case '<':
+                    if ((pos < curline.Length) && (curline[pos] == '<'))
+                    {
+                        if ((pos < curline.Length - 1) && (curline[pos + 1] == '='))
                         {
-                            token = new Token(TokenType.tPLUSPLUS);
-                            token.chars = "++";
-                            pos++;
-                        }
-                        else if ((pos < curline.Length) && (curline[pos] == '='))
-                        {
-                            token = new Token(TokenType.tPLUSEQUAL);
-                            token.chars = "+=";
-                            pos++;
+                            token = new Token(TokenType.tLSHIFTEQUAL);
+                            token.chars = "<<=";
+                            pos += 2;
                         }
                         else
                         {
-                            token = new Token(TokenType.tPLUS);
-                            token.chars = "+";
+                            token = new Token(TokenType.tLEFTSHIFT);
+                            token.chars = "<<";
+                            pos++;
                         }
-                        break;
+                    }
+                    else if ((pos < curline.Length) && (curline[pos] == '='))
+                    {
+                        token = new Token(TokenType.tLESSEQUAL);
+                        token.chars = "<=";
+                        pos++;
+                    }
+                    else
+                    {
+                        token = new Token(TokenType.tLESSTHAN);
+                        token.chars = "<";
+                    }
+                    break;
 
-                    case '-':
-                        if ((pos < curline.Length) && (curline[pos] == '-'))
+                case '>':
+                    if ((pos < curline.Length) && (curline[pos] == '>'))
+                    {
+                        if ((pos < curline.Length - 1) && (curline[pos + 1] == '='))
                         {
-                            token = new Token(TokenType.tMINUSMINUS);
-                            token.chars = "--";
-                            pos++;
-                        }
-                        else if ((pos < curline.Length) && (curline[pos] == '='))
-                        {
-                            token = new Token(TokenType.tMINNUSEQUAL);
-                            token.chars = "-=";
-                            pos++;
-                        }
-                        else if ((pos < curline.Length) && (curline[pos] == '>'))
-                        {
-                            token = new Token(TokenType.tARROW);
-                            token.chars = "->";
-                            pos++;
+                            token = new Token(TokenType.tRSHIFTEQUAL);
+                            token.chars = ">>=";
+                            pos += 2;
                         }
                         else
                         {
-                            token = new Token(TokenType.tMINUS);
-                            token.chars = "-";
-                        }
-                        break;
-
-                    case '&':
-                        if ((pos < curline.Length) && (curline[pos] == '&'))
-                        {
-                            token = new Token(TokenType.tDOUBLEAMP);
-                            token.chars = "&&";
+                            token = new Token(TokenType.tRIGHTSHIFT);
+                            token.chars = ">>";
                             pos++;
                         }
-                        else if ((pos < curline.Length) && (curline[pos] == '='))
-                        {
-                            token = new Token(TokenType.tAMPEQUAL);
-                            token.chars = "&="; 
-                            pos++;
-                        }
-                        else
-                        {
-                            token = new Token(TokenType.tAMPERSAND);
-                            token.chars = "&";
-                        }
-                        break;
+                    }
+                    else if ((pos < curline.Length) && (curline[pos] == '='))
+                    {
+                        token = new Token(TokenType.tGTREQUAL);
+                        token.chars = ">=";
+                        pos++;
+                    }
+                    else
+                    {
+                        token = new Token(TokenType.tGTRTHAN);
+                        token.chars = ">";
+                    }
+                    break;
 
-                    case '*':
-                        if ((pos < curline.Length) && (curline[pos] == '='))
-                        {
-                            token = new Token(TokenType.tMULTEQUAL);
-                            token.chars = "*=";
-                            pos++;
-                        }
-                        else
-                        {
-                            token = new Token(TokenType.tSTAR);
-                            token.chars = "*";
-                        }
-                        break;
+                case '=':
+                    if ((pos < curline.Length) && (curline[pos] == '='))
+                    {
+                        token = new Token(TokenType.tEQUALEQUAL);
+                        token.chars = "==";
+                        pos++;
+                    }
+                    else
+                    {
+                        token = new Token(TokenType.tEQUAL);
+                        token.chars = "=";
+                    }
+                    break;
 
-                    case '~':
-                        token = new Token(TokenType.tTILDE);
-                        token.chars = "~";
-                        break;
+                case '^':
+                    if ((pos < curline.Length) && (curline[pos] == '='))
+                    {
+                        token = new Token(TokenType.tCARETEQUAL);
+                        token.chars = "^=";
+                        pos++;
+                    }
+                    else
+                    {
+                        token = new Token(TokenType.tCARET);
+                        token.chars = "^";
+                    }
+                    break;
 
-                    case '!':
-                        if ((pos < curline.Length) && (curline[pos] == '='))
-                        {
-                            token = new Token(TokenType.tNOTEQUAL);
-                            token.chars = "!=";
-                            pos++;
-                        }
-                        else
-                        {
-                            token = new Token(TokenType.tEXCLAIM);
-                            token.chars = "!";
-                        }
-                        break;
+                case '|':
+                    if ((pos < curline.Length) && (curline[pos] == '|'))
+                    {
+                        token = new Token(TokenType.tDOUBLEBAR);
+                        token.chars = "||";
+                        pos++;
+                    }
+                    else if ((pos < curline.Length) && (curline[pos] == '='))
+                    {
+                        token = new Token(TokenType.tBAREQUAL);
+                        token.chars = "|=";
+                        pos++;
+                    }
+                    else
+                    {
+                        token = new Token(TokenType.tBAR);
+                        token.chars = "|";
+                    }
+                    break;
 
-                    case '/':
-                        if ((pos < curline.Length) && (curline[pos] == '='))
-                        {
-                            token = new Token(TokenType.tSLASHEQUAL);
-                            token.chars = "/=";
-                            pos++;
-                        }
-                        else
-                        {
-                            token = new Token(TokenType.tSLASH);
-                            token.chars = "/";
-                        }
-                        break;
+                case '?':
+                    token = new Token(TokenType.tQUESTION);
+                    token.chars = "?";
+                    break;
 
-                    case '%':
-                        if ((pos < curline.Length) && (curline[pos] == '='))
-                        {
-                            token = new Token(TokenType.tPERCENTEQUAL);
-                            token.chars = "%=";
-                            pos++;
-                        }
-                        else
-                        {
-                            token = new Token(TokenType.tPERCENT);
-                            token.chars = "%";
-                        }
-                        break;
+                case ':':
+                    token = new Token(TokenType.tCOLON);
+                    token.chars = ":";
+                    break;
 
-                    case '<':
-                        if ((pos < curline.Length) && (curline[pos] == '<'))
-                        {
-                            if ((pos < curline.Length - 1) && (curline[pos + 1] == '='))
-                            {
-                                token = new Token(TokenType.tLSHIFTEQUAL);
-                                token.chars = "<<=";
-                                pos += 2;
-                            }
-                            else
-                            {
-                                token = new Token(TokenType.tLEFTSHIFT);
-                                token.chars = "<<";
-                                pos++;
-                            }
-                        }
-                        else if ((pos < curline.Length) && (curline[pos] == '='))
-                        {
-                            token = new Token(TokenType.tLESSEQUAL);
-                            token.chars = "<=";
-                            pos++;
-                        }
-                        else
-                        {
-                            token = new Token(TokenType.tLESSTHAN);
-                            token.chars = "<";
-                        }
-                        break;
+                case ';':
+                    token = new Token(TokenType.tSEMICOLON);
+                    token.chars = ";";
+                    break;
 
-                    case '>':
-                        if ((pos < curline.Length) && (curline[pos] == '>'))
-                        {
-                            if ((pos < curline.Length - 1) && (curline[pos + 1] == '='))
-                            {
-                                token = new Token(TokenType.tRSHIFTEQUAL);
-                                token.chars = ">>=";
-                                pos += 2;
-                            }
-                            else
-                            {
-                                token = new Token(TokenType.tRIGHTSHIFT);
-                                token.chars = ">>";
-                                pos++;
-                            }
-                        }
-                        else if ((pos < curline.Length) && (curline[pos] == '='))
-                        {
-                            token = new Token(TokenType.tGTREQUAL);
-                            token.chars = ">=";
-                            pos++;
-                        }
-                        else
-                        {
-                            token = new Token(TokenType.tGTRTHAN);
-                            token.chars = ">";
-                        }
-                        break;
+                case ',':
+                    token = new Token(TokenType.tCOMMA);
+                    token.chars = ",";
+                    break;
 
-                    case '=':
-                        if ((pos < curline.Length) && (curline[pos] == '='))
-                        {
-                            token = new Token(TokenType.tEQUALEQUAL);
-                            token.chars = "==";
-                            pos++;
-                        }
-                        else
-                        {
-                            token = new Token(TokenType.tEQUAL);
-                            token.chars = "=";
-                        }
-                        break;
+                //proprocessing
+                case '#':
+                    if ((pos < curline.Length) && (curline[pos] == '#'))
+                    {
+                        token = new Token(TokenType.tDOUBLEHASH);
+                        token.chars = "##";
+                        pos++;
+                    }
+                    else
+                    {
+                        token = new Token(TokenType.tHASH);
+                        token.chars = "#";
+                    }
+                    break;
 
-                    case '^':
-                        if ((pos < curline.Length) && (curline[pos] == '='))
-                        {
-                            token = new Token(TokenType.tCARETEQUAL);
-                            token.chars = "^=";
-                            pos++;
-                        }
-                        else
-                        {
-                            token = new Token(TokenType.tCARET);
-                            token.chars = "^";
-                        }
-                        break;
-
-                    case '|':
-                        if ((pos < curline.Length) && (curline[pos] == '|'))
-                        {
-                            token = new Token(TokenType.tDOUBLEBAR);
-                            token.chars = "||";
-                            pos++;
-                        }
-                        else if ((pos < curline.Length) && (curline[pos] == '='))
-                        {
-                            token = new Token(TokenType.tBAREQUAL);
-                            token.chars = "|=";
-                            pos++;
-                        }
-                        else
-                        {
-                            token = new Token(TokenType.tBAR);
-                            token.chars = "|";
-                        }
-                        break;
-
-                    case '?':
-                        token = new Token(TokenType.tQUESTION);
-                        token.chars = "?";
-                        break;
-
-                    case ':':
-                        token = new Token(TokenType.tCOLON);
-                        token.chars = ":";
-                        break;
-
-                    case ';':
-                        token = new Token(TokenType.tSEMICOLON);
-                        token.chars = ";";
-                        break;
-
-                    case ',':
-                        token = new Token(TokenType.tCOMMA);
-                        token.chars = ",";
-                        break;
-
-//proprocessing
-                    case '#':
-                        if ((pos < curline.Length) && (curline[pos] == '#'))
-                        {
-                            token = new Token(TokenType.tDOUBLEHASH);
-                            token.chars = "##";
-                            pos++;
-                        }
-                        else
-                        {
-                            token = new Token(TokenType.tHASH);
-                            token.chars = "#";
-                        }
-                        break;
-
-//any other char we don't recognize
-                    default:
-                        token = new Token(TokenType.tOTHER);
-                        token.chars = "" + c;
-                        break;
-                }
+                //any other char we don't recognize
+                default:
+                    token = new Token(TokenType.tOTHER);
+                    token.chars = "" + c;
+                    break;
             }
-            else
-            {
-                token = new Token(TokenType.tEOF);
-            }
 
-            token.sawWS = sawWS;
+            token.LeadingSpace = sawWS;
             token.atBOL = atBOL;
             atBOL = false;          //if we've read a token, then we're not at the beginning of the line anymore
 
