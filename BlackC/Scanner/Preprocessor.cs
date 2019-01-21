@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Black C - a frontend C parser
-Copyright (C) 1997-2018  George E Greaney
+Copyright (C) 1997-2019  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -66,68 +66,68 @@ namespace BlackC
 
         public Token getToken()
         {
-            //return any stored token first
-            if (recpos < replay.Count)
-            {
-                return replay[recpos];                
-            }
+            ////return any stored token first
+            //if (recpos < replay.Count)
+            //{
+            //    return replay[recpos];                
+            //}
 
-            if (lookahead != null)
-            {
-                return lookahead;
-            }
+            //if (lookahead != null)
+            //{
+            //    return lookahead;
+            //}
 
             //don't have a stored token, so get a new one
             Token token = null;
-            bool done = true;
-            do
-            {
-                if (inMacro)
-                {
-                    token = currentMacro.getToken();
-                    inMacro = currentMacro.atEnd();
-                }
-                else
-                {
+            //bool done = true;
+            //do
+            //{
+            //    if (inMacro)
+            //    {
+            //        token = currentMacro.getToken();
+            //        inMacro = currentMacro.atEnd();
+            //    }
+            //    else
+            //    {
                     token = scanner.scanToken();
-                }
-                done = true;
+                //}
+                //done = true;
 
-                //check for a directive
-                if ((token.type == TokenType.tHASH) && (token.atBOL))
-                {
-                    handleDirective();
-                    done = false;        //get token following directive's eoln
-                }
+                ////check for a directive
+                //if ((token.type == TokenType.tHASH) && (token.atBOL))
+                //{
+                //    handleDirective();
+                //    done = false;        //get token following directive's eoln
+                //}
 
-                //check for a macro
-                else if (token.type == TokenType.tIDENTIFIER)
-                {
-                    Macro macro = Macro.lookupMacro(token);
-                    if (macro != null)
-                    {
-                        inMacro = true;
-                        currentMacro = macro;
-                        macro.invokeMacro(scanner);         //start macro running
-                        done = false;                       //and get first token from macro definition
-                    }
-                }
+                ////check for a macro
+                //else if (token.type == TokenType.tIDENTIFIER)
+                //{
+                //    Macro macro = Macro.lookupMacro(token);
+                //    if (macro != null)
+                //    {
+                //        inMacro = true;
+                //        currentMacro = macro;
+                //        macro.invokeMacro(scanner);         //start macro running
+                //        done = false;                       //and get first token from macro definition
+                //    }
+                //}
 
-                //we've hit the end of file. if this is an include file, pull it off the stack 
-                //and resume scanning at the point we stopped in the including file
-                //we return the EOF token from the main file only
-                else if ((token.type == TokenType.tEOF) && (sourceStack.Count > 1))
-                {
-                    Console.WriteLine("closing include file " + sourceStack[sourceStack.Count - 1].fullname);
-                    sourceStack.RemoveAt(sourceStack.Count - 1);
-                    scanner.setSource(sourceStack[sourceStack.Count - 1]);
-                    done = false;                                           //get next token from including source
-                }
+            //    //we've hit the end of file. if this is an include file, pull it off the stack 
+            //    //and resume scanning at the point we stopped in the including file
+            //    //we return the EOF token from the main file only
+            //    else if ((token.type == TokenType.tEOF) && (sourceStack.Count > 1))
+            //    {
+            //        Console.WriteLine("closing include file " + sourceStack[sourceStack.Count - 1].fullname);
+            //        sourceStack.RemoveAt(sourceStack.Count - 1);
+            //        scanner.setSource(sourceStack[sourceStack.Count - 1]);
+            //        done = false;                                           //get next token from including source
+            //    }
 
-            } while (!done);
+            //} while (!done);
 
-            lookahead = token;
-            replay.Add(token);
+            //lookahead = token;
+            //replay.Add(token);
             return token;
         }
 

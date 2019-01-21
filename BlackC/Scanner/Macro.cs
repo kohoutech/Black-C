@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Black C - a frontend C parser
-Copyright (C) 1997-2018  George E Greaney
+Copyright (C) 1997-2019  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -202,27 +202,27 @@ namespace BlackC
         public List<Token> StringifyInvokeList(List<Token> inList)
         {
             List<Token> outList = new List<Token>();
-            Token token = null;
-            for (int i = 0; i < inList.Count; i++)
-            {
-                if (((i + 1) < inList.Count) && (inList[i].type == TokenType.tHASH))
-                {
-                    String tokenString = inList[i+1].chars;
-                    token = new Token(TokenType.tSTRINGCONST, tokenString);
-                    i++;
-                }
-                else if (((i + 2) < inList.Count) && (inList[i+1].type == TokenType.tDOUBLEHASH))
-                {
-                    String tokenString = inList[i].chars + inList[i+2].chars;
-                    token = new Token(TokenType.tSTRINGCONST, tokenString);
-                    i += 2;
-                }
-                else
-                {
-                    token = inList[i];
-                }
-                outList.Add(token);
-            }
+            //Token token = null;
+            //for (int i = 0; i < inList.Count; i++)
+            //{
+            //    if (((i + 1) < inList.Count) && (inList[i].type == TokenType.tHASH))
+            //    {
+            //        String tokenString = inList[i+1].chars;
+            //        token = new Token(TokenType.tSTRINGCONST, tokenString);
+            //        i++;
+            //    }
+            //    else if (((i + 2) < inList.Count) && (inList[i+1].type == TokenType.tDOUBLEHASH))
+            //    {
+            //        String tokenString = inList[i].chars + inList[i+2].chars;
+            //        token = new Token(TokenType.tSTRINGCONST, tokenString);
+            //        i += 2;
+            //    }
+            //    else
+            //    {
+            //        token = inList[i];
+            //    }
+            //    outList.Add(token);
+            //}
 
             return outList;
         }

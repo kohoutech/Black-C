@@ -28,23 +28,25 @@ namespace BlackC
     {
         public TokenType type;
         public String chars;
+        public SourceLocation loc;
         public bool atBOL;
         public bool LeadingSpace;
 
-        public Token() : this(TokenType.tUNKNOWN)
-        {
-        }
+        //public Token() : this(TokenType.tUNKNOWN)
+        //{
+        //}
 
-        public Token(TokenType _type) : this(_type, "")
-        {
-            atBOL = false;
-            LeadingSpace = false;
-        }
+        //public Token(TokenType _type) : this(_type, "")
+        //{
+        //    atBOL = false;
+        //    LeadingSpace = false;
+        //}
 
-        public Token(TokenType _type, String _chars)
+        public Token(TokenType _type, String _chars, SourceLocation _loc)
         {
             type = _type;
             chars = _chars;
+            loc = _loc;
         }
     }
 
@@ -54,6 +56,8 @@ namespace BlackC
     {
         tUNKNOWN,       //not yet defined
 
+        tWHITESPACE,
+        tCOMMENT,
         tEOLN,
         tEOF,
         tIDENTIFIER,
@@ -152,6 +156,6 @@ namespace BlackC
         tHASH,              //#
         tDOUBLEHASH,        //##
 
-        tOTHER
+        tOTHER              //any char we don't recognize
     }
 }

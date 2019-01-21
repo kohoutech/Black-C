@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Black C - a frontend C parser
-Copyright (C) 1997-2018  George E Greaney
+Copyright (C) 1997-2019  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -31,16 +31,14 @@ namespace BlackC
         public String path;
         public String fullname;
 
-        public string[] lines;
-        public String curline;
-        public int linenum;
-        public int linepos;
-        public bool atBOL;
-        public int eolnCount;
+        //public bool atBOL;
 
-        public byte[] buf;
-        public int pos;
-        public char ch;
+        public List<byte> buf;
+        public char ch;                 //the cur char
+        public int pos;                 //points to next char
+        public int linenum;             //cur line num, starts with 1
+        public int linestart;           //pos of first char on line in buf
+        public int linepos;             //pos of cur char in line
 
         public static SourceBuffer getIncludeFile(String filename, List<String> searchPaths)
         {
@@ -66,10 +64,6 @@ namespace BlackC
         //    path = _path;
         //    fullname = path + "\\" + filename;
 
-        //    lines = File.ReadAllLines(fullname);
-        //    curline = null;
-        //    linenum = 0;
-        //    linepos = 0;
         //    atBOL = true;
         //    eolnCount = 0;
         //}
@@ -80,17 +74,114 @@ namespace BlackC
             path = _path;
             fullname = path + "\\" + filename;
 
-            buf = File.ReadAllBytes(fullname);
+            //read in source into byte list, fix ending
+            buf = new List<byte>(File.ReadAllBytes(fullname));
+            if (buf[buf.Count - 1] != '\n')
+                buf.Add((byte)('\n'));
+            buf.Add(0);
+
             pos = 0;
-            ch = (char)buf[pos];
+            linenum = 1;
+            linestart = 0;
+            linepos = 0;
+
+            getChar();
+        }
+
+        /*(5.1.1.2) 
+            translation phase 1 : translate trigraphs (5.2.1.1)
+            translation phase 2 : handle line continuations
+         */
+        public void getChar()
+        {
+            bool done = true;
+            do
+            {
+                linepos = pos - linestart;
+                ch = (char)buf[pos++];
+                done = true;
+
+                //translate possible trigraph
+                if (ch == '?')
+                {
+                    char c2 = (char)buf[pos];
+                    if (c2 == '?')
+                    {
+                        char c3 = (char)buf[pos + 1];
+                        switch (c3)
+                        {
+                            case '=': ch = '#'; pos += 2; break;
+                            case '(': ch = '['; pos += 2; break;
+                            case '/': ch = '\\'; pos += 2; break;
+                            case ')': ch = ']'; pos += 2; break;
+                            case '\'': ch = '^'; pos += 2; break;
+                            case '<': ch = '{'; pos += 2; break;
+                            case '!': ch = '|'; pos += 2; break;
+                            case '>': ch = '}'; pos += 2; break;
+                            case '-': ch = '~'; pos += 2; break;
+                        }
+                    }
+                }
+
+                //handle line continuations
+                if ((ch == '\\') && ((char)buf[pos] == '\n') ||
+                    (ch == '\\') && ((char)buf[pos] == '\r') && ((char)buf[pos+1] == '\n'))     //MS eolns
+                {
+                    if (((char)buf[pos] == '\r') && ((char)buf[pos + 1] == '\n'))
+                        pos++;
+                    pos++;
+                    linenum++;
+                    linestart = pos;
+                    done = false;
+                }
+            } while (!done);
         }
 
         //goto next char & return cur char
-        public char nextch()
+        public char gotoNextChar()
         {
             char result = ch;
-            ch = (char)buf[++pos];
+            if (pos != buf.Count)
+            {
+                getChar();
+            }
             return result;
+        }
+
+        //return next char w/o advancing
+        public char peekNextChar()
+        {
+            return (char)buf[pos];
+        }
+
+        public void onNewLine()
+        {
+            linenum++;
+            linestart = pos;
+        }
+
+        public bool atEnd()
+        {
+            return (pos == buf.Count);
+        }
+
+        public SourceLocation getCurPos()
+        {
+            return new SourceLocation(linenum, pos - linestart - 1);
+        }
+    }
+
+    //-------------------------------------------------------------------------
+
+    public class SourceLocation
+    {
+        public int linenum;
+        public int linepos;
+
+        public SourceLocation(int lnum, int lpos)
+        {
+            linenum = lnum;
+            linepos = lpos;
         }
     }
 }
