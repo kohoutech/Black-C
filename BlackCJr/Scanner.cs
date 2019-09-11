@@ -37,8 +37,26 @@ namespace BlackCJr
 
         public Token getToken()
         {
-            string word = pp.getWord();
+            while (pp.fragtype != FragType.EOF)
+            {
+                string frag = pp.getFrag();
+                switch (pp.fragtype)
+                {
+                    case FragType.WORD:
+                        Console.Out.WriteLine("word - {0}", frag);
+                        break;
+                    case FragType.NUMBER:
+                        Console.Out.WriteLine("number - {0}", frag);
+                        break;
+                    case FragType.CHAR:
+                        Console.Out.WriteLine("char - {0}", frag);
+                        break;
+                    case FragType.SPACE:
+                        Console.Out.WriteLine("space - {0}", frag);
+                        break;
+                }
 
+            }
             return new Token();
         }
     }

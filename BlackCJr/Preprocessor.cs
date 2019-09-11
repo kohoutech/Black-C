@@ -21,22 +21,110 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 
 namespace BlackCJr
 {
     class Preprocessor
     {
-        private string sourceName;
+        string srcName;
+        string[] srcLines;
+        public int lineNum;
+        public int linePos;
+        public FragType fragtype;
 
-        public Preprocessor(string sourceName)
+        public Preprocessor(string _srcName)
         {
-            // TODO: Complete member initialization
-            this.sourceName = sourceName;
+            srcName = _srcName;
+            srcLines = File.ReadAllLines(srcName);
+            lineNum = 0;
+            linePos = 0;
         }
 
-        internal string getWord()
+        public String getFrag()
         {
-            throw new NotImplementedException();
+            //eof
+            if (lineNum >= srcLines.Length)
+            {
+                fragtype = FragType.EOF;
+                return "\0";
+            }
+
+            //spaces
+            String line = srcLines[lineNum];
+            if ((linePos >= line.Length) || (line[linePos] == ' '))
+            {
+                bool done = false;
+                do
+                {
+                    if (!done && (linePos >= line.Length))
+                    {
+                        lineNum++;
+                        linePos = 0;
+                        if (lineNum < srcLines.Length)
+                        {
+                            line = srcLines[lineNum];
+                        }
+                        else
+                        {
+                            done = true;
+                        }
+                    }
+                    if (!done && (line[linePos] == ' '))
+                    {
+                        linePos++;
+                    }
+                    else
+                    {
+                        done = true;
+                    }
+                } while (!done);
+                fragtype = FragType.SPACE;
+                return " ";
+            }
+
+            //words
+            if ((line[linePos] >= 'A' && line[linePos] <= 'Z') || (line[linePos] >= 'a' && line[linePos] <= 'z') || (line[linePos] == '_'))
+            {
+                String word = "";
+                while ((linePos < line.Length) &&
+                    (line[linePos] >= 'A' && line[linePos] <= 'Z') || (line[linePos] >= 'a' && line[linePos] <= 'z') ||
+                    (line[linePos] >= '0' && line[linePos] <= '9') || (line[linePos] == '_'))
+                {
+                    word += line[linePos];
+                    linePos++;
+                }
+                fragtype = FragType.WORD;
+                return word;
+            }
+
+            //numbers
+            if (line[linePos] >= '0' && line[linePos] <= '9')
+            {
+                String num = "";
+                while ((linePos < line.Length) && (line[linePos] >= '0' && line[linePos] <= '9'))
+                {
+                    num += line[linePos];
+                    linePos++;
+                }
+                fragtype = FragType.NUMBER;
+                return num;
+            }
+
+            //chars
+            fragtype = FragType.CHAR;
+            String ch = "" + line[linePos];
+            linePos++;
+            return ch;
         }
+    }
+
+    enum FragType
+    {
+        WORD,
+        NUMBER,
+        CHAR,
+        SPACE,
+        EOF
     }
 }
