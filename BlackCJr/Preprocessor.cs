@@ -36,9 +36,17 @@ namespace BlackCJr
         public Preprocessor(string _srcName)
         {
             srcName = _srcName;
-            srcLines = File.ReadAllLines(srcName);
+            try
+            {
+                srcLines = File.ReadAllLines(srcName);
+            }
+            catch (Exception e)
+            {
+                Console.Out.WriteLine("error reading source file {0}", srcName);
+            }
             lineNum = 0;
             linePos = 0;
+            fragtype = FragType.NONE;
         }
 
         public String getFrag()
@@ -57,7 +65,7 @@ namespace BlackCJr
                 bool done = false;
                 do
                 {
-                    if (!done && (linePos >= line.Length))
+                    if (linePos >= line.Length)
                     {
                         lineNum++;
                         linePos = 0;
@@ -67,16 +75,19 @@ namespace BlackCJr
                         }
                         else
                         {
-                            done = true;
+                            done = true;        //we are at eof
                         }
                     }
-                    if (!done && (line[linePos] == ' '))
+                    if (!done)
                     {
-                        linePos++;
-                    }
-                    else
-                    {
-                        done = true;
+                        if (line[linePos] == ' ')
+                        {
+                            linePos++;
+                        }
+                        else
+                        {
+                            done = true;
+                        }
                     }
                 } while (!done);
                 fragtype = FragType.SPACE;
@@ -125,6 +136,7 @@ namespace BlackCJr
         NUMBER,
         CHAR,
         SPACE,
-        EOF
+        EOF,
+        NONE        //haven't started scanning yet
     }
 }

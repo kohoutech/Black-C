@@ -27,10 +27,29 @@ namespace BlackCJr
     class Token
     {
         public TokenType type;
+        public string ident;
+        public int intval;
+
+        public Token(TokenType _type)
+        {
+            type = _type;
+            ident = "";
+            intval = 0;
+        }
     }
 
     enum TokenType
     {
+        IDENT,
+        INTCONST,
+        LBRACE,
+        RBRACE,
+        LPAREN,
+        RPAREN,
+        SEMICOLON,
+        INT,
+        RETURN,
         EOF
     }
+
 }

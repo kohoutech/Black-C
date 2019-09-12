@@ -28,36 +28,72 @@ namespace BlackCJr
     {
         string sourceName;
         Preprocessor pp;
+        Dictionary<String, TokenType> reservedWords;
 
         public Scanner(string _sourceName)
         {
             sourceName = _sourceName;
             pp = new Preprocessor(sourceName);
+
+            reservedWords = new Dictionary<string, TokenType>();
+            reservedWords.Add("int", TokenType.INT);
+            reservedWords.Add("return", TokenType.RETURN);
         }
 
         public Token getToken()
         {
-            while (pp.fragtype != FragType.EOF)
+            Token tok = null;
+            string frag = pp.getFrag();
+            if (pp.fragtype == FragType.SPACE)
             {
-                string frag = pp.getFrag();
-                switch (pp.fragtype)
+                frag = pp.getFrag();
+            }
+
+            if (pp.fragtype == FragType.WORD)
+            {
+                if (reservedWords.ContainsKey(frag))
                 {
-                    case FragType.WORD:
-                        Console.Out.WriteLine("word - {0}", frag);
+                    tok = new Token(reservedWords[frag]);
+                }
+                else
+                {
+                    tok = new Token(TokenType.IDENT);
+                    tok.ident = frag;
+                }
+            }
+
+            else if (pp.fragtype == FragType.NUMBER)
+            {
+                tok = new Token(TokenType.INTCONST);
+                tok.intval = Int32.Parse(frag);
+            }
+            else if (pp.fragtype == FragType.CHAR)
+            {
+                switch (frag[0])
+                {
+                    case '{':
+                        tok = new Token(TokenType.LBRACE);
                         break;
-                    case FragType.NUMBER:
-                        Console.Out.WriteLine("number - {0}", frag);
+                    case '}':
+                        tok = new Token(TokenType.RBRACE);
                         break;
-                    case FragType.CHAR:
-                        Console.Out.WriteLine("char - {0}", frag);
+                    case '(':
+                        tok = new Token(TokenType.LPAREN);
                         break;
-                    case FragType.SPACE:
-                        Console.Out.WriteLine("space - {0}", frag);
+                    case ')':
+                        tok = new Token(TokenType.RPAREN);
+                        break;
+                    case ';':
+                        tok = new Token(TokenType.SEMICOLON);
                         break;
                 }
-
             }
-            return new Token();
+            else if (pp.fragtype == FragType.EOF)
+            {
+                tok = new Token(TokenType.EOF);
+            }
+
+            return tok;
         }
     }
 }

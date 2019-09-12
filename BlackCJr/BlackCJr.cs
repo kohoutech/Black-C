@@ -31,7 +31,7 @@ namespace BlackCJr
 
         static void Main(string[] args)
         {
-            String sourcefile = args[1];
+            String sourcefile = args[0];
             parser = new Parser(sourcefile);
             root = parser.parse();
 
