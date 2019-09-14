@@ -24,7 +24,34 @@ using System.Text;
 
 namespace BlackCJr
 {
-    class ASTNode
+    //base class
+    public class ASTNode
     {
+    }
+
+    public class Program : ASTNode
+    {
+        public FunctionDecl func;
+    }
+
+    public class FunctionDecl : ASTNode
+    {
+        public String name;
+        public ReturnStmt stmt;
+    }
+
+    public class ReturnStmt : ASTNode
+    {
+        public Expression expr;
+    }
+
+    public class Expression : ASTNode
+    {
+        public IntConstant retval;
+    }
+
+    public class IntConstant : ASTNode
+    {
+        public int value;
     }
 }

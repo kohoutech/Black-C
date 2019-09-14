@@ -27,16 +27,13 @@ namespace BlackCJr
     class BlackCJr
     {
         static Parser parser;
-        static ASTNode root;
+        static Program root;
 
         static void Main(string[] args)
         {
             String sourcefile = args[0];
             parser = new Parser(sourcefile);
-            root = parser.parse();
-
-
-
+            root = parser.parseProgram();
         }
     }
 }

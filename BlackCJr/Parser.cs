@@ -35,16 +35,49 @@ namespace BlackCJr
             scanner = new Scanner(sourceName);
         }
 
-        public ASTNode parse()
+        public Program parseProgram()
         {
-            Token token = null;
-            do
-            {
-                token  = scanner.getToken();
-            } 
-            while (token.type != TokenType.EOF);
+            Program prog = new Program();
+            prog.func = parseFunctionDecl();
+            return prog;
+        }
 
-            return null;
+        public FunctionDecl parseFunctionDecl()
+        {
+            FunctionDecl func = new FunctionDecl();
+            Token tok = scanner.getToken();         //int
+            tok = scanner.getToken();               //main
+            func.name = tok.ident;
+            tok = scanner.getToken();               //(
+            tok = scanner.getToken();               //)
+            tok = scanner.getToken();               //{
+            func.stmt = parseReturnStatement();     //return 2;
+            tok = scanner.getToken();               //}
+            return func;
+        }
+
+        public ReturnStmt parseReturnStatement()
+        {
+            ReturnStmt stmt = new ReturnStmt();
+            Token tok = scanner.getToken();         //return
+            stmt.expr = parseExpression();          //2
+            tok = scanner.getToken();               //;
+            return stmt;
+        }
+
+        public Expression parseExpression()
+        {
+            Expression expr = new Expression();
+            expr.retval = parseIntConstant();       //2
+            return expr;
+        }
+
+        public IntConstant parseIntConstant()
+        {
+            IntConstant intconst = new IntConstant();
+            Token tok = scanner.getToken();
+            intconst.value = tok.intval;
+            return intconst;
         }
     }
 }
