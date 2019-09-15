@@ -27,31 +27,78 @@ namespace BlackCJr
     //base class
     public class ASTNode
     {
+        public virtual void printNode(int indent)
+        {
+        }
+
+        public void printIndention(int indent)
+        {
+            for (int i = 0; i < indent; i++)
+                Console.Out.Write(' ');
+        }
     }
 
     public class Program : ASTNode
     {
         public FunctionDecl func;
+
+        public override void printNode(int indent)
+        {
+            printIndention(indent);
+            Console.Out.WriteLine("<program>");
+            func.printNode(indent + 2);
+        }
     }
 
     public class FunctionDecl : ASTNode
     {
         public String name;
         public ReturnStmt stmt;
+
+        public override void printNode(int indent)
+        {
+            printIndention(indent);
+            Console.Out.WriteLine("<function {0}>", name);
+            printIndention(indent);
+            Console.Out.WriteLine("  params: ()");
+            printIndention(indent);
+            Console.Out.WriteLine("  body:");
+            stmt.printNode(indent + 2);
+        }
     }
 
     public class ReturnStmt : ASTNode
     {
         public Expression expr;
+
+        public override void printNode(int indent)
+        {
+            printIndention(indent);
+            Console.Out.WriteLine("<return statement>");
+            expr.printNode(indent + 2);
+        }
     }
 
     public class Expression : ASTNode
     {
         public IntConstant retval;
+
+        public override void printNode(int indent)
+        {
+            printIndention(indent);
+            Console.Out.WriteLine("<expression>");
+            retval.printNode(indent + 2);
+        }
     }
 
     public class IntConstant : ASTNode
     {
         public int value;
+
+        public override void printNode(int indent)
+        {
+            printIndention(indent);
+            Console.Out.WriteLine("<int constant {0}>", value);
+        }
     }
 }

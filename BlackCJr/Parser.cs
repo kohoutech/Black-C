@@ -79,5 +79,10 @@ namespace BlackCJr
             intconst.value = tok.intval;
             return intconst;
         }
+
+        public void printAST(Program root)
+        {
+            root.printNode(0);
+        }
     }
 }
