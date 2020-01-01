@@ -25,7 +25,7 @@ using System.Text;
 namespace BlackCJr
 {
     //base class
-    public class ASTNode
+    public class OILNode
     {
         public virtual void printNode(int indent)
         {
@@ -38,7 +38,7 @@ namespace BlackCJr
         }
     }
 
-    public class Program : ASTNode
+    public class Program : OILNode
     {
         public FunctionDecl func;
 
@@ -50,7 +50,7 @@ namespace BlackCJr
         }
     }
 
-    public class FunctionDecl : ASTNode
+    public class FunctionDecl : OILNode
     {
         public String name;
         public ReturnStmt stmt;
@@ -67,7 +67,7 @@ namespace BlackCJr
         }
     }
 
-    public class ReturnStmt : ASTNode
+    public class ReturnStmt : OILNode
     {
         public Expression expr;
 
@@ -79,7 +79,7 @@ namespace BlackCJr
         }
     }
 
-    public class Expression : ASTNode
+    public class Expression : OILNode
     {
         public IntConstant retval;
 
@@ -91,7 +91,7 @@ namespace BlackCJr
         }
     }
 
-    public class IntConstant : ASTNode
+    public class IntConstant : OILNode
     {
         public int value;
 

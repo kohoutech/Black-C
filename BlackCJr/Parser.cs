@@ -27,12 +27,12 @@ namespace BlackCJr
     class Parser
     {
         string sourceName;
-        Scanner scanner;
+        Tokenizer tokenizer;
 
         public Parser(string _sourceName)
         {
             sourceName = _sourceName;
-            scanner = new Scanner(sourceName);
+            tokenizer = new Tokenizer(sourceName);
         }
 
         public Program parseProgram()
@@ -45,23 +45,23 @@ namespace BlackCJr
         public FunctionDecl parseFunctionDecl()
         {
             FunctionDecl func = new FunctionDecl();
-            Token tok = scanner.getToken();         //int
-            tok = scanner.getToken();               //main
+            Token tok = tokenizer.getToken();         //int
+            tok = tokenizer.getToken();               //main
             func.name = tok.ident;
-            tok = scanner.getToken();               //(
-            tok = scanner.getToken();               //)
-            tok = scanner.getToken();               //{
+            tok = tokenizer.getToken();               //(
+            tok = tokenizer.getToken();               //)
+            tok = tokenizer.getToken();               //{
             func.stmt = parseReturnStatement();     //return 2;
-            tok = scanner.getToken();               //}
+            tok = tokenizer.getToken();               //}
             return func;
         }
 
         public ReturnStmt parseReturnStatement()
         {
             ReturnStmt stmt = new ReturnStmt();
-            Token tok = scanner.getToken();         //return
+            Token tok = tokenizer.getToken();         //return
             stmt.expr = parseExpression();          //2
-            tok = scanner.getToken();               //;
+            tok = tokenizer.getToken();               //;
             return stmt;
         }
 
@@ -75,7 +75,7 @@ namespace BlackCJr
         public IntConstant parseIntConstant()
         {
             IntConstant intconst = new IntConstant();
-            Token tok = scanner.getToken();
+            Token tok = tokenizer.getToken();
             intconst.value = tok.intval;
             return intconst;
         }

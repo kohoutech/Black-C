@@ -21,79 +21,122 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 
 namespace BlackCJr
 {
     class Scanner
     {
-        string sourceName;
-        Preprocessor pp;
-        Dictionary<String, TokenType> reservedWords;
+        string srcName;
+        string[] srcLines;
+        public int lineNum;
+        public int linePos;
+        public FragType fragtype;
 
-        public Scanner(string _sourceName)
+        public Scanner(string _srcName)
         {
-            sourceName = _sourceName;
-            pp = new Preprocessor(sourceName);
-
-            reservedWords = new Dictionary<string, TokenType>();
-            reservedWords.Add("int", TokenType.INT);
-            reservedWords.Add("return", TokenType.RETURN);
+            srcName = _srcName;
+            try
+            {
+                srcLines = File.ReadAllLines(srcName);
+            }
+            catch (Exception e)
+            {
+                Console.Out.WriteLine("error reading source file {0}", srcName);
+            }
+            lineNum = 0;
+            linePos = 0;
+            fragtype = FragType.NONE;
         }
 
-        public Token getToken()
+        public String getFrag()
         {
-            Token tok = null;
-            string frag = pp.getFrag();
-            if (pp.fragtype == FragType.SPACE)
+            //eof
+            if (lineNum >= srcLines.Length)
             {
-                frag = pp.getFrag();
+                fragtype = FragType.EOF;
+                return "\0";
             }
 
-            if (pp.fragtype == FragType.WORD)
+            //spaces
+            String line = srcLines[lineNum];
+            if ((linePos >= line.Length) || (line[linePos] == ' '))
             {
-                if (reservedWords.ContainsKey(frag))
+                bool done = false;
+                do
                 {
-                    tok = new Token(reservedWords[frag]);
-                }
-                else
-                {
-                    tok = new Token(TokenType.IDENT);
-                    tok.ident = frag;
-                }
+                    if (linePos >= line.Length)
+                    {
+                        lineNum++;
+                        linePos = 0;
+                        if (lineNum < srcLines.Length)
+                        {
+                            line = srcLines[lineNum];
+                        }
+                        else
+                        {
+                            done = true;        //we are at eof
+                        }
+                    }
+                    if (!done)
+                    {
+                        if (line[linePos] == ' ')
+                        {
+                            linePos++;
+                        }
+                        else
+                        {
+                            done = true;
+                        }
+                    }
+                } while (!done);
+                fragtype = FragType.SPACE;
+                return " ";
             }
 
-            else if (pp.fragtype == FragType.NUMBER)
+            //words
+            if ((line[linePos] >= 'A' && line[linePos] <= 'Z') || (line[linePos] >= 'a' && line[linePos] <= 'z') || (line[linePos] == '_'))
             {
-                tok = new Token(TokenType.INTCONST);
-                tok.intval = Int32.Parse(frag);
-            }
-            else if (pp.fragtype == FragType.CHAR)
-            {
-                switch (frag[0])
+                String word = "";
+                while ((linePos < line.Length) &&
+                    (line[linePos] >= 'A' && line[linePos] <= 'Z') || (line[linePos] >= 'a' && line[linePos] <= 'z') ||
+                    (line[linePos] >= '0' && line[linePos] <= '9') || (line[linePos] == '_'))
                 {
-                    case '{':
-                        tok = new Token(TokenType.LBRACE);
-                        break;
-                    case '}':
-                        tok = new Token(TokenType.RBRACE);
-                        break;
-                    case '(':
-                        tok = new Token(TokenType.LPAREN);
-                        break;
-                    case ')':
-                        tok = new Token(TokenType.RPAREN);
-                        break;
-                    case ';':
-                        tok = new Token(TokenType.SEMICOLON);
-                        break;
+                    word += line[linePos];
+                    linePos++;
                 }
-            }
-            else if (pp.fragtype == FragType.EOF)
-            {
-                tok = new Token(TokenType.EOF);
+                fragtype = FragType.WORD;
+                return word;
             }
 
-            return tok;
+            //numbers
+            if (line[linePos] >= '0' && line[linePos] <= '9')
+            {
+                String num = "";
+                while ((linePos < line.Length) && (line[linePos] >= '0' && line[linePos] <= '9'))
+                {
+                    num += line[linePos];
+                    linePos++;
+                }
+                fragtype = FragType.NUMBER;
+                return num;
+            }
+
+            //chars
+            fragtype = FragType.CHAR;
+            String ch = "" + line[linePos];
+            linePos++;
+            return ch;
         }
+    }
+
+    enum FragType
+    {
+        WORD,
+        NUMBER,
+        CHAR,
+        SPACE,
+        EOF,
+        NONE        //haven't started scanning yet
     }
 }
