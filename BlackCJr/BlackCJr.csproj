@@ -43,7 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="OIL\ASTNode.cs" />
+    <Compile Include="OIL\OILNode.cs" />
     <Compile Include="BlackCJr.cs" />
     <Compile Include="Parser.cs" />
     <Compile Include="Scanner.cs" />

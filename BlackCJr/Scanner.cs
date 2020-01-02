@@ -49,6 +49,7 @@ namespace BlackCJr
             fragtype = FragType.NONE;
         }
 
+        //breaks source text into string fragments and returns the next fragment, sets frag type accordingly
         public String getFrag()
         {
             //eof

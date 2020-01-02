@@ -28,7 +28,7 @@ namespace BlackCJr
     {
         string sourceName;
         Scanner scanner;
-        Dictionary<String, TokenType> reservedWords;
+        Dictionary<String, TokenType> keywords;
         List<String> typedefs;
 
         public Tokenizer(string _sourceName)
@@ -36,63 +36,147 @@ namespace BlackCJr
             sourceName = _sourceName;
             scanner = new Scanner(sourceName);
 
-            //build reserved word list
-            reservedWords = new Dictionary<string, TokenType>();
-            reservedWords.Add("int", TokenType.INT);
-            reservedWords.Add("return", TokenType.RETURN);
+            //build keyword list
+            keywords = new Dictionary<string, TokenType>();
+            keywords.Add("break", TokenType.BREAK);
+            keywords.Add("case", TokenType.CASE);
+            keywords.Add("char", TokenType.CHAR);
+            keywords.Add("const", TokenType.CONST);
+            keywords.Add("continue", TokenType.CONTINUE);
+            keywords.Add("default", TokenType.DEFAULT);
+            keywords.Add("do", TokenType.DO);
+            keywords.Add("double", TokenType.DOUBLE);
+            keywords.Add("else", TokenType.ELSE);
+            keywords.Add("enum", TokenType.ENUM);
+            keywords.Add("extern", TokenType.EXTERN);
+            keywords.Add("float", TokenType.FLOAT);
+            keywords.Add("for", TokenType.FOR);
+            keywords.Add("goto", TokenType.GOTO);
+            keywords.Add("if", TokenType.IF);
+            keywords.Add("int", TokenType.INT);
+            keywords.Add("long", TokenType.LONG);
+            keywords.Add("return", TokenType.RETURN);
+            keywords.Add("short", TokenType.SHORT);
+            keywords.Add("signed", TokenType.SIGNED);
+            keywords.Add("static", TokenType.STATIC);
+            keywords.Add("struct", TokenType.STRUCT);
+            keywords.Add("switch", TokenType.SWITCH);
+            keywords.Add("typedef", TokenType.TYPEDEF);
+            keywords.Add("union", TokenType.UNION);
+            keywords.Add("unsigned", TokenType.UNSIGNED);
+            keywords.Add("void", TokenType.VOID);
+            keywords.Add("while", TokenType.WHILE);
         }
 
         public Token getToken()
         {
             Token tok = null;
             String frag = scanner.getFrag();
-            if (scanner.fragtype == FragType.SPACE)
+
+            //skip spaces
+            while (scanner.fragtype == FragType.SPACE)
             {
                 frag = scanner.getFrag();
             }
 
-            if (scanner.fragtype == FragType.WORD)
+            switch (scanner.fragtype)
             {
-                if (reservedWords.ContainsKey(frag))
-                {
-                    tok = new Token(reservedWords[frag]);
-                }
-                else
-                {
-                    tok = new Token(TokenType.IDENT);
-                    tok.ident = frag;
-                }
-            }
+                case FragType.WORD:
+                    if (keywords.ContainsKey(frag))
+                    {
+                        tok = new Token(keywords[frag]);
+                    }
+                    else
+                    {
+                        tok = new Token(TokenType.IDENT);
+                        tok.ident = frag;
+                    }
+                    break;
 
-            else if (scanner.fragtype == FragType.NUMBER)
-            {
-                tok = new Token(TokenType.INTCONST);
-                tok.intval = Int32.Parse(frag);
-            }
-            else if (scanner.fragtype == FragType.CHAR)
-            {
-                switch (frag[0])
-                {
-                    case '{':
-                        tok = new Token(TokenType.LBRACE);
-                        break;
-                    case '}':
-                        tok = new Token(TokenType.RBRACE);
-                        break;
-                    case '(':
-                        tok = new Token(TokenType.LPAREN);
-                        break;
-                    case ')':
-                        tok = new Token(TokenType.RPAREN);
-                        break;
-                    case ';':
-                        tok = new Token(TokenType.SEMICOLON);
-                        break;
-                }
-            }
-            else if (scanner.fragtype == FragType.EOF)
-            {
-                tok = new Token(TokenType.EOF);
+                case FragType.NUMBER:
+                    tok = new Token(TokenType.INTCONST);
+                    tok.intval = Int32.Parse(frag);
+                    break;
+
+                case FragType.CHAR:
+                    switch (frag[0])
+                    {
+
+                        case '{':
+                            tok = new Token(TokenType.LBRACE);
+                            break;
+                        case '}':
+                            tok = new Token(TokenType.RBRACE);
+                            break;
+                        case '(':
+                            tok = new Token(TokenType.LPAREN);
+                            break;
+                        case ')':
+                            tok = new Token(TokenType.RPAREN);
+                            break;
+
+                            
+        //ARROW,
+        //PLUSPLUS,
+        //MINUSMINUS,
+                        case '&':
+                            tok = new Token(TokenType.AMPERSAND);
+                            break;
+
+                        case '*':
+                            tok = new Token(TokenType.STAR);
+                            break;
+                        case '+':
+                            tok = new Token(TokenType.PLUS);
+                            break;
+                                case '-':
+                            tok = new Token(TokenType.MINUS);
+                            break;
+
+        //TILDE,
+        //EXCLAIM,
+        //SLASH,
+        //PERCENT,
+        //LESSLESS,
+        //GTRGTR,
+        //LESSTHAN,
+        //GTRTHAN,
+        //LESSEQUAL,
+        //GTREQUAL,
+        //EQUALEQUAL,
+        //NOTEQUAL,
+        //CARET,
+        //BAR,
+        //AMPAMP,
+        //BARBAR,
+        //QUESTION,
+        //COLON,
+
+                        case ';':
+                            tok = new Token(TokenType.SEMICOLON);
+                            break;
+
+        //                            ELIPSIS,
+        //EQUAL,
+        //STAREQUAL,
+        //SLASHEQUAL,
+        //PERCENTEQUAL,
+        //PLUSEQUAL,
+        //MINUSEQUAL,
+        //LESSLESSEQUAL,
+        //GTRGTREQUAL,
+        //AMPEQUAL,
+        //CARETEQUAL,
+        //BAREQUAL,
+        //COMMA,
+
+                    }
+
+                    break;
+
+                case FragType.EOF:
+                    tok = new Token(TokenType.EOF);
+                    break;
             }
 
             return tok;
