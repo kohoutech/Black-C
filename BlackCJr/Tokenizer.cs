@@ -68,6 +68,11 @@ namespace BlackCJr
             keywords.Add("while", TokenType.WHILE);
         }
 
+        public void setTypedef(String s) 
+        {
+            typedefs.Add(s);
+        }
+
         public Token getToken()
         {
             Token tok = null;
@@ -86,6 +91,10 @@ namespace BlackCJr
                     {
                         tok = new Token(keywords[frag]);
                     }
+                    else if (typedefs.Contains(frag))
+                    {
+                        tok = new Token(TokenType.TYPEDEF);
+                    }
                     else
                     {
                         tok = new Token(TokenType.IDENT);
@@ -102,11 +111,11 @@ namespace BlackCJr
                     switch (frag[0])
                     {
 
-                        case '{':
-                            tok = new Token(TokenType.LBRACE);
+                        case '[':
+                            tok = new Token(TokenType.LBRACKET);
                             break;
-                        case '}':
-                            tok = new Token(TokenType.RBRACE);
+                        case ']':
+                            tok = new Token(TokenType.RBRACKET);
                             break;
                         case '(':
                             tok = new Token(TokenType.LPAREN);
@@ -114,64 +123,223 @@ namespace BlackCJr
                         case ')':
                             tok = new Token(TokenType.RPAREN);
                             break;
-
-                            
-        //ARROW,
-        //PLUSPLUS,
-        //MINUSMINUS,
-                        case '&':
-                            tok = new Token(TokenType.AMPERSAND);
+                        case '{':
+                            tok = new Token(TokenType.LBRACE);
+                            break;
+                        case '}':
+                            tok = new Token(TokenType.RBRACE);
                             break;
 
-                        case '*':
-                            tok = new Token(TokenType.STAR);
-                            break;
                         case '+':
-                            tok = new Token(TokenType.PLUS);
+                            if (scanner.isNextChar('+'))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.PLUSPLUS);
+                            }
+                            else if (scanner.isNextChar('='))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.PLUSEQUAL);
+                            }
+                            else
+                            {
+                                tok = new Token(TokenType.PLUS);
+                            }
                             break;
-                                case '-':
-                            tok = new Token(TokenType.MINUS);
+                        case '-':
+                            if (scanner.isNextChar('-'))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.MINUSMINUS);
+                            }
+                            else if (scanner.isNextChar('='))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.MINUSEQUAL);
+                            }
+                            else if (scanner.isNextChar('>'))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.ARROW);
+                            }
+                            else
+                            {
+                                tok = new Token(TokenType.MINUS);
+                            }
+                            break;
+                        case '*':
+                            if (scanner.isNextChar('='))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.STAREQUAL);
+                            }
+                            else
+                            {
+                                tok = new Token(TokenType.STAR);
+                            }
+                            break;
+                        case '/':
+                            if (scanner.isNextChar('='))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.SLASHEQUAL);
+                            }
+                            else
+                            {
+                                tok = new Token(TokenType.SLASH);
+                            }
+                            break;
+                        case '%':
+                            if (scanner.isNextChar('='))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.PERCENTEQUAL);
+                            }
+                            else
+                            {
+                                tok = new Token(TokenType.PERCENT);
+                            }
+                            break;
+                        case '&':
+                            if (scanner.isNextChar('&'))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.AMPAMP);
+                            }
+                            else if (scanner.isNextChar('='))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.AMPEQUAL);
+                            }
+                            else
+                                tok = new Token(TokenType.AMPERSAND);
+                            break;
+                        case '|':
+                            if (scanner.isNextChar('|'))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.BARBAR);
+                            }
+                            else if (scanner.isNextChar('='))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.BAREQUAL);
+                            }
+                            else
+                            {
+                                tok = new Token(TokenType.BAR);
+                            }
+                            break;
+                        case '~':
+                            tok = new Token(TokenType.TILDE);
+                            break;
+                        case '^':
+                            if (scanner.isNextChar('='))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.CARETEQUAL);
+                            }
+                            else
+                            {
+                                tok = new Token(TokenType.CARET);
+                            }
                             break;
 
-        //TILDE,
-        //EXCLAIM,
-        //SLASH,
-        //PERCENT,
-        //LESSLESS,
-        //GTRGTR,
-        //LESSTHAN,
-        //GTRTHAN,
-        //LESSEQUAL,
-        //GTREQUAL,
-        //EQUALEQUAL,
-        //NOTEQUAL,
-        //CARET,
-        //BAR,
-        //AMPAMP,
-        //BARBAR,
-        //QUESTION,
-        //COLON,
 
+                        case '=':
+                            if (scanner.isNextChar('='))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.EQUALEQUAL);
+                            }
+                            else
+                            {
+                                tok = new Token(TokenType.EQUAL);
+                            }
+                            break;
+                        case '!':
+                            if (scanner.isNextChar('='))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.NOTEQUAL);
+                            }
+                            else
+                            {
+                                tok = new Token(TokenType.EXCLAIM);
+                            }
+                            break;
+                        case '<':
+                            if (scanner.isNextChar('<'))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.LESSLESS);
+                            }
+                            else if (scanner.isNextChar('='))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.LESSEQUAL);
+                            }
+                            else if (scanner.areNextTwoChars("<="))
+                            {
+                                scanner.skipNextTwoChars();
+                                tok = new Token(TokenType.LESSLESSEQUAL);
+                            }
+                            else
+                            {
+                                tok = new Token(TokenType.LESSTHAN);
+                            }
+                            break;
+                        case '>':
+                            if (scanner.isNextChar('>'))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.GTRGTR);
+                            }
+                            else if (scanner.isNextChar('='))
+                            {
+                                scanner.skipNextChar();
+                                tok = new Token(TokenType.GTREQUAL);
+                            }
+                            else if (scanner.areNextTwoChars(">="))
+                            {
+                                scanner.skipNextTwoChars();
+                                tok = new Token(TokenType.GTRGTREQUAL);
+                            }
+                            else
+                            {
+                                tok = new Token(TokenType.GTRTHAN);
+                            }
+                            break;
+
+                        case ',':
+                            tok = new Token(TokenType.COMMA);
+                            break;
+                        case '.':
+                            if (scanner.areNextTwoChars(".."))
+                            {
+                                scanner.skipNextTwoChars();
+                                tok = new Token(TokenType.ELIPSIS);
+                            }
+                            else
+                            {
+                                tok = new Token(TokenType.PERIOD);
+                            }
+                            break;
+                        case '?':
+                            tok = new Token(TokenType.QUESTION);
+                            break;
+                        case ':':
+                            tok = new Token(TokenType.COLON);
+                            break;
                         case ';':
                             tok = new Token(TokenType.SEMICOLON);
+                            break;                        
+
+                        default:
+                            tok = new Token(TokenType.ERROR);
                             break;
 
-        //                            ELIPSIS,
-        //EQUAL,
-        //STAREQUAL,
-        //SLASHEQUAL,
-        //PERCENTEQUAL,
-        //PLUSEQUAL,
-        //MINUSEQUAL,
-        //LESSLESSEQUAL,
-        //GTRGTREQUAL,
-        //AMPEQUAL,
-        //CARETEQUAL,
-        //BAREQUAL,
-        //COMMA,
-
                     }
-
                     break;
 
                 case FragType.EOF:

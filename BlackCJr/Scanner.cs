@@ -59,7 +59,7 @@ namespace BlackCJr
                 return "\0";
             }
 
-            //spaces
+            //compress spaces / eolns to one space and return that
             String line = srcLines[lineNum];
             if ((linePos >= line.Length) || (line[linePos] == ' '))
             {
@@ -123,19 +123,52 @@ namespace BlackCJr
                 return num;
             }
 
-            //chars
+            //chars - everything else is returned as a single char
             fragtype = FragType.CHAR;
             String ch = "" + line[linePos];
             linePos++;
             return ch;
         }
+
+        //character lookahead -----------------------------
+
+        public bool isNextChar(char c)
+        {
+            if (linePos < srcLines[lineNum].Length)
+            {
+                return (srcLines[lineNum][linePos] == c);
+            }
+            return false;
+        }
+
+        public void skipNextChar()
+        {
+            linePos++;
+        }
+
+        public bool areNextTwoChars(String s)
+        {
+            if (linePos < srcLines[lineNum].Length - 1)
+            {
+                return ((srcLines[lineNum][linePos] == s[0]) && (srcLines[lineNum][linePos+1] == s[1]));
+            }
+            return false;
+        }
+
+        internal void skipNextTwoChars()
+        {
+            linePos += 2;
+        }
     }
+
+    //---------------------------------
 
     enum FragType
     {
         WORD,
         NUMBER,
         CHAR,
+        STRING,
         SPACE,
         EOF,
         NONE        //haven't started scanning yet

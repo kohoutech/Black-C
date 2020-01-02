@@ -29,12 +29,53 @@ namespace BlackCJr
         public TokenType type;
         public string ident;
         public int intval;
+        public double floatval;
+        public String stringval;
 
         public Token(TokenType _type)
         {
             type = _type;
             ident = "";
             intval = 0;
+            floatval = 0.0;
+            stringval = "";
+        }
+
+        //keep these in sync with the TokenType enum
+        String[] spellings = { "identifier", "int const", "float const", "char const", "string const",
+                               "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum",
+                               "extern", "float", "for", "goto", "if", "int", "long", "return", "short", "signed",
+                               "static", "struct", "switch", "typedef", "union", "unsigned", "void", "while",
+                               "[", "]", "(", ")", "{", "}", ".", "->", "++", "--", "&", "*", "+", "-", "~", "!", "/", "%",
+                               "<<", ">>", "<", ">", "<=", ">=", "==", "!=", "^", "|", "&&", "||", "?", ":", ";",
+                               "...", "=", "*=", "/=", "%=", "+=", "-=", "<<=", ">>=", "&=", "^=", "|=", ",",
+                               "eof", "error"
+                             };
+
+        public override string ToString()
+        {
+            String result = spellings[(int)type];
+            if (type == TokenType.IDENT)
+            {
+                result = result + "(" + ident + ")";
+            }
+            if (type == TokenType.INTCONST)
+            {
+                result = result + "(" + intval + ")";
+            }
+            if (type == TokenType.FLOATCONST)
+            {
+                result = result + "(" + floatval + ")";
+            }
+            if (type == TokenType.CHARCONST)
+            {
+                result = result + "(" + intval.ToString("X2") + ")";
+            }
+            if (type == TokenType.STRINGCONST)
+            {
+                result = result + "(" + stringval + ")";
+            }
+            return result;
         }
     }
 
@@ -77,17 +118,19 @@ namespace BlackCJr
         WHILE,
 
         //punctuation
-        LBRACE,
-        RBRACE,
+        LBRACKET,
+        RBRACKET,
         LPAREN,
         RPAREN,
+        LBRACE,
+        RBRACE,
         PERIOD,
         ARROW,
         PLUSPLUS,
         MINUSMINUS,
         AMPERSAND,
         STAR,
-        PLUS, 
+        PLUS,
         MINUS,
         TILDE,
         EXCLAIM,
@@ -123,7 +166,10 @@ namespace BlackCJr
         COMMA,
 
         //end of file
-        EOF
+        EOF,
+
+        //anything else
+        ERROR
     }
 
 }

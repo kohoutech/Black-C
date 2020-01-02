@@ -33,8 +33,9 @@ namespace BlackCJr
         {
             String sourcefile = args[0];
             parser = new Parser(sourcefile);
-            root = parser.parseProgram();
-            parser.printAST(root);
+            parser.testScanner();
+            //root = parser.parseProgram();
+            //parser.printAST(root);
         }
     }
 }

@@ -84,5 +84,16 @@ namespace BlackCJr
         {
             root.printNode(0);
         }
+
+        public void testScanner() 
+        {
+            Token tok = tokenizer.getToken();
+            while (tok.type != TokenType.EOF)
+            {
+                Console.Out.WriteLine("token is " + tok.ToString());
+                tok = tokenizer.getToken();
+            }
+            Console.Out.WriteLine("token is " + tok.ToString());
+        }
     }
 }
