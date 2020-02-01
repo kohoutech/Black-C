@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Black C - a frontend C parser
-Copyright (C) 1997-2019  George E Greaney
+Copyright (C) 1997-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,13 +28,14 @@ namespace BlackC
     {
         static void Main(string[] args)
         {
-            Options options = new Options(args);        //parse the cmd line args
+            Options options = new Options(args);            //parse the cmd line args
 
-            foreach (String filename in options.filenames)
-            {
-                Parser parser = new Parser(options);        //create a parser
-                parser.parseFile(filename);                         //and parse the source file
-            }
+            //            foreach (String filename in options.filenames)
+            //            {
+            String filename = args[0];
+            Parser parser = new Parser(options);        //create a parser
+            parser.parseFile(filename);                 //and parse the source file
+            //            }
         }
     }
 }

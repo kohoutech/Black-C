@@ -24,21 +24,441 @@ using System.Text;
 
 namespace BlackC.Lexer
 {
-    class Tokenizer
+    public class Tokenizer
     {
+        String filename;
         Scanner scanner;
+        Queue<Fragment> frags;
+        Dictionary<String, TokenType> keywords;
+        List<String> typedefs;
 
-        public Tokenizer(String filename)
+        public Tokenizer(String _filename)
         {
+            filename = _filename;
             scanner = new Scanner(filename);
+            frags = new Queue<Fragment>();
+
+            //build keyword list
+            keywords = new Dictionary<string, TokenType>();
+            keywords.Add("break", TokenType.BREAK);
+            keywords.Add("case", TokenType.CASE);
+            keywords.Add("char", TokenType.CHAR);
+            keywords.Add("const", TokenType.CONST);
+            keywords.Add("continue", TokenType.CONTINUE);
+            keywords.Add("default", TokenType.DEFAULT);
+            keywords.Add("do", TokenType.DO);
+            keywords.Add("double", TokenType.DOUBLE);
+            keywords.Add("else", TokenType.ELSE);
+            keywords.Add("enum", TokenType.ENUM);
+            keywords.Add("extern", TokenType.EXTERN);
+            keywords.Add("float", TokenType.FLOAT);
+            keywords.Add("for", TokenType.FOR);
+            keywords.Add("goto", TokenType.GOTO);
+            keywords.Add("if", TokenType.IF);
+            keywords.Add("int", TokenType.INT);
+            keywords.Add("long", TokenType.LONG);
+            keywords.Add("return", TokenType.RETURN);
+            keywords.Add("short", TokenType.SHORT);
+            keywords.Add("signed", TokenType.SIGNED);
+            keywords.Add("static", TokenType.STATIC);
+            keywords.Add("struct", TokenType.STRUCT);
+            keywords.Add("switch", TokenType.SWITCH);
+            keywords.Add("typedef", TokenType.TYPEDEF);
+            keywords.Add("union", TokenType.UNION);
+            keywords.Add("unsigned", TokenType.UNSIGNED);
+            keywords.Add("void", TokenType.VOID);
+            keywords.Add("while", TokenType.WHILE);
+
+            typedefs = new List<string>();
+        }
+
+        public Fragment getNextFrag()
+        {
+            if (frags.Count != 0)
+            {
+                return frags.Dequeue();
+            }
+            Fragment frag = scanner.getFrag();
+            return frag;
+        }
+
+        public void putFragBack(Fragment frag)
+        {
+            frags.Enqueue(frag);
+        }
+
+        //the number fragment we get from the scanner should be well-formed
+        public Token ParseNumber(String numstr)
+        {
+            Token tok = null;
+            try
+            {
+                if (numstr.Contains('.'))
+                {
+                    double dval = Convert.ToDouble(numstr);
+                    tok = new Token(TokenType.FLOATCONST);
+                    tok.floatval = dval;
+                }
+                else
+                {
+                    int bass = 10;
+                    if (numstr.StartsWith("0x"))
+                    {
+                        bass = 16;
+                    }
+                    else if (numstr.StartsWith("0"))
+                    {
+                        bass = 8;
+                    }
+                    int intval = Convert.ToInt32(numstr, bass);
+                    tok = new Token(TokenType.INTCONST);
+                    tok.intval = intval;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("error parsing number str " + numstr + " : " + e.Message);
+            }
+            return tok;
+        }
+
+        public Token ParseString(string p)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Token ParseChar(string p)
+        {
+            throw new NotImplementedException();
         }
 
         public Token getToken()
         {
             Token tok = null;
-            String frag = scanner.getFrag();
+            Fragment frag;
+            Fragment nextfrag;
+
+            while (true)
+            {
+                frag = getNextFrag();
+                if (frag.type == FragType.SPACE)
+                {
+                    continue;
+                }
+
+                if (frag.type == FragType.WORD)
+                {
+                    if (keywords.ContainsKey(frag.str))
+                    {
+                        tok = new Token(keywords[frag.str]);
+                    }
+                    else if (typedefs.Contains(frag.str))
+                    {
+                        tok = new Token(TokenType.TYPENAME);
+                        tok.strval = frag.str;
+                    }
+                    else
+                    {
+                        tok = new Token(TokenType.IDENT);
+                        tok.strval = frag.str;
+                    }
+                    break;
+                }
+
+                if (frag.type == FragType.NUMBER)
+                {
+                    tok = ParseNumber(frag.str);
+                    break;
+                }
+
+                if (frag.type == FragType.STRING)
+                {
+                    tok = ParseString(frag.str);
+                    break;
+                }
+
+                if (frag.type == FragType.CHAR)
+                {
+                    tok = ParseChar(frag.str);
+                    break;
+                }
+
+                if (frag.type == FragType.PUNCT)
+                {
+                    char c = frag.str[0];
+                    switch (c)
+                    {
+                        case '[':
+                            tok = new Token(TokenType.LBRACKET);
+                            break;
+                        case ']':
+                            tok = new Token(TokenType.RBRACKET);
+                            break;
+                        case '(':
+                            tok = new Token(TokenType.LPAREN);
+                            break;
+                        case ')':
+                            tok = new Token(TokenType.RPAREN);
+                            break;
+                        case '{':
+                            tok = new Token(TokenType.LBRACE);
+                            break;
+                        case '}':
+                            tok = new Token(TokenType.RBRACE);
+                            break;
+
+                        case '+':
+                            nextfrag = getNextFrag();
+                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '+'))
+                            {
+                                tok = new Token(TokenType.PLUSPLUS);
+                            }
+                            else if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.PLUSEQUAL);
+                            }
+                            else
+                            {
+                                putFragBack(nextfrag);
+                                tok = new Token(TokenType.PLUS);
+                            }
+                            break;
+                        case '-':
+                            nextfrag = getNextFrag();
+                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '-'))
+                            {
+                                tok = new Token(TokenType.MINUSMINUS);
+                            }
+                            else if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.MINUSEQUAL);
+                            }
+                            else if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '>'))
+                            {
+                                tok = new Token(TokenType.ARROW);
+                            }
+                            else
+                            {
+                                putFragBack(nextfrag);
+                                tok = new Token(TokenType.MINUS);
+                            }
+                            break;
+                        case '*':
+                            nextfrag = getNextFrag();
+                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.MULTEQUAL);
+                            }
+                            else
+                            {
+                                putFragBack(nextfrag);
+                                tok = new Token(TokenType.STAR);
+                            }
+                            break;
+                        case '/':
+                            nextfrag = getNextFrag();
+                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.SLASHEQUAL);
+                            }
+                            else
+                            {
+                                putFragBack(nextfrag);
+                                tok = new Token(TokenType.SLASH);
+                            }
+                            break;
+                        case '%':
+                            nextfrag = getNextFrag();
+                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.PERCENTEQUAL);
+                            }
+                            else
+                            {
+                                putFragBack(nextfrag);
+                                tok = new Token(TokenType.PERCENT);
+                            }
+                            break;
+                        case '&':
+                            nextfrag = getNextFrag();
+                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '&'))
+                            {
+                                tok = new Token(TokenType.AMPAMP);
+                            }
+                            else if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.AMPEQUAL);
+                            }
+                            else
+                            {
+                                putFragBack(nextfrag);
+                                tok = new Token(TokenType.AMPERSAND);
+                            }
+                            break;
+                        case '|':
+                            nextfrag = getNextFrag();
+                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '|'))
+                            {
+                                tok = new Token(TokenType.BARBAR);
+                            }
+                            else if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.BAREQUAL);
+                            }
+                            else
+                            {
+                                putFragBack(nextfrag);
+                                tok = new Token(TokenType.BAR);
+                            }
+                            break;
+                        case '~':
+                            tok = new Token(TokenType.TILDE);
+                            break;
+                        case '^':
+                            nextfrag = getNextFrag();
+                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.CARETEQUAL);
+                            }
+                            else
+                            {
+                                putFragBack(nextfrag);
+                                tok = new Token(TokenType.CARET);
+                            }
+                            break;
+
+
+                        case '=':
+                            nextfrag = getNextFrag();
+                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.EQUALEQUAL);
+                            }
+                            else
+                            {
+                                putFragBack(nextfrag);
+                                tok = new Token(TokenType.EQUAL);
+                            }
+                            break;
+                        case '!':
+                            nextfrag = getNextFrag();
+                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.NOTEQUAL);
+                            }
+                            else
+                            {
+                                putFragBack(nextfrag);
+                                tok = new Token(TokenType.EXCLAIM);
+                            }
+                            break;
+                        case '<':
+                            nextfrag = getNextFrag();
+                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '<'))
+                            {
+                                Fragment frag2 = getNextFrag();
+                                if ((frag2.type == FragType.PUNCT) && (frag2.str[0] == '='))
+                                {
+                                    tok = new Token(TokenType.LESSLESSEQUAL);   //<<=
+                                }
+                                else
+                                {
+                                    putFragBack(frag2);
+                                    tok = new Token(TokenType.LESSLESS);
+                                }
+                            }
+                            else if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.LESSEQUAL);
+                            }
+                            else
+                            {
+                                putFragBack(nextfrag);
+                                tok = new Token(TokenType.LESSTHAN);
+                            }
+                            break;
+                        case '>':
+                            nextfrag = getNextFrag();
+                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '>'))
+                            {
+                                Fragment frag2 = getNextFrag();
+                                if ((frag2.type == FragType.PUNCT) && (frag2.str[0] == '='))
+                                {
+                                    tok = new Token(TokenType.GTRGTREQUAL);   //>>=
+                                }
+                                else
+                                {
+                                    putFragBack(frag2);
+                                    tok = new Token(TokenType.GTRGTR);
+                                }
+                            }
+                            else if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.GTREQUAL);
+                            }
+                            else
+                            {
+                                putFragBack(nextfrag);
+                                tok = new Token(TokenType.GTRTHAN);
+                            }
+                            break;
+
+                        case ',':
+                            tok = new Token(TokenType.COMMA);
+                            break;
+                        case '.':
+                            bool threedots = false;
+                            nextfrag = getNextFrag();
+                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '.'))
+                            {
+                                Fragment frag2 = getNextFrag();
+                                if ((frag2.type == FragType.PUNCT) && (frag2.str[0] == '.'))
+                                {
+                                    tok = new Token(TokenType.ELLIPSIS);        //...
+                                    threedots = true;
+                                }
+                                else
+                                {
+                                    putFragBack(nextfrag);
+                                    putFragBack(frag2);
+                                }
+                            }
+                            else
+                            {
+                                putFragBack(nextfrag);
+                            }
+                            if (!threedots)
+                            {
+                                tok = new Token(TokenType.PERIOD);
+                            }
+                            break;
+                        case '?':
+                            tok = new Token(TokenType.QUESTION);
+                            break;
+                        case ':':
+                            tok = new Token(TokenType.COLON);
+                            break;
+                        case ';':
+                            tok = new Token(TokenType.SEMICOLON);
+                            break;
+
+                        default:
+                            tok = new Token(TokenType.ERROR);
+                            break;
+                    }
+                    break;
+                }
+
+                if (frag.type == FragType.EOF)
+                {
+                    tok = new Token(TokenType.EOF);
+                    break;
+                }
+            }
 
             return tok;
         }
     }
 }
+
+//Console.WriteLine("There's no sun in the shadow of the wizard");
