@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Black C - a frontend C parser
-Copyright (C) 1997-2019  George E Greaney
+Copyright (C) 1997-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 
-namespace BlackC
+namespace BlackC.Lexer
 {
     public class Scanner
     {
@@ -34,13 +34,18 @@ namespace BlackC
         SourceLocation tokenLoc;
 
         string curline;
-        bool atEOF;
-        bool atBOL;                 //token was at beginning of line
-        bool sawWS;                 //token was preceeded by whitespace (including comments)
+        bool atLineStart;            //token was at start of line
+        bool leadingWS;                 //token was preceeded by whitespace (including comments)
 
         public Scanner()
         {
             tokenLoc = null;
+            atLineStart = true;
+            leadingWS = false;
+        }
+
+        public Scanner(String filename)
+        {
         }
 
         //- source file mgmt --------------------------------------------------
@@ -68,50 +73,6 @@ namespace BlackC
 
         //- skipping whitespace & comments  -----------------------------------
 
-        public void getCurrentLine()
-        {
-            String newline = lines[linenum].Trim();
-
-            //concatenate continued lines
-            while ((linenum < lines.Length - 1) && (newline.EndsWith("\\")))
-            {
-                newline = newline.Remove(newline.Length - 1, 1);
-                newline += lines[++linenum].Trim();
-            }
-
-            //translate any trigraphs
-            newline = newline.Replace("??=", "#");
-            newline = newline.Replace("??(", "[");
-            newline = newline.Replace("??/", "\\");
-            newline = newline.Replace("??)", "]");
-            newline = newline.Replace("??'", "^");
-            newline = newline.Replace("??<", "{");
-            newline = newline.Replace("??!", "|");
-            newline = newline.Replace("??>", "}");
-            newline = newline.Replace("??-", "~");
-
-            curline = newline;
-        }
-
-        //public void gotoNextLine()
-        //{
-        //    do
-        //    {
-        //        linenum++;
-        //        eolnCount++;
-        //        atEOF = (linenum == lines.Length);
-        //        if (!atEOF)
-        //        {
-        //            getCurrentLine();
-        //        }
-        //    }
-        //    while ((!atEOF) && (curline.Length == 0));      //skip empty lines
-
-        //    pos = 0;                    //at start of line
-        //    atBOL = true;
-        //    sawWS = false;              //any whitespace has been removed from line start
-        //}
-
         //skip remainder of current line & eoln chars
         public void skipLineComment()
         {
@@ -124,6 +85,7 @@ namespace BlackC
                 buffer.gotoNextChar();
             buffer.onNewLine();
             buffer.gotoNextChar();
+            atLineStart = true;
         }
 
         //skip source characters until reach next '*/'
@@ -137,6 +99,7 @@ namespace BlackC
                     if (buffer.ch == '\r')
                         buffer.gotoNextChar();
                     buffer.onNewLine();
+                    atLineStart = true;
                 }
 
                 buffer.gotoNextChar();
@@ -145,7 +108,7 @@ namespace BlackC
 
         public Token skipWhitespace()
         {
-            sawWS = false;
+            leadingWS = false;
             bool done = true;
             do
             {
@@ -155,7 +118,7 @@ namespace BlackC
                 if ((buffer.ch == ' ') || (buffer.ch == '\t') || (buffer.ch == '\f') || (buffer.ch == '\v'))
                 {
                     buffer.gotoNextChar();
-                    sawWS = true;
+                    leadingWS = true;
                     done = false;
                 }
 
@@ -167,7 +130,8 @@ namespace BlackC
                         buffer.gotoNextChar();
                     buffer.onNewLine();
                     buffer.gotoNextChar();
-                    sawWS = true;
+                    leadingWS = true;
+                    atLineStart = true;
                     done = false;
                 }
 
@@ -175,17 +139,19 @@ namespace BlackC
                 if ((buffer.ch == '/') && (buffer.peekNextChar() == '/'))
                 {
                     skipLineComment();
+                    leadingWS = true;
                     done = false;
                 }
 
                 if ((buffer.ch == '/') && (buffer.peekNextChar() == '*'))
                 {
                     skipBlockComment();
+                    leadingWS = true;
                     done = false;
                 }
             } while (!done);
 
-            return null;
+            return null;        //we may want to return a whitespace token at some point
         }
 
         private Token scanEndOfFile()
@@ -339,7 +305,9 @@ namespace BlackC
             }
 
             TokenType ttype = findKeyword(id);                      //check if ident is a keyword
-            return new Token(ttype, id, tokenLoc);
+            Token token = new Token(ttype, id, tokenLoc);
+            setTokenFlags(token);
+            return token;
         }
 
         /*
@@ -377,7 +345,6 @@ namespace BlackC
         */
         public Token scanFloatConst(String num)
         {
-            Token token;
             bool atend;
             if (num.EndsWith("."))      //get optional decimal part
             {
@@ -442,7 +409,9 @@ namespace BlackC
                 pos++;
             }
 
-            return new Token(TokenType.tFLOATCONST, num, tokenLoc);
+            Token token = new Token(TokenType.tFLOATCONST, num, tokenLoc);
+            setTokenFlags(token);
+            return token;
         }
 
         /*(6.4.4.1) 
@@ -503,14 +472,12 @@ namespace BlackC
          long-long-suffix: one of
             ll LL
         */
-        public Token scanNumber(char c)
+        public Token scanNumber(char c)     //either int or float const
         {
             String num = "";
-            int bass = 10;                  //number base
-            bool floatpt = false;           //haven't seen '.' yet
+            int bass = 10;      //default number base
 
-
-            if (!floatpt)       //get mantissa
+            if (c != '.')       //get mantissa
             {
                 num += c;
                 if (c == '0')             //set base
@@ -534,7 +501,11 @@ namespace BlackC
                     buffer.gotoNextChar();
                     c1 = buffer.ch;
                 }
-
+            }
+            else
+            {
+                num = "0.";                         //add the leading 0 to a float const str '.1234'
+                return scanFloatConst(num);         //get floating point constant token
             }
 
             //got the mantissa, if the next char is decimal point or exponent, then it's a float const
@@ -544,34 +515,37 @@ namespace BlackC
                 num = num + Char.ToUpper(c2);
                 return scanFloatConst(num);                 //get floating point constant token
             }
-            else
-            {
-                bool usuffix = false;
-                bool lsuffix = false;
-                for (int i = 0; i < 2; i++)     //check for int const suffixes
-                {
-                    if ((!usuffix) && ((buffer.ch == 'u') || (buffer.ch == 'U')))
-                    {
-                        usuffix = true;
-                        num = num + "U";
-                        buffer.gotoNextChar();
-                    }
 
-                    if ((!lsuffix) && ((buffer.ch == 'l') || (buffer.ch == 'L')))
+            //not a float, check for int const suffixes
+            bool usuffix = false;
+            int lsuffix = 0;
+            string intstr = num;
+            for (int i = 0; i < 2; i++)     //check for int const suffixes
+            {
+                if ((!usuffix) && ((buffer.ch == 'u') || (buffer.ch == 'U')))
+                {
+                    usuffix = true;
+                    num = num + "U";
+                    buffer.gotoNextChar();
+                }
+
+                if ((lsuffix == 0) && ((buffer.ch == 'l') || (buffer.ch == 'L')))
+                {
+                    lsuffix++;
+                    num = num + "L";
+                    buffer.gotoNextChar();
+                    if ((buffer.ch == 'l') || (buffer.ch == 'L'))
                     {
-                        lsuffix = true;
+                        lsuffix++;
                         num = num + "L";
                         buffer.gotoNextChar();
-                        if ((buffer.ch == 'l') || (buffer.ch == 'L'))
-                        {
-                            num = num + "L";
-                            buffer.gotoNextChar();
-                        }
                     }
                 }
-                
             }
-            return new Token(TokenType.tINTCONST, num, tokenLoc);
+
+            Token token = new IntConstToken(TokenType.tINTCONST, num, tokenLoc, intstr, usuffix, lsuffix);
+            setTokenFlags(token);
+            return token;
         }
 
         /*(6.4.4.4) 
@@ -612,7 +586,6 @@ namespace BlackC
           */
         private Token scanCharLiteral(char c)
         {
-            Token token;
             String cstr = (c == 'L') ? "L\'" : "";
 
             while ((pos < curline.Length) && (curline[pos] != '\''))
@@ -632,7 +605,9 @@ namespace BlackC
             {
                 pos++;
             }
-            return new Token(TokenType.tCHARCONST, cstr, tokenLoc);
+            Token token = new Token(TokenType.tCHARCONST, cstr, tokenLoc);
+            setTokenFlags(token);
+            return token;
         }
 
         /*(6.4.5) 
@@ -652,7 +627,6 @@ namespace BlackC
          */
         public Token scanString(char c)
         {
-            Token token;
             String str = (c == 'L') ? "L\"" : "";
 
             while ((pos < curline.Length) && (curline[pos] != '\"'))
@@ -672,7 +646,9 @@ namespace BlackC
             {
                 pos++;
             }
-            return new Token(TokenType.tSTRINGCONST, str, tokenLoc);
+            Token token = new Token(TokenType.tSTRINGCONST, str, tokenLoc);
+            setTokenFlags(token);
+            return token;
         }
 
         //- main scanning method ----------------------------------------------
@@ -1164,12 +1140,20 @@ namespace BlackC
             }
 
             Token token = new Token(ttype, tokenStr, tokenLoc);
-
-            token.LeadingSpace = sawWS;
-            token.atBOL = atBOL;
-            atBOL = false;          //if we've read a token, then we're not at the beginning of the line anymore
-
+            setTokenFlags(token);
             return token;
+        }
+
+        private void setTokenFlags(Token token)
+        {
+            token.leadingSpace = leadingWS;
+            token.startsLine = atLineStart;
+            atLineStart = false;                //if we've read a token, then we're not at the beginning of the line anymore
+        }
+
+        internal string getFrag()
+        {
+            throw new NotImplementedException();
         }
     }
 }
