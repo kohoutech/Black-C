@@ -237,9 +237,8 @@ namespace BlackC.Lexer
          floating-suffix: one of
             f l F L
         */
-        public string scanFloatConst()
+        public string scanFloatConst(String fstr)
         {
-            string fstr = "";
             //    bool atend;
             //    if (num.EndsWith("."))      //get optional decimal part
             //    {
@@ -399,17 +398,17 @@ namespace BlackC.Lexer
             }
             else
                 {
-            //        num = "0.";                         //add the leading 0 to a float const str '.1234'
-            //        return scanFloatConst(num);         //get floating point constant token
+                    numstr = "0.";                         //add the leading 0 to a float const str '.1234'
+                    return scanFloatConst(numstr);         //get floating point constant string
                 }
 
-            //    //got the mantissa, if the next char is decimal point or exponent, then it's a float const
-            //    if ((buffer.ch == '.') || (buffer.ch == 'E') || (buffer.ch == 'e'))
-            //    {
-            //        char c2 = buffer.gotoNextChar();           //get '.' or 'E' or 'e'
-            //        num = num + Char.ToUpper(c2);
-            //        return scanFloatConst(num);                 //get floating point constant token
-            //    }
+                //got the mantissa, if the next char is decimal point or exponent, then it's a float const
+                if ((ch == '.') || (ch == 'E') || (ch == 'e'))
+                {
+                    char c2 = source[++srcpos];            //get '.' or 'E' or 'e'
+                    numstr = numstr + Char.ToUpper(c2);
+                    return scanFloatConst(numstr);            //get floating point constant token
+                }
 
             //    //not a float, check for int const suffixes
             //    bool usuffix = false;
