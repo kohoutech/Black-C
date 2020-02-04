@@ -32,13 +32,13 @@ namespace BlackC.Lexer
         int srcpos;
 
         //old vars
-        SourceBuffer buffer;
-        string[] lines;
-        int linenum;
-        SourceLocation tokenLoc;
-        string curline;
-        bool atLineStart;            //token was at start of line
-        bool leadingWS;                 //token was preceeded by whitespace (including comments)
+        //SourceBuffer buffer;
+        //string[] lines;
+        //int linenum;
+        //SourceLocation tokenLoc;
+        //string curline;
+        //bool atLineStart;            //token was at start of line
+        //bool leadingWS;                 //token was preceeded by whitespace (including comments)
 
         public Scanner(String _filename)
         {
@@ -77,6 +77,84 @@ namespace BlackC.Lexer
         //    //atEOF = false;
         //}
 
+        //- source transformation ---------------------------------------------
+
+        Dictionary<char, char> trigraphs = new Dictionary<char, char>() { 
+                        { '=', '#' },  { ')', ']' }, { '!', '|' }, 
+                        { '(', '[' },  { '\'','^' }, { '>', '}' },
+                        { '/', '\\' }, { '<', '{' }, { '-', '~' }};
+
+        public char translateTrigraphs(char ch, out int offset)
+        {
+            offset = 0;
+            if (ch == '?' && (source[srcpos + 1] == '?'))
+            {
+                char ch2 = source[srcpos + 2];
+                if (trigraphs.ContainsKey(ch2))
+                {
+                    ch = trigraphs[ch2];
+                    offset = 2;
+                }
+            }
+            return ch;
+        }
+
+        //line continuation - either (\\ + \n) or (\\ + \r\n)
+        public char spliceContinuedLines(char ch, ref int offset)
+        {
+            if ((ch == '\\') && (source[srcpos + 1 + offset] == '\n'))
+            {
+                offset += 2;
+                ch = source[srcpos + offset];
+            }
+            if ((ch == '\\') && ((source[srcpos + 1 + offset] == '\r') && (source[srcpos + 2 + offset] == '\n')))
+            {
+                offset += 3;
+                ch = source[srcpos + offset];
+            }
+            return ch;
+        }
+
+        //translation phase 1 : replace trigraphs with their eqivalent chars
+        //translation phase 2 : splice lines ending with line continuation chars together
+        public char getChar()
+        {
+            char ch = source[srcpos];
+            int offset;
+            ch = translateTrigraphs(ch, out offset);
+            ch = spliceContinuedLines(ch, ref offset);
+            return ch;
+        }
+
+        public void gotoNextChar()
+        {
+            char ch = source[srcpos];
+            int offset;
+            ch = translateTrigraphs(ch, out offset);
+            ch = spliceContinuedLines(ch, ref offset);
+            srcpos = srcpos + offset + 1;
+        }
+
+        public char getNextChar()
+        {
+            gotoNextChar();
+            char ch = getChar();
+            return ch;
+        }
+
+        public char getCharAt(int pos)
+        {
+            int curpos = srcpos;
+            while (pos > 0)
+            {
+                    gotoNextChar();
+                    pos--;
+            }
+            char ch = getChar();
+            srcpos = curpos;
+            return ch;
+        }
+
         //- skipping whitespace & comments  -----------------------------------
 
         public bool isSpace(char ch)
@@ -87,31 +165,32 @@ namespace BlackC.Lexer
         public void skipWhitespace()
         {
             bool done = false;
-            char ch = source[srcpos];
+            char ch = getChar();
             while (!done)
             {
                 //skip any whitespace
                 if ((ch == ' ') || (ch == '\t') || (ch == '\f') || (ch == '\v') || (ch == '\r'))
                 {
-                    ch = source[++srcpos];
+                    gotoNextChar();
+                    ch = getChar();
                     continue;
                 }
 
                 //skip any eolns - any new line handling that needs to be done goes here
                 if ((ch == '\n'))
                 {
-                    ch = source[++srcpos];
+                    ch = getNextChar();
                     continue;
                 }
 
                 //skip any following comments, if we found a comment, then we're not done yet
-                if ((ch == '/') && (source[srcpos + 1] == '/'))
+                if ((ch == '/') && (getCharAt(1) == '/'))
                 {
                     skipLineComment();
                     continue;
                 }
 
-                if ((ch == '/') && (source[srcpos + 1] == '*'))
+                if ((ch == '/') && (getCharAt(1) == '*'))
                 {
                     skipBlockComment();
                     continue;
@@ -125,34 +204,30 @@ namespace BlackC.Lexer
         //skip remainder of current line & eoln chars
         public void skipLineComment()
         {
-            //    while ((buffer.ch == '\n') ||
-            //            (buffer.ch == '\r') && (buffer.peekNextChar() == '\n'))
-            //    {
-            //        buffer.gotoNextChar();
-            //    }
-            //    if (buffer.ch == '\r')
-            //        buffer.gotoNextChar();
-            //    buffer.onNewLine();
-            //    buffer.gotoNextChar();
-            //    atLineStart = true;
+            char ch = getChar();
+            while (ch != '\n' && ch != '\0')
+            {
+                ch = getNextChar();
+            }
+            if (ch != '\0')     //if not eof, then skip the eoln char
+            {
+                gotoNextChar();
+            }
         }
 
-        //skip source characters until reach next '*/'
+        //skip source characters until reach next '*/' or eof
         public void skipBlockComment()
         {
-            //    while ((buffer.ch == '*') && (buffer.peekNextChar() == '/'))
-            //    {
-            //        if ((buffer.ch == '\n') ||
-            //            (buffer.ch == '\r') && (buffer.peekNextChar() == '\n'))
-            //        {
-            //            if (buffer.ch == '\r')
-            //                buffer.gotoNextChar();
-            //            buffer.onNewLine();
-            //            atLineStart = true;
-            //        }
-
-            //        buffer.gotoNextChar();
-            //    }
+            char ch = getChar();
+            while ((ch != '\0') && ((ch != '*') && (getCharAt(1) != '/')))
+            {
+                ch = getNextChar();
+            }
+            if (ch != '\0')         //if we haven't reached eof, then skip '*/' chars
+            {
+                gotoNextChar();
+                gotoNextChar();
+            }
         }
 
         //- source scanning ------------------------------------------------
@@ -190,11 +265,11 @@ namespace BlackC.Lexer
         public string scanIdentifier()
         {
             String idstr = "";
-            char ch = source[srcpos];
+            char ch = getChar();
             while (isAlphaNum(ch))
             {
                 idstr = idstr + ch;
-                ch = source[++srcpos];
+                ch = getNextChar();
             }
             return idstr;
         }
@@ -239,72 +314,48 @@ namespace BlackC.Lexer
         */
         public string scanFloatConst(String fstr)
         {
-            //    bool atend;
-            //    if (num.EndsWith("."))      //get optional decimal part
-            //    {
-            //        atend = !(pos < curline.Length);
-            //        while (!atend)
-            //        {
-            //            char c1 = curline[pos++];
-            //            if (c1 >= '0' && c1 <= '9')
-            //            {
-            //                num = num + c1;
-            //                atend = !(pos < curline.Length);
-            //            }
-            //            else
-            //            {
-            //                pos--;
-            //                atend = true;
-            //            }
-            //        }
-            //        if (num.EndsWith("."))      //if we didn't have a decimal part above, we add one anyway
-            //        {
-            //            num = num + '0';
-            //        }
-            //        if ((pos < curline.Length) && ((curline[pos] == 'e') || (curline[pos] == 'E')))     //then check for exponent part
-            //        {
-            //            num = num + 'E';
-            //            pos++;
-            //        }
-            //    }
-            //    if (num.EndsWith("E"))      //get optional decimal part
-            //    {
-            //        if ((pos < curline.Length) && ((curline[pos] == '+') || (curline[pos] == '-')))
-            //        {
-            //            char s1 = curline[pos++];
-            //            num = num + s1;
-            //        }
-            //        atend = !(pos < curline.Length);
-            //        while (!atend)
-            //        {
-            //            char c1 = curline[pos++];
-            //            if (c1 >= '0' && c1 <= '9')
-            //            {
-            //                num = num + c1;
-            //                atend = !(pos < curline.Length);
-            //            }
-            //            else
-            //            {
-            //                pos--;
-            //                atend = true;
-            //            }
-            //        }
-            //    }
-            //    bool fsuffix = false;
-            //    if ((pos < curline.Length) && ((curline[pos] == 'f') || (curline[pos] == 'F')))
-            //    {
-            //        fsuffix = true;
-            //        num = num + "F";
-            //        pos++;
-            //    }
-            //    if ((!fsuffix) && (pos < curline.Length) && ((curline[pos] == 'l') || (curline[pos] == 'L')))
-            //    {
-            //        num = num + "L";
-            //        pos++;
-            //    }
+            if (fstr.EndsWith("."))      //get optional decimal part
+            {
+                char c1 = getChar();
+                while (c1 >= '0' && c1 <= '9')
+                {
+                    fstr = fstr + c1;
+                    c1 = getNextChar();
+                }
+                if (fstr.EndsWith("."))      //if we didn't have a decimal part above, we add one anyway (123. --> 123.0)
+                {
+                    fstr = fstr + '0';
+                }
+                if ((c1 == 'e') || (c1 == 'E'))     //then check for exponent part
+                {
+                    fstr = fstr + 'E';
+                    gotoNextChar();
+                }
+            }
 
-            //    Token token = new Token(TokenType.tFLOATCONST, num, tokenLoc);
-            //    setTokenFlags(token);
+            if (fstr.EndsWith("E"))      //get optional exponent part
+            {
+                char s1 = getChar();
+                if ((s1 == '+') || (s1 == '-'))     //exponent sign is optional
+                {
+                    fstr = fstr + s1;
+                    s1 = getNextChar();
+                }
+                while (s1 >= '0' && s1 <= '9')
+                {
+                    fstr = fstr + s1;
+                    s1 = getNextChar();
+                }
+            }
+
+            //check for float const suffixes
+            char f1 = getChar();
+            if ((f1 == 'f') || (f1 == 'F') || (f1 == 'l') || (f1 == 'L'))
+            {
+                fstr = fstr + Char.ToUpper(f1);
+                gotoNextChar();
+            }
+
             return fstr;
         }
 
@@ -369,73 +420,79 @@ namespace BlackC.Lexer
         public string scanNumber()     //either int or float const
         {
             int bass = 10;      //default number base
-            char ch = source[srcpos];
+            char ch = getChar();
             String numstr = "" + ch;
 
             if (ch != '.')       //get mantissa
             {
                 if (ch == '0')             //set base
                 {
-                    if ((source[srcpos + 1] == 'X' || source[srcpos + 1] == 'x'))
+                    if ((getCharAt(1) == 'X' || getCharAt(1) == 'x'))
                     {
                         bass = 16;
-                        numstr += source[++srcpos];
-                        srcpos++;
+                        gotoNextChar();
+                        numstr += getChar();
+                        gotoNextChar();
                     }
                     else
                     {
                         bass = 8;
                     }
                 }
-                ch = source[++srcpos];
+                ch = getNextChar();
                 while (((bass == 10) && (ch >= '0' && ch <= '9')) ||
                         ((bass == 8) && (ch >= '0' && ch <= '7')) ||
                         ((bass == 16) && ((ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'F') || (ch >= 'a' && ch <= 'f'))))
                 {
                     numstr = numstr + ch;
-                    ch = source[++srcpos];
+                    ch = getNextChar();
                 }
             }
             else
+            {
+                numstr = "0.";                         //add the leading 0 to a float const str '.1234'
+                return scanFloatConst(numstr);         //get floating point constant string
+            }
+
+            //got the mantissa, if the next char is decimal point or exponent, then it's a float const
+            if ((ch == '.') || (ch == 'E') || (ch == 'e'))
+            {
+                char ch2 = getNextChar();                   //get '.' or 'E' or 'e'
+
+                if (ch == 'E' || ch == 'e')
                 {
-                    numstr = "0.";                         //add the leading 0 to a float const str '.1234'
-                    return scanFloatConst(numstr);         //get floating point constant string
+                    numstr = numstr + ".0";            //add decimal part if missing (123E10 --> 123.0E10)
+                }
+                numstr = numstr + Char.ToUpper(ch2);
+                return scanFloatConst(numstr);         //get floating point constant token
+            }
+
+            //not a float, check for int const suffixes, can be in any order
+            bool usuffix = false;
+            int lsuffix = 0;
+            string intstr = numstr;
+            for (int i = 0; i < 2; i++)     //check for int const suffixes
+            {
+                if ((!usuffix) && ((ch == 'u') || (ch == 'U')))
+                {
+                    usuffix = true;
+                    numstr = numstr + "U";
+                    ch = getNextChar();
                 }
 
-                //got the mantissa, if the next char is decimal point or exponent, then it's a float const
-                if ((ch == '.') || (ch == 'E') || (ch == 'e'))
+                if ((lsuffix == 0) && ((ch == 'l') || (ch == 'L')))
                 {
-                    char c2 = source[++srcpos];            //get '.' or 'E' or 'e'
-                    numstr = numstr + Char.ToUpper(c2);
-                    return scanFloatConst(numstr);            //get floating point constant token
+                    lsuffix++;
+                    numstr = numstr + "L";
+                    ch = getNextChar();
+                    if ((ch == 'l') || (ch == 'L'))
+                    {
+                        lsuffix++;
+                        numstr = numstr + "L";
+                        ch = getNextChar();
+                    }
                 }
-
-            //    //not a float, check for int const suffixes
-            //    bool usuffix = false;
-            //    int lsuffix = 0;
-            //    string intstr = num;
-            //    for (int i = 0; i < 2; i++)     //check for int const suffixes
-            //    {
-            //        if ((!usuffix) && ((buffer.ch == 'u') || (buffer.ch == 'U')))
-            //        {
-            //            usuffix = true;
-            //            num = num + "U";
-            //            buffer.gotoNextChar();
-            //        }
-
-            //        if ((lsuffix == 0) && ((buffer.ch == 'l') || (buffer.ch == 'L')))
-            //        {
-            //            lsuffix++;
-            //            num = num + "L";
-            //            buffer.gotoNextChar();
-            //            if ((buffer.ch == 'l') || (buffer.ch == 'L'))
-            //            {
-            //                lsuffix++;
-            //                num = num + "L";
-            //                buffer.gotoNextChar();
-            //            }
-            //        }
-            //    }
+            }
 
             return numstr;
         }
@@ -545,51 +602,36 @@ namespace BlackC.Lexer
             return str;
         }
 
-        Dictionary<char, char> trigraphs = new Dictionary<char, char>() { 
-                        { '=', '#' },  { ')', ']' }, { '!', '|' }, 
-                        { '(', '[' },  { '\'','^' }, { '>', '}' },
-                        { '/', '\\' }, { '<', '{' }, { '-', '~' }};
-
         public char TranslateChars()
         {
-            char ch = source[srcpos];
+            char ch = getChar();
 
-            //trigraphs
-            if (ch == '?' && (source[srcpos + 1] == '?'))
-            {
-                char ch2 = source[srcpos + 2];
-                if (trigraphs.ContainsKey(ch2))
-                {
-                    ch = trigraphs[ch2];
-                    srcpos += 2;
-                }
-            }
 
             //diagraphs
-            if (ch == '<' && (source[srcpos + 1] == ':'))
+            if (ch == '<' && (getCharAt(1) == ':'))
             {
                 ch = '[';
-                srcpos++;
+                gotoNextChar();
             }
-            if (ch == ':' && (source[srcpos + 1] == '>'))
+            if (ch == ':' && (getCharAt(1) == '>'))
             {
                 ch = ']';
-                srcpos++;
+                gotoNextChar();
             }
-            if (ch == '<' && (source[srcpos + 1] == '%'))
+            if (ch == '<' && (getCharAt(1) == '%'))
             {
                 ch = '{';
-                srcpos++;
+                gotoNextChar();
             }
-            if (ch == '%' && (source[srcpos + 1] == '>'))
+            if (ch == '%' && (getCharAt(1) == '>'))
             {
                 ch = '}';
-                srcpos++;
+                gotoNextChar();
             }
-            if (ch == '%' && (source[srcpos + 1] == '>'))
+            if (ch == '%' && (getCharAt(1) == '>'))
             {
                 ch = '#';
-                srcpos++;
+                gotoNextChar();
             }
             //we handle '%:%:' --> '##' when we handle '#'
 
@@ -603,7 +645,7 @@ namespace BlackC.Lexer
         {
             Fragment frag = null;
 
-            char ch = source[srcpos];
+            char ch = getChar();
             while (true)
             {
                 if (isSpace(ch))
@@ -614,7 +656,7 @@ namespace BlackC.Lexer
                 }
 
                 //line comment
-                if (ch == '/' && (source[srcpos + 1] == '/'))
+                if (ch == '/' && (getCharAt(1) == '/'))
                 {
                     skipLineComment();
                     ch = ' ';                   //replace comment with single space
@@ -622,7 +664,7 @@ namespace BlackC.Lexer
                 }
 
                 //block comment
-                if (ch == '/' && (source[srcpos + 1] == '*'))
+                if (ch == '/' && (getCharAt(1) == '*'))
                 {
                     skipBlockComment();
                     ch = ' ';                   //replace comment with single space
@@ -632,13 +674,13 @@ namespace BlackC.Lexer
                 //L is a special case since it can start long char constants or long string constants, as well as identifiers
                 if (ch == 'L')
                 {
-                    if ((source[srcpos + 1]) == '\'')
+                    if ((getCharAt(1)) == '\'')
                     {
                         string chstr = scanCharLiteral();
                         frag = new Fragment(FragType.CHAR, chstr);
                         break;
                     }
-                    else if ((source[srcpos + 1]) == '"')
+                    else if ((getCharAt(1)) == '"')
                     {
                         string sstr = scanString();
                         frag = new Fragment(FragType.STRING, sstr);
@@ -656,7 +698,7 @@ namespace BlackC.Lexer
 
                 //numeric constant
                 //'.' can start a float const
-                if ((isDigit(ch)) || (ch == '.' && isDigit(source[srcpos + 1])))
+                if ((isDigit(ch)) || (ch == '.' && isDigit(getCharAt(1))))
                 {
                     string numstr = scanNumber();
                     frag = new Fragment(FragType.NUMBER, numstr);
@@ -706,7 +748,7 @@ namespace BlackC.Lexer
 
                 //anything else is punctuation
                 frag = new Fragment(FragType.PUNCT, "" + ch);
-                srcpos++;
+                gotoNextChar();
                 break;
             }
 
