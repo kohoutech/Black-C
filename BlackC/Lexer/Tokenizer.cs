@@ -26,16 +26,18 @@ namespace BlackC.Lexer
 {
     public class Tokenizer
     {
-        String filename;
-        Scanner scanner;
+        Parser parser;
+        Preprocessor prep;
+
         Queue<Fragment> frags;
         Dictionary<String, TokenType> keywords;
         List<String> typedefs;
 
-        public Tokenizer(String _filename)
+        public Tokenizer(Parser _parser, String filename)
         {
-            filename = _filename;
-            scanner = new Scanner(filename);
+            parser = _parser;
+
+            prep = new Preprocessor(parser, filename);
             frags = new Queue<Fragment>();
 
             //build keyword list
@@ -78,7 +80,7 @@ namespace BlackC.Lexer
             {
                 return frags.Dequeue();
             }
-            Fragment frag = scanner.getFrag();
+            Fragment frag = prep.getFrag();
             return frag;
         }
 
@@ -124,12 +126,12 @@ namespace BlackC.Lexer
 
         public Token ParseString(string p)
         {
-            throw new NotImplementedException();
+            return new Token(TokenType.STRINGCONST);
         }
 
         public Token ParseChar(string p)
         {
-            throw new NotImplementedException();
+            return new Token(TokenType.CHARCONST);
         }
 
         public Token getToken()

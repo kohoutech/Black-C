@@ -34,7 +34,7 @@ namespace BlackC
     public class Parser
     {
         public Options options;
-        public Tokenizer scan;
+        public Tokenizer tokenizer;
         public Arbor arbor;
 
         public ParseExpr pexpr;
@@ -50,7 +50,7 @@ namespace BlackC
         {
             options = _options;
 
-            scan = null;
+            tokenizer = null;
             arbor = new Arbor(this);
 
         //    //create sub parsers
@@ -67,6 +67,32 @@ namespace BlackC
             tokenCount = 0;
         }
 
+        public void parseFile(String filename)
+        {
+            tokenizer = new Tokenizer(this, filename);
+
+            //    if (options.preProcessOnly)
+            //    {
+            //        prep.preprocessFile();
+            //    }
+            //    else
+            //    {
+            Module module = parseTranslationUnit();
+            module.write();
+            //    }
+            Console.WriteLine("parsed " + filename);
+        }
+
+        public void error(String msg)
+        {
+            Console.WriteLine("error : " + msg);
+        }
+
+        public void warning(String msg)
+        {
+            Console.WriteLine("warning : " + msg);
+        }
+
         //- token handling -----------------------------------------------------
 
         public void nextToken()
@@ -79,7 +105,7 @@ namespace BlackC
             {
                 tokenList[2] = tokenList[1];            //move the sliding window forward
                 tokenList[1] = tokenList[0];
-                tokenList[0] = scan.getToken();
+                tokenList[0] = tokenizer.getToken();
             }
             curToken = tokenList[tokenCount];
         }
@@ -91,24 +117,6 @@ namespace BlackC
                 tokenCount++;
                 curToken = tokenList[tokenCount];
             }            
-        }
-
-        //---------------------------------------------------------------------
-
-        public void parseFile(String filename)
-        {
-            scan = new Tokenizer(filename);
-
-        //    if (options.preProcessOnly)
-        //    {
-        //        prep.preprocessFile();
-        //    }
-        //    else
-        //    {
-                Module module = parseTranslationUnit();
-                module.write();
-        //    }
-            Console.WriteLine("parsed " + filename);
         }
 
         //- external definitions ----------------------------------------------
@@ -124,15 +132,16 @@ namespace BlackC
             nextToken();
             while (curToken.type != TokenType.EOF)
             {               
-                OILNode node = parseExternalDef();
-                if (node.type == OILNodeType.VarDecl)
-                {
-                    unit.globals.Add((VarDecl)node);
-                }
-                else
-                {
-                    unit.funcs.Add((FunctionDecl)node);
-                }
+                //OILNode node = parseExternalDef();
+                //if (node.type == OILNodeType.VarDecl)
+                //{
+                //    unit.globals.Add((VarDecl)node);
+                //}
+                //else
+                //{
+                //    unit.funcs.Add((FunctionDecl)node);
+                //}
+                Console.WriteLine(curToken.ToString());
                 nextToken();
             }
             return unit;
