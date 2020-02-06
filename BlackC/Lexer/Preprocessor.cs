@@ -28,6 +28,8 @@ namespace BlackC.Lexer
     {
         public Parser parser;
         public Scanner scan;
+
+        public Fragment curFrag;
         //public List<SourceBuffer> sourceStack;
         //public bool inMacro;
         //public Macro currentMacro;
@@ -42,6 +44,7 @@ namespace BlackC.Lexer
         {
             parser = _parser;
             scan = new Scanner(parser, filename);
+            curFrag = null;
         //    sourceStack = new List<SourceBuffer>();
 
         //    Macro.initMacros();
@@ -57,13 +60,34 @@ namespace BlackC.Lexer
 
         public Fragment getFrag()
         {
-            Fragment frag =  scan.getFrag();
-            while (frag.type != FragType.EOF)
+            curFrag = scan.getFrag();
+            Console.WriteLine(curFrag.ToString());
+            bool atLineStart = true;
+            while (curFrag.type != FragType.EOF)
             {
-                Console.WriteLine(frag.ToString());
-                frag = scan.getFrag();
+                //check for directive as first non-space frag at start of line
+                if (atLineStart && curFrag.type != FragType.SPACE)
+                {
+                    if ((curFrag.type == FragType.PUNCT) && (curFrag.str[0] == '#'))
+                    {
+                        handleDirective();
+                    }
+                    else
+                    {
+                        atLineStart = false;
+                    }
+                }
+
+                if (curFrag.type == FragType.EOLN)
+                {
+                    atLineStart = true;
+                }
+
+                curFrag = scan.getFrag();
+                Console.WriteLine(curFrag.ToString());
             }
-            return frag;
+
+            return curFrag;
         }
 
         //public void setMainSourceFile(string filename)
@@ -216,80 +240,96 @@ namespace BlackC.Lexer
 
         ////(6.10) Preprocessing directives
 
-        ////handle directive, this will read all the tokens to the eoln in the directive line
-        //public void handleDirective()
-        //{
-        //    Token token = scanner.scanToken();        //get directive name
+        //handle directive, this will read all the tokens to the eoln in the directive line
+        public void handleDirective()
+        {
+            curFrag = scan.getFrag();
+            while (curFrag.type == FragType.SPACE)  //skip space(s) & get directive name
+            {
+                curFrag = scan.getFrag();
+            }
 
-        //    if (token.type != TokenType.tEOLN)          //skip empty directives, ie "#  <eoln>"
-        //    {
-        //        switch (token.chars)
-        //        {
-        //            case "include":
-        //                handleIncludeDirective();
-        //                break;
+            if (curFrag.type == FragType.EOLN)          //skip empty directives, ie "#  <eoln>"
+            {
+                return;
+            }
 
-        //            case "define":
-        //                handleDefineDirective();
-        //                break;
+            if (curFrag.type == FragType.WORD)
+            {
+                switch (curFrag.str)
+                {
+                    case "include":
+                        handleIncludeDirective();
+                        break;
 
-        //            case "undef":
-        //                handleUndefDirective();
-        //                break;
+                    case "define":
+                        handleDefineDirective();
+                        break;
 
-        //            case "if":
-        //                handleIfDirective();
-        //                break;
+                    case "undef":
+                        handleUndefDirective();
+                        break;
 
-        //            case "ifdef":
-        //                handleIfdefDirective();
-        //                break;
+                    case "if":
+                        handleIfDirective();
+                        break;
 
-        //            case "ifndef":
-        //                handleIfndefDirective();
-        //                break;
+                    case "ifdef":
+                        handleIfdefDirective();
+                        break;
 
-        //            case "elif":
-        //                handleElifDirective();
-        //                break;
+                    case "ifndef":
+                        handleIfndefDirective();
+                        break;
 
-        //            case "else":
-        //                handleElseDirective();
-        //                break;
+                    case "elif":
+                        handleElifDirective();
+                        break;
 
-        //            case "endif":
-        //                handleEndifDirective();
-        //                break;
+                    case "else":
+                        handleElseDirective();
+                        break;
 
-        //            case "line":
-        //                handleLineDirective();
-        //                break;
+                    case "endif":
+                        handleEndifDirective();
+                        break;
 
-        //            case "error":
-        //                handleErrorDirective();
-        //                break;
+                    case "line":
+                        handleLineDirective();
+                        break;
 
-        //            case "pragma":
-        //                handlePragmaDirective();
-        //                break;
+                    case "error":
+                        handleErrorDirective();
+                        break;
 
-        //            default:
-        //                handleUnknownDirective(token.chars);
-        //                break;
-        //        }
-        //    }
-        //}
+                    case "pragma":
+                        handlePragmaDirective();
+                        break;
 
-        //public void skipRestOfLine(Token token)
-        //{
-        //    while (token.type != TokenType.tEOLN)
-        //    {
-        //        token = scanner.scanToken();        //skip remaining chars in source line
-        //    }
-        //}
+                    default:
+                        parser.error("saw unknown directive #" + curFrag.str + " at " + curFrag.loc.ToString());
+                        skipRestOfLine();
+                        break;
+                }
+            }
+            else
+            {
+                parser.error("invalid directive #" + curFrag.str + " at " + curFrag.loc.ToString());
+                skipRestOfLine();
+            }
+        }
 
-        //public void handleIncludeDirective()
-        //{
+        //we pass in the current fragment becuase we may already be at eoln & don't want to read past it
+        public void skipRestOfLine()
+        {
+            while (curFrag.type != FragType.EOLN)
+            {
+                curFrag = scan.getFrag();        //skip remaining fragments in source line
+            }
+        }
+
+        public void handleIncludeDirective()
+        {
         //    Token token = scanner.scanToken();
         //    String filename = "";
 
@@ -306,7 +346,8 @@ namespace BlackC.Lexer
         //            token = scanner.scanToken();
         //        }
         //    }
-        //    skipRestOfLine(token);
+            curFrag = scan.getFrag();
+            skipRestOfLine();
 
         //    if (!oncelerList.Contains(filename))        //if file hasn't been marked with "pragma once"
         //    {
@@ -315,69 +356,98 @@ namespace BlackC.Lexer
         //        scanner.saveSource();
         //        scanner.setSource(includeBuf);
         //    }
-        //}
+        }
 
-        //public void handleDefineDirective()
-        //{
+        public void handleDefineDirective()
+        {
+            Console.WriteLine("saw #define");
+            curFrag = scan.getFrag();
+            skipRestOfLine();
+
         //    Token token = scanner.scanToken();
         //    Macro macro = Macro.defineMacro(token);
         //    macro.scanMacroDefinition(scanner);
-        //}
+        }
 
-        //public void handleUndefDirective()
-        //{
-        //    Token token = scanner.scanToken();
+        public void handleUndefDirective()
+        {
+            Console.WriteLine("saw #undef");
+            curFrag = scan.getFrag();
+            skipRestOfLine();
+
+            //    Token token = scanner.scanToken();
         //    Macro.undefineMacro(token);
         //    skipRestOfLine(token);
-        //}
+        }
 
-        //public void handleIfDirective()
-        //{
-        //    Console.WriteLine("saw #if");
-        //}
+        public void handleIfDirective()
+        {
+            Console.WriteLine("saw #if");
+            curFrag = scan.getFrag();
+            skipRestOfLine();
 
-        //public void handleIfdefDirective()
-        //{
-        //    Console.Write("saw #ifdef ");
+        }
+
+        public void handleIfdefDirective()
+        {
+            Console.WriteLine("saw #ifdef");
+            curFrag = scan.getFrag();
+            skipRestOfLine();
+            //    Token token = scanner.scanToken();
+        //    Macro macro = Macro.lookupMacro(token);
+        }
+
+        public void handleIfndefDirective()
+        {
+            Console.WriteLine("saw #ifndef");
+            curFrag = scan.getFrag();
+            skipRestOfLine();
+
         //    Token token = scanner.scanToken();
         //    Macro macro = Macro.lookupMacro(token);
-        //}
+        }
 
-        //public void handleIfndefDirective()
-        //{
-        //    Console.Write("saw #ifndef ");
-        //    Token token = scanner.scanToken();
-        //    Macro macro = Macro.lookupMacro(token);
-        //}
+        public void handleElifDirective()
+        {
+            Console.WriteLine("saw #elif");
+            curFrag = scan.getFrag();
+            skipRestOfLine();
+        }
 
-        //public void handleElifDirective()
-        //{
-        //    Console.WriteLine("saw #elif");
-        //}
+        public void handleElseDirective()
+        {
+            Console.WriteLine("saw #else");
+            curFrag = scan.getFrag();
+            skipRestOfLine();
+        }
 
-        //public void handleElseDirective()
-        //{
-        //    Console.WriteLine("saw #else");
-        //}
+        public void handleEndifDirective()
+        {
+            Console.WriteLine("saw #endif");
+            curFrag = scan.getFrag();
+            skipRestOfLine();
+        }
 
-        //public void handleEndifDirective()
-        //{
-        //    Console.WriteLine("saw #endif");
-        //}
+        public void handleLineDirective()
+        {
+            Console.WriteLine("saw #line");
+            curFrag = scan.getFrag();
+            skipRestOfLine();
+        }
 
-        //public void handleLineDirective()
-        //{
-        //    Console.WriteLine("saw #line");
-        //}
+        public void handleErrorDirective()
+        {
+            Console.WriteLine("saw #error");
+            curFrag = scan.getFrag();
+            skipRestOfLine();
+        }
 
-        //public void handleErrorDirective()
-        //{
-        //    Console.WriteLine("saw #error");
-        //}
-
-        //public void handlePragmaDirective()
-        //{
-        //    Token token = scanner.scanToken();        //get pragma name
+        public void handlePragmaDirective()
+        {
+            Console.WriteLine("saw #pragma");
+            curFrag = scan.getFrag();
+            skipRestOfLine();
+            //    Token token = scanner.scanToken();        //get pragma name
 
         //    switch (token.chars)
         //    {
@@ -386,12 +456,7 @@ namespace BlackC.Lexer
         //            oncelerList.Add(filename);
         //            break;
         //    }
-        //}
-
-        //public void handleUnknownDirective(String direct)
-        //{
-        //    Console.WriteLine("saw unknown directive: " + direct);
-        //}
+        }
     }
 }
 

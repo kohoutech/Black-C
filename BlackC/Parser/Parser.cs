@@ -83,6 +83,11 @@ namespace BlackC
             Console.WriteLine("parsed " + filename);
         }
 
+        public void fatal(string msg)
+        {
+            Console.WriteLine("fatal : " + msg);
+        }
+
         public void error(String msg)
         {
             Console.WriteLine("error : " + msg);
@@ -1424,7 +1429,6 @@ namespace BlackC
         //    }
         //    return node;
         //}
-
     }
 }
 

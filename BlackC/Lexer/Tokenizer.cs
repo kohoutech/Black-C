@@ -143,11 +143,14 @@ namespace BlackC.Lexer
             while (true)
             {
                 frag = getNextFrag();
-                if (frag.type == FragType.SPACE)
+
+                //ignore spaces & eolns
+                if ((frag.type == FragType.SPACE) || (frag.type == FragType.EOLN))
                 {
                     continue;
                 }
 
+                //check if word is keyword, typename or identifier
                 if (frag.type == FragType.WORD)
                 {
                     if (keywords.ContainsKey(frag.str))
@@ -167,6 +170,7 @@ namespace BlackC.Lexer
                     break;
                 }
 
+                //convert number / string / char str into constant value
                 if (frag.type == FragType.NUMBER)
                 {
                     tok = ParseNumber(frag.str);
@@ -185,6 +189,8 @@ namespace BlackC.Lexer
                     break;
                 }
 
+                //convert single punctuation chars into punctuation tokens, combining as necessary
+                //need 2 lookaheads at most for '...' token
                 if (frag.type == FragType.PUNCT)
                 {
                     char c = frag.str[0];

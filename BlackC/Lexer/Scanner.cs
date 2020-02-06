@@ -31,9 +31,10 @@ namespace BlackC.Lexer
 
         string filename;
         String source;
+
         int srcpos;
-        int linenum;
-        int linestart;
+        List<SourceNote> sourceMap;
+        int sourceMapPos;
 
         public Scanner(Parser _parser, String _filename)
         {
@@ -42,27 +43,15 @@ namespace BlackC.Lexer
             try
             {
                 source = File.ReadAllText(filename);        //read entire file as single string
-                if (!source.EndsWith("\n"))
-                {
-                    source = source + '\n';                 //add eoln at end of file if not already there
-                }
-                source = source + '\0';                     //mark end of file
             }
             catch (Exception e)
             {
-                parser.error("error reading source file " + filename + " : " + e.Message);
+                parser.fatal("error reading source file " + filename + " : " + e.Message);
             }
+            transformSource();
 
             srcpos = 0;
-            linenum = 1;
-            linestart = 0;
-        }
-
-        //update location when we go to a new line
-        public void handleEoln()
-        {
-            linenum++;
-            linestart = srcpos;
+            sourceMapPos = 0;
         }
 
         //- source transformation ---------------------------------------------
@@ -77,89 +66,58 @@ namespace BlackC.Lexer
                         { '(', '[' },  { '\'','^' }, { '>', '}' },
                         { '/', '\\' }, { '<', '{' }, { '-', '~' }};
 
-        //(5.2.1.1)
-        //translate char if trigraph & return offset pointing to where char would be in source file
-        public int translateTrigraphs(ref char ch)
+        //translate source & build source line map
+        public void transformSource()
         {
-            int offset = 0;
-            if (ch == '?' && (source[srcpos + 1] == '?'))
+            if (!source.EndsWith("\n"))
             {
-                char ch2 = source[srcpos + 2];
-                if (trigraphs.ContainsKey(ch2))
+                source = source + '\n';                 //add eoln at end of file if not already there
+            }
+            source = source + '\0';                     //mark end of file
+
+            StringBuilder result = new StringBuilder();
+            sourceMap = new List<SourceNote>();
+            int linenum = 1;
+            int linepos = 0;
+            sourceMap.Add(new SourceNote(1, 0, 0));
+
+            for (int i = 0; i < source.Length; i++)
+            {
+                if (source[i] == '?' && (source[i + 1] == '?') && trigraphs.ContainsKey(source[i + 2]))
                 {
-                    ch = trigraphs[ch2];
-                    offset = 2;
+                    result.Append(trigraphs[source[i + 2]]);
+                    linepos += 3;
+                    sourceMap.Add(new SourceNote(linenum, linepos, result.Length));
+                    i += 2;
+                }
+                else if ((source[i] == '\\') && (source[i + 1] == '\n'))
+                {
+                    i += 1;
+                    linenum++;
+                    linepos = 1;
+                    sourceMap.Add(new SourceNote(linenum, linepos, result.Length + 1));
+                }
+                else if ((source[i] == '\\') && ((source[i + 1] == '\r') && (source[i + 2] == '\n')))
+                {
+                    i += 2;
+                    linenum++;
+                    linepos = 1;
+                    sourceMap.Add(new SourceNote(linenum, linepos, result.Length + 1));
+                }
+                else if (source[i] == '\n')
+                {
+                    linenum++;
+                    linepos = 1;
+                    sourceMap.Add(new SourceNote(linenum, linepos, result.Length + 1));
+                    result.Append(source[i]);
+                }
+                else
+                {
+                    result.Append(source[i]);
+                    linepos++;
                 }
             }
-            return offset;
-        }
-
-        //line continuation - return char following either (\\ + \n) or (\\ + \r\n) & true if line was spliced
-        public bool spliceContinuedLines(ref char ch, ref int offset)
-        {
-            bool spliced = false;
-            if ((ch == '\\') && (source[srcpos + 1 + offset] == '\n'))
-            {
-                offset += 2;
-                spliced = true;
-                ch = source[srcpos + offset];
-            }
-            if ((ch == '\\') && ((source[srcpos + 1 + offset] == '\r') && (source[srcpos + 2 + offset] == '\n')))
-            {
-                offset += 3;
-                spliced = true;
-                ch = source[srcpos + offset];
-            }
-            return spliced;
-        }
-
-        //get the char at the current source pos, possibly translating chars & joining lines
-        public char getChar()
-        {
-            char ch = source[srcpos];
-            int offset = translateTrigraphs(ref ch);
-            spliceContinuedLines(ref ch, ref offset);
-            return ch;
-        }
-
-        //goto the next source pos, possibly translating chars & joining lines
-        //if we've crossed the end of line
-        public void gotoNextChar()
-        {
-            char ch = source[srcpos];
-            int offset = translateTrigraphs(ref ch);
-            bool spliced = spliceContinuedLines(ref ch, ref offset);
-            srcpos = srcpos + offset + 1;
-            if ((ch == '\n') || spliced)
-            {
-                handleEoln();
-            }
-        }
-
-        //goto next sourc epos & return the char there
-        public char getNextChar()
-        {
-            gotoNextChar();
-            char ch = getChar();
-            return ch;
-        }
-
-        //char lookahead, returns the char at (source pos + lookahead pos) but do not advance current source pos;
-        public char getCharAt(int lookahead)
-        {
-            int curpos = srcpos;
-            while (lookahead > 0)
-            {
-                //goto the next char w/o triggering eoln handling
-                char chpos = source[srcpos];
-                int offset = translateTrigraphs(ref chpos);
-                spliceContinuedLines(ref chpos, ref offset);
-                srcpos = srcpos + offset + 1;
-                lookahead--;
-            }
-            char ch = getChar();        //get char at offset
-            srcpos = curpos;            //and return to current source pos
-            return ch;
+            source = result.ToString();
         }
 
         //- skipping whitespace & comments  -----------------------------------
@@ -172,32 +130,30 @@ namespace BlackC.Lexer
         public void skipWhitespace()
         {
             bool done = false;
-            char ch = getChar();
+            char ch = source[srcpos];
             while (!done)
             {
                 //skip any whitespace
                 if ((ch == ' ') || (ch == '\t') || (ch == '\f') || (ch == '\v') || (ch == '\r'))
                 {
-                    ch = getNextChar();
+                    ch = source[++srcpos];
                     continue;
                 }
 
                 //skip any following comments, if we found a comment, then we're not done yet
-                if ((ch == '/') && (getCharAt(1) == '/'))
+                if ((ch == '/') && (source[srcpos + 1] == '/'))
                 {
-                    gotoNextChar();
-                    gotoNextChar();
+                    srcpos += 2;
                     skipLineComment();
-                    ch = getNextChar();
+                    ch = source[++srcpos];
                     continue;
                 }
 
-                if ((ch == '/') && (getCharAt(1) == '*'))
+                if ((ch == '/') && (source[srcpos + 1] == '*'))
                 {
-                    gotoNextChar();
-                    gotoNextChar();
+                    srcpos += 2;
                     skipBlockComment();
-                    ch = getNextChar(); 
+                    ch = source[++srcpos];
                     continue;
                 }
 
@@ -209,25 +165,24 @@ namespace BlackC.Lexer
         //skip remainder of current line up to eoln char
         public void skipLineComment()
         {
-            char ch = getChar();
+            char ch = source[srcpos];
             while (ch != '\n' && ch != '\0')
             {
-                ch = getNextChar();
+                ch = source[++srcpos];
             }
         }
 
         //skip source characters until reach next '*/' or eof
         public void skipBlockComment()
         {
-            char ch = getChar();
-            while (!((ch == '\0') || ((ch == '*') && (getCharAt(1) == '/'))))
+            char ch = source[srcpos];
+            while (!((ch == '\0') || ((ch == '*') && (source[srcpos + 1] == '/'))))
             {
-                ch = getNextChar();
+                ch = source[++srcpos];
             }
             if (ch != '\0')         //if we haven't reached eof, then skip '*/' chars
             {
-                gotoNextChar();
-                gotoNextChar();
+                srcpos += 2;
             }
         }
 
@@ -266,11 +221,11 @@ namespace BlackC.Lexer
         public string scanIdentifier()
         {
             String idstr = "";
-            char ch = getChar();
+            char ch = source[srcpos];
             while (isAlphaNum(ch))
             {
                 idstr = idstr + ch;
-                ch = getNextChar();
+                ch = source[++srcpos];
             }
             return idstr;
         }
@@ -317,11 +272,11 @@ namespace BlackC.Lexer
         {
             if (fstr.EndsWith("."))      //get optional decimal part
             {
-                char c1 = getChar();
+                char c1 = source[srcpos];
                 while (c1 >= '0' && c1 <= '9')
                 {
                     fstr = fstr + c1;
-                    c1 = getNextChar();
+                    c1 = source[++srcpos];
                 }
                 if (fstr.EndsWith("."))      //if we didn't have a decimal part above, we add one anyway (123. --> 123.0)
                 {
@@ -330,31 +285,31 @@ namespace BlackC.Lexer
                 if ((c1 == 'e') || (c1 == 'E'))     //then check for exponent part
                 {
                     fstr = fstr + 'E';
-                    gotoNextChar();
+                    srcpos++;
                 }
             }
 
             if (fstr.EndsWith("E"))      //get optional exponent part
             {
-                char s1 = getChar();
+                char s1 = source[srcpos];
                 if ((s1 == '+') || (s1 == '-'))     //exponent sign is optional
                 {
                     fstr = fstr + s1;
-                    s1 = getNextChar();
+                    s1 = source[++srcpos];
                 }
                 while (s1 >= '0' && s1 <= '9')
                 {
                     fstr = fstr + s1;
-                    s1 = getNextChar();
+                    s1 = source[++srcpos];
                 }
             }
 
             //check for float const suffixes
-            char f1 = getChar();
+            char f1 = source[srcpos];
             if ((f1 == 'f') || (f1 == 'F') || (f1 == 'l') || (f1 == 'L'))
             {
                 fstr = fstr + Char.ToUpper(f1);
-                gotoNextChar();
+                srcpos++;
             }
 
             return fstr;
@@ -421,32 +376,31 @@ namespace BlackC.Lexer
         public string scanNumber()     //either int or float const
         {
             int bass = 10;      //default number base
-            char ch = getChar();
+            char ch = source[srcpos];
             String numstr = "" + ch;
 
             if (ch != '.')       //get mantissa
             {
                 if (ch == '0')             //set base
                 {
-                    if ((getCharAt(1) == 'X' || getCharAt(1) == 'x'))
+                    if ((source[srcpos + 1] == 'X' || source[srcpos + 1] == 'x'))
                     {
                         bass = 16;
-                        gotoNextChar();             
-                        numstr += getChar();
-                        gotoNextChar();
+                        numstr += source[++srcpos];
+                        srcpos++;
                     }
                     else
                     {
                         bass = 8;
                     }
                 }
-                ch = getNextChar();
+                ch = source[++srcpos];
                 while (((bass == 10) && (ch >= '0' && ch <= '9')) ||
                         ((bass == 8) && (ch >= '0' && ch <= '7')) ||
                         ((bass == 16) && ((ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'F') || (ch >= 'a' && ch <= 'f'))))
                 {
                     numstr = numstr + ch;
-                    ch = getNextChar();
+                    ch = source[++srcpos];
                 }
             }
             else
@@ -458,7 +412,7 @@ namespace BlackC.Lexer
             //got the mantissa, if the next char is decimal point or exponent, then it's a float const
             if ((ch == '.') || (ch == 'E') || (ch == 'e'))
             {
-                gotoNextChar();                         //skip '.' or 'E' or 'e'
+                srcpos++;                         //skip '.' or 'E' or 'e'
 
                 if (ch == 'E' || ch == 'e')
                 {
@@ -478,19 +432,19 @@ namespace BlackC.Lexer
                 {
                     usuffix = true;
                     numstr = numstr + "U";
-                    ch = getNextChar();
+                    ch = source[++srcpos];
                 }
 
                 if ((lsuffix == 0) && ((ch == 'l') || (ch == 'L')))
                 {
                     lsuffix++;
                     numstr = numstr + "L";
-                    ch = getNextChar();
+                    ch = source[++srcpos];
                     if ((ch == 'l') || (ch == 'L'))
                     {
                         lsuffix++;
                         numstr = numstr + "L";
-                        ch = getNextChar();
+                        ch = source[++srcpos];
                     }
                 }
             }
@@ -537,24 +491,24 @@ namespace BlackC.Lexer
         public string scanCharLiteral(bool isLong)
         {
             string cstr = (isLong) ? "L\'" : "\'";
-            char ch = getNextChar();
+            char ch = source[++srcpos];
             while ((ch != '\'') && (ch != '\n') && (ch != '\0'))
             {
-                if ((ch == '\\') && (getCharAt(1) == '\''))
+                if ((ch == '\\') && (source[srcpos + 1] == '\''))
                 {
                     cstr = cstr + "\\\'";
-                    gotoNextChar();                    //skip over escaped single quotes
+                    srcpos++;                    //skip over escaped single quotes
                 }
                 else
                 {
-                    cstr = cstr + ch;                    
+                    cstr = cstr + ch;
                 }
-                ch = getNextChar();
+                ch = source[++srcpos];
             }
             if (ch == '\'')         //add the closing quote if not at eoln or eof
             {
                 cstr = cstr + '\'';
-                gotoNextChar();
+                srcpos++;
             }
             return cstr;
         }
@@ -577,70 +531,82 @@ namespace BlackC.Lexer
         public string scanString(bool isLong)
         {
             string sstr = (isLong) ? "L\"" : "\"";
-            char ch = getNextChar();
+            char ch = source[++srcpos];
             while ((ch != '\"') && (ch != '\n') && (ch != '\0'))
             {
-                if ((ch == '\\') && (getCharAt(1) == '\"'))
+                if ((ch == '\\') && (source[srcpos + 1] == '\"'))
                 {
                     sstr = sstr + "\\\"";
-                    gotoNextChar();                    //skip over escaped double quotes
+                    srcpos++;                    //skip over escaped double quotes
                 }
                 else
                 {
-                    sstr = sstr + ch;                    
+                    sstr = sstr + ch;
                 }
-                ch = getNextChar();
+                ch = source[++srcpos];
             }
             if (ch == '\"')                     //skip the closing quote if not at eoln or eof
             {
                 sstr = sstr + '\"';
-                gotoNextChar();
+                srcpos++;
             }
             return sstr;
         }
 
+        //- main scanning method ----------------------------------------------
+
         public char TranslateDiagraphs()
         {
-            char ch = getChar();
-            if (ch == '<' && (getCharAt(1) == ':'))
+            char ch = source[srcpos];
+            if (ch == '<' && (source[srcpos + 1] == ':'))
             {
                 ch = '[';
-                gotoNextChar();
+                srcpos++;
             }
-            if (ch == ':' && (getCharAt(1) == '>'))
+            if (ch == ':' && (source[srcpos + 1] == '>'))
             {
                 ch = ']';
-                gotoNextChar();
+                srcpos++;
             }
-            if (ch == '<' && (getCharAt(1) == '%'))
+            if (ch == '<' && (source[srcpos + 1] == '%'))
             {
                 ch = '{';
-                gotoNextChar();
+                srcpos++;
             }
-            if (ch == '%' && (getCharAt(1) == '>'))
+            if (ch == '%' && (source[srcpos + 1] == '>'))
             {
                 ch = '}';
-                gotoNextChar();
+                srcpos++;
             }
-            if (ch == '%' && (getCharAt(1) == ':'))
+            if (ch == '%' && (source[srcpos + 1] == ':'))
             {
                 ch = '#';
-                gotoNextChar();
+                srcpos++;
             }
             //we handle '%:%:' --> '##' when we handle '#' the 2nd time
 
             return ch;
         }
 
-        //- main scanning method ----------------------------------------------
+        public SourceLocation getFragLocation()
+        {
+            while ((sourceMapPos < sourceMap.Count - 1) && (srcpos >= sourceMap[sourceMapPos + 1].newpos))
+            {
+                sourceMapPos++;
+            }
+            int linenum = sourceMap[sourceMapPos].linenum;
+            int linepos = (srcpos - sourceMap[sourceMapPos].newpos) + sourceMap[sourceMapPos].linepos;
+            return new SourceLocation(filename, linenum, linepos);
+        }
+
 
         //(5.1.1.2) translation phase 3 : scan source line into preprocessing tokens
         public Fragment getFrag()
         {
             Fragment frag = null;
-            SourceLocation loc = new SourceLocation(filename, linenum, (srcpos - linestart + 1));
+            SourceLocation loc = getFragLocation();
 
-            char ch = getChar();
+            char ch = source[srcpos];
             while (true)
             {
                 if (isSpace(ch))
@@ -651,20 +617,18 @@ namespace BlackC.Lexer
                 }
 
                 //line comment
-                if (ch == '/' && (getCharAt(1) == '/'))
+                if (ch == '/' && (source[srcpos + 1] == '/'))
                 {
-                    gotoNextChar();
-                    gotoNextChar();             //skip opening //
+                    srcpos += 2;                //skip opening // chars
                     skipLineComment();
                     ch = ' ';                   //replace comment with single space
                     continue;
                 }
 
                 //block comment
-                if (ch == '/' && (getCharAt(1) == '*'))
+                if (ch == '/' && (source[srcpos + 1] == '*'))
                 {
-                    gotoNextChar();
-                    gotoNextChar();             //skip opening /*
+                    srcpos += 2;                //skip opening /* chars
                     skipBlockComment();
                     ch = ' ';                   //replace comment with single space
                     continue;
@@ -673,14 +637,14 @@ namespace BlackC.Lexer
                 //L is a special case since it can start long char constants or long string constants, as well as identifiers
                 if (ch == 'L')
                 {
-                    gotoNextChar();                     //skip initial 'L'
-                    if ((getCharAt(1)) == '\'')
+                    srcpos++;                     //skip initial 'L'
+                    if ((source[srcpos + 1]) == '\'')
                     {
                         string chstr = scanCharLiteral(true);
                         frag = new Fragment(FragType.CHAR, chstr);
                         break;
                     }
-                    else if ((getCharAt(1)) == '"')
+                    else if ((source[srcpos + 1]) == '"')
                     {
                         string sstr = scanString(true);
                         frag = new Fragment(FragType.STRING, sstr);
@@ -698,7 +662,7 @@ namespace BlackC.Lexer
 
                 //numeric constant
                 //'.' can start a float const
-                if ((isDigit(ch)) || (ch == '.' && isDigit(getCharAt(1))))
+                if ((isDigit(ch)) || (ch == '.' && isDigit(source[srcpos + 1])))
                 {
                     string numstr = scanNumber();
                     frag = new Fragment(FragType.NUMBER, numstr);
@@ -725,10 +689,9 @@ namespace BlackC.Lexer
                 if (ch == '\n')
                 {
                     frag = new Fragment(FragType.EOLN, "<eoln>");
-                    gotoNextChar();
+                    srcpos++;
                     break;
                 }
-
 
                 //end of file - check if this isn't a stray 0x0 char in file, if so pass it on as punctuation
                 if ((ch == '\0') && (srcpos == (source.Length - 1)))
@@ -742,7 +705,7 @@ namespace BlackC.Lexer
 
                 //anything else is punctuation
                 frag = new Fragment(FragType.PUNCT, "" + ch);
-                gotoNextChar();
+                srcpos++;
                 break;
             }
 
@@ -781,6 +744,22 @@ namespace BlackC.Lexer
         public override string ToString()
         {
             return str + " at " + loc.ToString();
+        }
+    }
+
+    //-------------------------------------------------------------------------
+
+    public class SourceNote
+    {
+        public int linenum;
+        public int linepos;
+        public int newpos;
+
+        public SourceNote(int _linenum, int _linepos, int _newpos)
+        {
+            linenum = _linenum;
+            linepos = _linepos;
+            newpos = _newpos;
         }
     }
 
