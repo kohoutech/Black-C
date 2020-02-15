@@ -36,6 +36,10 @@ namespace BlackC.Lexer
         List<SourceNote> sourceMap;
         int sourceMapPos;
 
+        int spaceCount;
+        int spaceLines;
+        int tabCount;
+
         public Scanner(Parser _parser, String _filename)
         {
             parser = _parser;
@@ -52,6 +56,10 @@ namespace BlackC.Lexer
 
             srcpos = 0;
             sourceMapPos = 0;
+
+            spaceCount = 0;
+            spaceLines = 0;
+            tabCount = 4;
         }
 
         //- source transformation ---------------------------------------------
@@ -136,6 +144,8 @@ namespace BlackC.Lexer
                 //skip any whitespace
                 if ((ch == ' ') || (ch == '\t') || (ch == '\f') || (ch == '\v') || (ch == '\r'))
                 {
+                    //tabs are <tabCount> spaces, carriage returns are 0 spaces, everything else is one space
+                    spaceCount += (ch == '\t') ? tabCount : (ch == '\r') ? 0 : 1;
                     ch = source[++srcpos];
                     continue;
                 }
@@ -143,7 +153,6 @@ namespace BlackC.Lexer
                 //skip any following comments, if we found a comment, then we're not done yet
                 if ((ch == '/') && (source[srcpos + 1] == '/'))
                 {
-                    srcpos += 2;
                     skipLineComment();
                     ch = source[++srcpos];
                     continue;
@@ -151,7 +160,6 @@ namespace BlackC.Lexer
 
                 if ((ch == '/') && (source[srcpos + 1] == '*'))
                 {
-                    srcpos += 2;
                     skipBlockComment();
                     ch = source[++srcpos];
                     continue;
@@ -162,9 +170,11 @@ namespace BlackC.Lexer
             };
         }
 
-        //skip remainder of current line up to eoln char
+        //skip remainder of current line up to (but not including) the eoln char
+        //since nothing follows this but the eoln, don't include this spaces in the preprocessor's fragment
         public void skipLineComment()
         {
+            srcpos += 2;
             char ch = source[srcpos];
             while (ch != '\n' && ch != '\0')
             {
@@ -175,14 +185,26 @@ namespace BlackC.Lexer
         //skip source characters until reach next '*/' or eof
         public void skipBlockComment()
         {
+            srcpos += 2;
+            spaceCount += 2;
             char ch = source[srcpos];
             while (!((ch == '\0') || ((ch == '*') && (source[srcpos + 1] == '/'))))
             {
+                if (ch == '\n')
+                {
+                    spaceLines++;
+                    spaceCount = 0;
+                }
+                else
+                {
+                    spaceCount++;
+                }
                 ch = source[++srcpos];
             }
             if (ch != '\0')         //if we haven't reached eof, then skip '*/' chars
             {
                 srcpos += 2;
+                spaceCount += 2;
             }
         }
 
@@ -599,12 +621,13 @@ namespace BlackC.Lexer
             return new SourceLocation(filename, linenum, linepos);
         }
 
-
         //(5.1.1.2) translation phase 3 : scan source line into preprocessing tokens
         public Fragment getFrag()
         {
             Fragment frag = null;
             SourceLocation loc = getFragLocation();
+            spaceCount = 0;
+            spaceLines = 0;
 
             char ch = source[srcpos];
             while (true)
@@ -613,13 +636,14 @@ namespace BlackC.Lexer
                 {
                     skipWhitespace();
                     frag = new Fragment(FragType.SPACE, "<space>");
+                    frag.spCount = spaceCount;
+                    frag.spLines = spaceLines;
                     break;
                 }
 
                 //line comment
                 if (ch == '/' && (source[srcpos + 1] == '/'))
                 {
-                    srcpos += 2;                //skip opening // chars
                     skipLineComment();
                     ch = ' ';                   //replace comment with single space
                     continue;
@@ -628,7 +652,6 @@ namespace BlackC.Lexer
                 //block comment
                 if (ch == '/' && (source[srcpos + 1] == '*'))
                 {
-                    srcpos += 2;                //skip opening /* chars
                     skipBlockComment();
                     ch = ' ';                   //replace comment with single space
                     continue;
@@ -714,7 +737,7 @@ namespace BlackC.Lexer
         }
     }
 
-    //---------------------------------------------------------------
+    //- fragment class ----------------------------------------------
 
     public enum FragType
     {
@@ -733,21 +756,45 @@ namespace BlackC.Lexer
         public String str;
         public FragType type;
         public SourceLocation loc;
+        public int spCount;
+        public int spLines;
 
         public Fragment(FragType _type, String _str)
         {
             str = _str;
             type = _type;
             loc = null;
+            spCount = 0;
+            spLines = 0;
         }
 
         public override string ToString()
         {
-            return str + " at " + loc.ToString();
+            //return str + " at " + loc.ToString();
+            string result = "";
+            if (type == FragType.SPACE)
+            {
+                StringBuilder s = new StringBuilder();
+                for (int i = 0; i < spLines; i++)
+                {
+                    s.Append("\n");
+                }
+                for (int i = 0; i < spCount; i++)
+                {
+                    s.Append(" ");
+                }
+                result = s.ToString();
+            }
+            else 
+            {
+            result = str;
+            }
+
+            return result;
         }
     }
 
-    //-------------------------------------------------------------------------
+    //- source file position tracking -----------------------------------------
 
     public class SourceNote
     {
@@ -762,8 +809,6 @@ namespace BlackC.Lexer
             newpos = _newpos;
         }
     }
-
-    //-------------------------------------------------------------------------
 
     public class SourceLocation
     {

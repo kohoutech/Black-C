@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 
 namespace BlackC.Lexer
 {
@@ -30,122 +31,94 @@ namespace BlackC.Lexer
         public Scanner scan;
 
         public Fragment curFrag;
+        bool atLineStart;
+
         //public List<SourceBuffer> sourceStack;
         //public bool inMacro;
         //public Macro currentMacro;
 
         //public HashSet<String> oncelerList;
 
-        //Token lookahead;
-        //List<Token> replay;
-        //int recpos;
-
         public Preprocessor(Parser _parser, string filename)
         {
             parser = _parser;
             scan = new Scanner(parser, filename);
             curFrag = null;
-        //    sourceStack = new List<SourceBuffer>();
+            //    sourceStack = new List<SourceBuffer>();
 
-        //    Macro.initMacros();
-        //    inMacro = false;
-        //    currentMacro = null;
+            atLineStart = true;
 
-        //    oncelerList = new HashSet<string>();
+            //    Macro.initMacros();
+            //    inMacro = false;
+            //    currentMacro = null;
 
-        //    lookahead = null;
-        //    replay = new List<Token>();
-        //    recpos = 0;
+            //    oncelerList = new HashSet<string>();        
         }
 
-        public Fragment getFrag()
+        public void setMainSourceFile(string filename)
         {
-            curFrag = scan.getFrag();
-            Console.WriteLine(curFrag.ToString());
-            bool atLineStart = true;
-            while (curFrag.type != FragType.EOF)
+            //    SourceBuffer srcbuf = new SourceBuffer(".", filename);
+            //    sourceStack.Add(srcbuf);
+            //    scanner.setSource(srcbuf);
+        }
+
+        public void preprocessFile(String filename)
+        {
+            using (StreamWriter prepFile = new StreamWriter(filename))
             {
-                //check for directive as first non-space frag at start of line
-                if (atLineStart && curFrag.type != FragType.SPACE)
+                Fragment frag = scan.getFrag();
+                while (frag.type != FragType.EOF)
                 {
-                    if ((curFrag.type == FragType.PUNCT) && (curFrag.str[0] == '#'))
+                    if (frag.type == FragType.EOLN)
                     {
-                        handleDirective();
+                        prepFile.WriteLine();
                     }
                     else
                     {
-                        atLineStart = false;
+                        prepFile.Write(frag.ToString());
                     }
+                    frag = scan.getFrag();
                 }
+            }
+        }
 
-                if (curFrag.type == FragType.EOLN)
+        //- fragment stream handling ------------------------------------------
+
+        public Fragment getFrag()
+        {
+            Fragment frag = getScannerFrag();
+            return frag;
+        }
+
+        //handle directives in the scanner's fragment stream, will be sent to tokenizer as EOLN fragments
+        public Fragment getScannerFrag()
+        {
+            curFrag = scan.getFrag();
+            //Console.WriteLine("fragment = " + curFrag.ToString());
+
+            //check for directive as first non-space frag at start of line
+            if (atLineStart)
+            {
+                if ((curFrag.type == FragType.PUNCT) && (curFrag.str[0] == '#'))
                 {
-                    atLineStart = true;
+                    handleDirective();      //cur fragment will be left as the EOLN at end of directive line
                 }
-
-                curFrag = scan.getFrag();
-                Console.WriteLine(curFrag.ToString());
+                else
+                {
+                    atLineStart = (curFrag.type == FragType.SPACE);
+                }
+            }
+            if (curFrag.type == FragType.EOLN)
+            {
+                atLineStart = true;
             }
 
             return curFrag;
         }
 
-        //public void setMainSourceFile(string filename)
-        //{
-        //    SourceBuffer srcbuf = new SourceBuffer(".", filename);
-        //    sourceStack.Add(srcbuf);
-        //    scanner.setSource(srcbuf);
-        //}
-
-        //public void preprocessFile()
-        //{
-        //    Token token = null;
-        //    int indent = 0;
-        //    do
-        //    {
-        //        token = getToken();
-        //        if (token.type == TokenType.tLBRACE)
-        //        {
-        //            indent++;
-        //        }
-        //        if (token.type == TokenType.tRBRACE)
-        //        {
-        //            indent--;
-        //        }
-        //        if (token.type == TokenType.tEOLN)
-        //        {
-        //            Console.WriteLine();
-        //            for (int i = 0; i < indent; i++)
-        //            {
-        //                Console.Write("  ");
-        //            }
-        //        }
-        //        else
-        //        {
-        //            if (token.leadingSpace) Console.Write(" ");
-        //            Console.Write(token.chars);
-        //        }
-        //        next();
-        //    }
-        //    while (token.type != TokenType.tEOF);
-        //}
-
-        ////- token stream handling ------------------------------------------
-
         //public Token getToken()
         //{
-        //    ////return any stored token first
-        //    //if (recpos < replay.Count)
-        //    //{
-        //    //    return replay[recpos];                
-        //    //}
 
-        //    //if (lookahead != null)
-        //    //{
-        //    //    return lookahead;
-        //    //}
-
-        //    //don't have a stored token, so get a new one
         //    Token token = null;
         //    //bool done = true;
         //    //do
@@ -194,53 +167,14 @@ namespace BlackC.Lexer
 
         //    //} while (!done);
 
-        //    //lookahead = token;
-        //    //replay.Add(token);
         //    return token;
         //}
 
-        //public void next()
-        //{
-        //    lookahead = null;
-        //    recpos++;
-        //}
+        //- directive handling ------------------------------------------------
 
-        //public int record()
-        //{
-        //    return recpos;
-        //}
+        //(6.10) Preprocessing directives
 
-        ////rewind one token
-        //public void rewind()
-        //{
-        //    if (recpos > 0)
-        //    {
-        //        recpos--;
-        //    }
-        //}
-
-        ////rewind tokens to cuepoint
-        //public void rewind(int cuepoint)
-        //{
-        //    recpos = cuepoint;
-        //}
-
-        //public void reset()
-        //{
-        //    replay.Clear();
-        //    recpos = 0;
-        //}
-
-        //public bool isNextToken(TokenType ttype)
-        //{
-        //    return (getToken().type == ttype);
-        //}
-
-        ////- directive handling ------------------------------------------------
-
-        ////(6.10) Preprocessing directives
-
-        //handle directive, this will read all the tokens to the eoln in the directive line
+        //handle directive, this will read all the fragments to the eoln in the directive line
         public void handleDirective()
         {
             curFrag = scan.getFrag();
@@ -319,7 +253,6 @@ namespace BlackC.Lexer
             }
         }
 
-        //we pass in the current fragment becuase we may already be at eoln & don't want to read past it
         public void skipRestOfLine()
         {
             while (curFrag.type != FragType.EOLN)
@@ -330,32 +263,33 @@ namespace BlackC.Lexer
 
         public void handleIncludeDirective()
         {
-        //    Token token = scanner.scanToken();
-        //    String filename = "";
+            //    Token token = scanner.scanToken();
+            //    String filename = "";
 
-        //    if (token.type == TokenType.tSTRINGCONST)
-        //    {
-        //        filename = token.chars;
-        //    }
-        //    else
-        //    {
-        //        token = scanner.scanToken();
-        //        while (token.type != TokenType.tGTRTHAN)
-        //        {
-        //            filename += token.chars;
-        //            token = scanner.scanToken();
-        //        }
-        //    }
+            //    if (token.type == TokenType.tSTRINGCONST)
+            //    {
+            //        filename = token.chars;
+            //    }
+            //    else
+            //    {
+            //        token = scanner.scanToken();
+            //        while (token.type != TokenType.tGTRTHAN)
+            //        {
+            //            filename += token.chars;
+            //            token = scanner.scanToken();
+            //        }
+            //    }
+            Console.WriteLine("saw #include");
             curFrag = scan.getFrag();
             skipRestOfLine();
 
-        //    if (!oncelerList.Contains(filename))        //if file hasn't been marked with "pragma once"
-        //    {
-        //        SourceBuffer includeBuf = SourceBuffer.getIncludeFile(filename, parser.includePaths);
-        //        sourceStack.Add(includeBuf);
-        //        scanner.saveSource();
-        //        scanner.setSource(includeBuf);
-        //    }
+            //    if (!oncelerList.Contains(filename))        //if file hasn't been marked with "pragma once"
+            //    {
+            //        SourceBuffer includeBuf = SourceBuffer.getIncludeFile(filename, parser.includePaths);
+            //        sourceStack.Add(includeBuf);
+            //        scanner.saveSource();
+            //        scanner.setSource(includeBuf);
+            //    }
         }
 
         public void handleDefineDirective()
@@ -364,9 +298,9 @@ namespace BlackC.Lexer
             curFrag = scan.getFrag();
             skipRestOfLine();
 
-        //    Token token = scanner.scanToken();
-        //    Macro macro = Macro.defineMacro(token);
-        //    macro.scanMacroDefinition(scanner);
+            //    Token token = scanner.scanToken();
+            //    Macro macro = Macro.defineMacro(token);
+            //    macro.scanMacroDefinition(scanner);
         }
 
         public void handleUndefDirective()
@@ -376,8 +310,7 @@ namespace BlackC.Lexer
             skipRestOfLine();
 
             //    Token token = scanner.scanToken();
-        //    Macro.undefineMacro(token);
-        //    skipRestOfLine(token);
+            //    Macro.undefineMacro(token);
         }
 
         public void handleIfDirective()
@@ -394,7 +327,7 @@ namespace BlackC.Lexer
             curFrag = scan.getFrag();
             skipRestOfLine();
             //    Token token = scanner.scanToken();
-        //    Macro macro = Macro.lookupMacro(token);
+            //    Macro macro = Macro.lookupMacro(token);
         }
 
         public void handleIfndefDirective()
@@ -403,8 +336,8 @@ namespace BlackC.Lexer
             curFrag = scan.getFrag();
             skipRestOfLine();
 
-        //    Token token = scanner.scanToken();
-        //    Macro macro = Macro.lookupMacro(token);
+            //    Token token = scanner.scanToken();
+            //    Macro macro = Macro.lookupMacro(token);
         }
 
         public void handleElifDirective()
@@ -449,13 +382,13 @@ namespace BlackC.Lexer
             skipRestOfLine();
             //    Token token = scanner.scanToken();        //get pragma name
 
-        //    switch (token.chars)
-        //    {
-        //        case "once" :
-        //            String filename = sourceStack[sourceStack.Count - 1].filename;
-        //            oncelerList.Add(filename);
-        //            break;
-        //    }
+            //    switch (token.chars)
+            //    {
+            //        case "once" :
+            //            String filename = sourceStack[sourceStack.Count - 1].filename;
+            //            oncelerList.Add(filename);
+            //            break;
+            //    }
         }
     }
 }
