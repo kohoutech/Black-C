@@ -1429,6 +1429,1696 @@ namespace BlackC
         //    }
         //    return node;
         //}
+
+        //- statements --------------------------------------------------------
+
+        ///* (6.8)
+        // statement:
+        //     labeled-statement
+        //     compound-statement
+        //     expression-statement
+        //     selection-statement
+        //     iteration-statement
+        //     jump-statement
+        //*/
+        //public StatementNode parseStatement()
+        //{
+        //    StatementNode node = parseLabeledStatement();
+        //    if (node == null)
+        //    {
+        //        node = parseCompoundStatement();
+        //    }
+        //    if (node == null)
+        //    {
+        //        node = parseExpressionStatement();
+        //    }
+        //    if (node == null)
+        //    {
+        //        node = parseSelectionStatement();
+        //    }
+        //    if (node == null)
+        //    {
+        //        node = parseIterationStatement();
+        //    }
+        //    if (node == null)
+        //    {
+        //        node = parseJumpStatement();
+        //    }
+        //    return node;
+        //}
+
+        ///*(6.8.1) 
+        // labeled-statement:
+        //    identifier : statement
+        //    case constant-expression : statement
+        //    default : statement
+        // */
+        //public StatementNode parseLabeledStatement()
+        //{
+        //    StatementNode node = null;
+        //    int cuepoint = prep.record();
+        //    Token token = prep.getToken();
+        //    IdentNode labelId = arbor.makeLabelIdentNode(token);         //identifier : statement
+        //    bool result = (labelId != null);
+        //    if (result)
+        //    {
+        //        token = prep.getToken();
+        //        result = (token.type == TokenType.COLON);
+        //        if (result)
+        //        {
+        //            StatementNode stmt = parseStatement();
+        //            result = (stmt != null);
+        //            if (result)
+        //            {
+        //                node = arbor.makeLabelStatement(labelId);
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);        //case constant-expression : statement
+        //        token = prep.getToken();
+        //        result = (token.type == TokenType.CASE);
+        //        if (result)
+        //        {
+        //            ConstExpressionNode expr = pexpr.parseConstantExpression();
+        //            result = (expr != null);
+        //            if (result)
+        //            {
+        //                token = prep.getToken();
+        //                result = (token.type == TokenType.COLON);
+        //                if (result)
+        //                {
+        //                    StatementNode stmt = parseStatement();
+        //                    result = (stmt != null);
+        //                    if (result)
+        //                    {
+        //                        node = arbor.makeCaseStatementNode(expr, stmt);
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);        //default : statement
+        //        token = prep.getToken();
+        //        result = (token.type == TokenType.DEFAULT);
+        //        if (result)
+        //        {
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.COLON);
+        //            if (result)
+        //            {
+        //                StatementNode stmt = parseStatement();
+        //                result = (stmt != null);
+        //                if (result)
+        //                {
+        //                    node = arbor.makeDefaultStatementNode(stmt);
+        //                }
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);
+        //    }
+        //    return node;
+        //}
+
+        ///*(6.8.2) 
+        // compound-statement:
+        //    { block-item-list[opt] }
+        // */
+        //public StatementNode parseCompoundStatement()
+        //{
+        //    StatementNode node = null;
+        //    List<BlockItemNode> list = null;
+        //    int cuepoint = prep.record();
+        //    Token token = prep.getToken();
+        //    bool result = (token.type == TokenType.LBRACE);
+        //    if (result)
+        //    {
+        //        list = parseBlockItemList();
+        //        token = prep.getToken();
+        //        result = (token.type == TokenType.RBRACE);
+        //    }
+        //    if (result)
+        //    {
+        //        node = arbor.makeCompoundStatementNode(list);
+        //    }
+        //    else
+        //    {
+        //        prep.rewind(cuepoint);
+        //    }
+        //    return node;
+        //}
+
+        ///*(6.8.2) 
+        // block-item-list:
+        //    block-item
+        //    block-item-list block-item
+        // */
+        //public List<BlockItemNode> parseBlockItemList()
+        //{
+        //    List<BlockItemNode> list = null;
+        //    BlockItemNode item = parseBlockItem();
+        //    bool result = (item != null);
+        //    if (result)
+        //    {
+        //        list = new List<BlockItemNode>();
+        //        list.Add(item);
+        //    }
+        //    while (result)
+        //    {
+        //        item = parseBlockItem();
+        //        result = (item != null);
+        //        if (result)
+        //        {
+        //            list.Add(item);
+        //        }
+        //    }
+        //    return list;
+        //}
+
+        ///*(6.8.2) 
+        // block-item:
+        //    declaration
+        //    statement
+        // */
+        //public BlockItemNode parseBlockItem()
+        //{
+        //    BlockItemNode item = pdeclar.parseDeclaration();
+        //    if (item == null)
+        //    {
+        //        item = parseStatement();
+        //    }
+        //    return item;
+        //}
+
+        ///*(6.8.3) 
+        // expression-statement:
+        //    expression[opt] ;
+        // */
+        //public StatementNode parseExpressionStatement()
+        //{
+        //    StatementNode node = null;
+        //    int cuepoint = prep.record();
+        //    ExpressionNode expr = pexpr.parseExpression();
+        //    Token token = prep.getToken();
+        //    bool result = (token.type == TokenType.SEMICOLON);
+        //    if (result)
+        //    {
+        //        if (expr != null)
+        //        {
+        //            node = arbor.makeExpressionStatement(expr);
+        //        }
+        //        else
+        //        {
+        //            node = arbor.makeEmptyStatement(expr);
+        //        }
+        //    }
+        //    else
+        //    {
+        //        prep.rewind(cuepoint);
+        //    }
+        //    return node;
+        //}
+
+        ///*(6.8.4) 
+        // selection-statement:
+        //    if ( expression ) statement
+        //    if ( expression ) statement else statement
+        //    switch ( expression ) statement
+        // */
+        //public StatementNode parseSelectionStatement()
+        //{
+        //    StatementNode node = null;
+        //    int cuepoint = prep.record();
+        //    Token token = prep.getToken();
+        //    bool result = (token.type == TokenType.IF);             //if ( expression ) statement
+        //    if (result)
+        //    {
+        //        token = prep.getToken();
+        //        result = (token.type == TokenType.LPAREN);
+        //        if (result)
+        //        {
+        //            ExpressionNode expr = pexpr.parseExpression();
+        //            result = (expr != null);
+        //            if (result)
+        //            {
+        //                token = prep.getToken();
+        //                result = (token.type == TokenType.RPAREN);
+        //                if (result)
+        //                {
+        //                    StatementNode thenstmt = parseStatement();
+        //                    result = (thenstmt != null);
+        //                    if (result)
+        //                    {
+        //                        int cuepoint2 = prep.record();     //if ( expression ) statement else statement
+        //                        StatementNode elsestmt = null;
+        //                        token = prep.getToken();
+        //                        bool result2 = (token.type == TokenType.ELSE);
+        //                        if (result2)
+        //                        {
+        //                            elsestmt = parseStatement();
+        //                            result2 = (elsestmt != null);
+        //                        }
+        //                        if (!result2)
+        //                        {
+        //                            prep.rewind(cuepoint2);
+        //                        }
+        //                        node = arbor.makeIfStatementNode(expr, thenstmt, elsestmt);
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);            //switch ( expression ) statement
+        //        token = prep.getToken();
+        //        result = (token.type == TokenType.SWITCH);
+        //        if (result)
+        //        {
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.LPAREN);
+
+        //            if (result)
+        //            {
+        //                ExpressionNode expr = pexpr.parseExpression();
+        //                result = (expr != null);
+        //                if (result)
+        //                {
+        //                    token = prep.getToken();
+        //                    result = (token.type == TokenType.RPAREN);
+        //                    if (result)
+        //                    {
+        //                        StatementNode stmt = parseStatement();
+        //                        result = (stmt != null);
+        //                        if (result)
+        //                        {
+        //                            node = arbor.makeSwitchStatement(expr, stmt);
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);
+        //    }
+        //    return node;
+        //}
+
+        ///*(6.8.5) 
+        // iteration-statement:
+        //    while ( expression ) statement
+        //    do statement while ( expression ) ;
+        //    for ( expression[opt] ; expression[opt] ; expression[opt] ) statement
+        //    for ( declaration expression[opt] ; expression[opt] ) statement
+        // */
+        //public StatementNode parseIterationStatement()
+        //{
+        //    StatementNode node = null;
+        //    int cuepoint = prep.record();
+        //    Token token = prep.getToken();
+        //    bool result = (token.type == TokenType.WHILE);             //while ( expression ) statement
+        //    if (result)
+        //    {
+        //        token = prep.getToken();
+        //        result = (token.type == TokenType.LPAREN);
+        //        if (result)
+        //        {
+        //            ExpressionNode expr = pexpr.parseExpression();
+        //            result = (expr != null);
+        //            if (result)
+        //            {
+        //                token = prep.getToken();
+        //                result = (token.type == TokenType.RPAREN);
+        //                if (result)
+        //                {
+        //                    StatementNode stmt = parseStatement();
+        //                    result = (stmt != null);
+        //                    if (result)
+        //                    {
+        //                        node = arbor.makeWhileStatementNode(expr, stmt);
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);               //do statement while ( expression ) ;
+        //        token = prep.getToken();
+        //        result = (token.type == TokenType.DO);
+        //        if (result)
+        //        {
+        //            StatementNode stmt = parseStatement();
+        //            result = (stmt != null);
+        //            if (result)
+        //            {
+        //                token = prep.getToken();
+        //                result = (token.type == TokenType.WHILE);
+        //                if (result)
+        //                {
+        //                    token = prep.getToken();
+        //                    result = (token.type == TokenType.LPAREN);
+        //                    if (result)
+        //                    {
+        //                        ExpressionNode expr = pexpr.parseExpression();
+        //                        result = (expr != null);
+        //                        if (result)
+        //                        {
+        //                            token = prep.getToken();
+        //                            result = (token.type == TokenType.RPAREN);
+        //                            if (result)
+        //                            {
+        //                                token = prep.getToken();
+        //                                result = (token.type == TokenType.SEMICOLON);
+        //                                if (result)
+        //                                {
+        //                                    node = arbor.makeDoStatementNode(stmt, expr);
+        //                                }
+        //                            }
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);           //for ( expression[opt] ; expression[opt] ; expression[opt] ) statement
+        //        token = prep.getToken();
+        //        result = (token.type == TokenType.FOR);
+        //        if (result)
+        //        {
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.LPAREN);
+        //            if (result)
+        //            {
+        //                ExpressionNode expr1 = pexpr.parseExpression();
+        //                token = prep.getToken();
+        //                result = (token.type == TokenType.SEMICOLON);
+        //                if (result)
+        //                {
+        //                    ExpressionNode expr2 = pexpr.parseExpression();
+        //                    token = prep.getToken();
+        //                    result = (token.type == TokenType.SEMICOLON);
+        //                    if (result)
+        //                    {
+        //                        ExpressionNode expr3 = pexpr.parseExpression();
+        //                        token = prep.getToken();
+        //                        result = (token.type == TokenType.RPAREN);
+        //                        if (result)
+        //                        {
+        //                            StatementNode stmt = parseStatement();
+        //                            result = (stmt != null);
+        //                            if (result)
+        //                            {
+        //                                node = arbor.makeForStatementNode(expr1, expr2, expr3, stmt);
+        //                            }
+
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);           //for ( declaration expression[opt] ; expression[opt] ) statement
+        //        token = prep.getToken();
+        //        result = (token.type == TokenType.FOR);
+        //        if (result)
+        //        {
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.LPAREN);
+        //            if (result)
+        //            {
+        //                DeclarationNode declar = pdeclar.parseDeclaration();
+        //                result = (declar != null);
+        //                if (result)
+        //                {
+        //                    ExpressionNode expr2 = pexpr.parseExpression();
+        //                    token = prep.getToken();
+        //                    result = (token.type == TokenType.SEMICOLON);
+        //                    if (result)
+        //                    {
+        //                        ExpressionNode expr3 = pexpr.parseExpression();
+        //                        token = prep.getToken();
+        //                        result = (token.type == TokenType.RPAREN);
+        //                        if (result)
+        //                        {
+        //                            StatementNode stmt = parseStatement();
+        //                            result = (stmt != null);
+        //                            if (result)
+        //                            {
+        //                                node = arbor.makeForStatementNode(declar, expr2, expr3, stmt);
+        //                            }
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);
+        //    }
+        //    return node;
+        //}
+
+        ///*(6.8.6) 
+        // jump-statement:
+        //    goto identifier ;
+        //    continue ;
+        //    break ;
+        //    return expression[opt] ;
+        // */
+        //public StatementNode parseJumpStatement()
+        //{
+        //    StatementNode node = null;
+        //    int cuepoint = prep.record();
+        //    Token token = prep.getToken();
+        //    bool result = (token.type == TokenType.GOTO);             //goto identifier ;
+        //    if (result)
+        //    {
+        //        token = prep.getToken();
+        //        IdentNode idNode = arbor.getLabelIdentNode(token);
+        //        result = (idNode != null);
+        //        if (result)
+        //        {
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.SEMICOLON);
+        //            if (result)
+        //            {
+        //                node = arbor.makeGotoStatementNode(idNode);
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);        //continue ;
+        //        token = prep.getToken();
+        //        result = (token.type == TokenType.CONTINUE);
+        //        if (result)
+        //        {
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.SEMICOLON);
+        //            if (result)
+        //            {
+        //                node = arbor.makeContinueStatementNode();
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);        //break ;
+        //        token = prep.getToken();
+        //        result = (token.type == TokenType.BREAK);
+        //        if (result)
+        //        {
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.SEMICOLON);
+        //            if (result)
+        //            {
+        //                node = arbor.makeBreakStatementNode();
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);        //return expression[opt] ;
+        //        token = prep.getToken();
+        //        result = (token.type == TokenType.RETURN);
+        //        if (result)
+        //        {
+        //            ExpressionNode expr = pexpr.parseExpression();
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.SEMICOLON);
+        //            if (result)
+        //            {
+        //                node = arbor.makeReturnStatementNode(expr);
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);
+        //    }
+        //    return node;
+        //}
+
+        //- expressions -------------------------------------------------------
+
+        /*(6.5.1) 
+         primary-expression:
+            identifier
+            constant
+            string-literal
+            ( expression )
+         */
+        public Expression parsePrimaryExpression()
+        {
+        //    int cuepoint = prep.record();
+        //    Token token = prep.getToken();
+        //    ExprNode node = arbor.getExprIdentNode(token);
+        //    bool result = (node != null);
+        //    if (!result)
+        //    {
+        //        result = (token.type == TokenType.INTCONST);
+        //        if (result)
+        //        {
+        //            node = arbor.makeIntegerConstantNode(token);
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        result = (token.type == TokenType.FLOATCONST);
+        //        if (result)
+        //        {
+        //            node = arbor.makeFloatConstantNode(token);
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        result = (token.type == TokenType.CHARCONST);
+        //        if (result)
+        //        {
+        //            node = arbor.makeCharConstantNode(token);
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        result = (token.type == TokenType.STRINGCONST);
+        //        if (result)
+        //        {
+        //            node = arbor.makeStringConstantNode(token);
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        node = arbor.getExprEnumNode(token);
+        //        result = (node != null);
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);                   //( expression )
+        //        token = prep.getToken();
+        //        result = (token.type == TokenType.LPAREN);
+        //        if (result)
+        //        {
+        //            ExpressionNode expr = parseExpression();
+        //            if (result)
+        //            {
+        //                token = prep.getToken();
+        //                result = (token.type == TokenType.RPAREN);
+        //                if (result)
+        //                {
+        //                    node = arbor.makeSubexpressionNode(expr);
+        //                }
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);
+        //    }
+        //    return node;
+            return null;
+        }
+
+        /*(6.5.2) 
+         postfix-expression:
+            primary-expression
+            ( type-name ) { initializer-list }
+            ( type-name ) { initializer-list , }
+            postfix-expression [ expression ]
+            postfix-expression ( argument-expression-list[opt] )
+            postfix-expression . identifier
+            postfix-expression -> identifier
+            postfix-expression ++
+            postfix-expression --
+         */
+        public Expression parsePostfixExpression()
+        {
+        //    int cuepoint = prep.record();
+        //    ExprNode node = parsePrimaryExpression();         //primary-expression
+        //    bool result = (node != null);
+        //    if (!result)
+        //    {
+        //        int cuepoint2 = prep.record();
+        //        Token token = prep.getToken();           //( type-name ) { initializer-list }
+        //        result = (token.type == TokenType.LPAREN);
+        //        if (result)
+        //        {
+        //            TypeNameNode name = pdeclar.parseTypeName();
+        //            result = (name != null);
+        //            if (result)
+        //            {
+        //                token = prep.getToken();
+        //                result = (token.type == TokenType.RPAREN);
+        //                if (result)
+        //                {
+        //                    token = prep.getToken();
+        //                    result = (token.type == TokenType.LBRACE);
+        //                    if (result)
+        //                    {
+        //                        List<InitializerNode> initList = pdeclar.parseInitializerList();
+        //                        result = (initList != null);
+        //                        if (result)
+        //                        {
+        //                            token = prep.getToken();
+        //                            result = (token.type == TokenType.RBRACE);
+        //                            if (!result)
+        //                            {
+        //                                result = (token.type == TokenType.COMMA);             //the comma is optional
+        //                                if (result)
+        //                                {
+        //                                    token = prep.getToken();
+        //                                    result = (token.type == TokenType.RBRACE);
+        //                                    if (result)
+        //                                    {
+        //                                        node = arbor.makeTypeInitExprNode(node);
+        //                                        result = (node != null);
+        //                                    }
+
+        //                                }
+        //                            }
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //        }
+        //    }
+        //    bool notEmpty = result;
+        //    while (result)
+        //    {
+        //        int cuepoint2 = prep.record();           //postfix-expression [ expression ]
+        //        Token token = prep.getToken();
+        //        result = (token.type == TokenType.LBRACKET);
+        //        if (result)
+        //        {
+        //            ExpressionNode expr = parseExpression();
+        //            result = (expr != null);
+        //            if (result)
+        //            {
+        //                token = prep.getToken();
+        //                result = (token.type == TokenType.RBRACKET);
+        //                if (result)
+        //                {
+        //                    node = arbor.makeIndexExprNode(node, expr);
+        //                    result = (node != null);
+        //                }
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);                  //postfix-expression ( argument-expression-list[opt] )
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.LPAREN);
+        //            if (result)
+        //            {
+        //                List<AssignExpressionNode> argList = parseArgExpressionList();
+        //                token = prep.getToken();
+        //                result = (token.type == TokenType.RPAREN);
+        //                if (result)
+        //                {
+        //                    node = arbor.makeFuncCallExprNode(node, argList);
+        //                    result = (node != null);
+        //                }
+
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);                  //postfix-expression . identifier
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.PERIOD);
+        //            if (result)
+        //            {
+        //                token = prep.getToken();
+        //                IdentNode idNode = arbor.getFieldIdentNode(token);
+        //                result = (idNode != null);
+        //                if (result)
+        //                {
+        //                    node = arbor.makeFieldExprNode(node, idNode);
+        //                    result = (node != null);
+        //                }
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);                  //postfix-expression -> identifier
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.ARROW);
+        //            if (result)
+        //            {
+        //                token = prep.getToken();
+        //                IdentNode idNode = arbor.getFieldIdentNode(token);
+        //                result = (idNode != null);
+        //                if (result)
+        //                {
+        //                    node = arbor.makeRefFieldExprNode(node, idNode);
+        //                    result = (node != null);
+        //                }
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);                  //postfix-expression ++
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.PLUSPLUS);
+        //            result = (node != null);
+        //            if (result)
+        //            {
+        //                node = arbor.makePostPlusPlusExprNode(node);
+        //                result = (node != null);
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);                  //postfix-expression --
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.MINUSMINUS);
+        //            result = (node != null);
+        //            if (result)
+        //            {
+        //                node = arbor.makePostMinusMinusExprNode(node);
+        //                result = (node != null);
+        //            }
+        //            if (!result)
+        //            {
+        //                prep.rewind(cuepoint2);
+        //            }
+        //        }
+        //    }
+        //    if (!notEmpty)
+        //    {
+        //        prep.rewind(cuepoint);
+        //    }
+        //    return node;
+            return null;
+        }
+
+        /*(6.5.2) 
+         argument-expression-list:
+            assignment-expression
+            argument-expression-list , assignment-expression
+         */
+        public List<Expression> parseArgExpressionList()
+        {
+        //    List<AssignExpressionNode> list = null;
+        //    AssignExpressionNode node = parseAssignExpression();
+        //    bool result = (node != null);
+        //    if (result)
+        //    {
+        //        list = new List<AssignExpressionNode>();
+        //        list.Add(node);
+        //    }
+        //    while (result)
+        //    {
+        //        int cuepoint2 = prep.record();
+        //        Token token = prep.getToken();
+        //        result = (token.type == TokenType.COMMA);
+        //        if (result)
+        //        {
+        //            node = parseAssignExpression();
+        //            result = (node != null);
+        //            if (result)
+        //            {
+        //                list.Add(node);
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //        }
+        //    }
+        //    return list;
+            return null;
+        }
+
+        /*(6.5.3) 
+         unary-expression:
+            postfix-expression
+            ++ unary-expression
+            -- unary-expression
+            unary-operator cast-expression
+            sizeof unary-expression
+            sizeof ( type-name )
+         */
+        public Expression parseUnaryExpression()
+        {
+        //    int cuepoint = prep.record();
+        //    ExprNode node = parsePostfixExpression();         //postfix-expression
+        //    bool result = (node != null);
+        //    if (!result)
+        //    {
+        //        Token token = prep.getToken();           //++ unary-expression
+        //        result = (token.type == TokenType.PLUSPLUS);
+        //        if (result)
+        //        {
+        //            node = parseUnaryExpression();
+        //            result = (node != null);
+        //            if (result)
+        //            {
+        //                node = arbor.makePlusPlusExprNode(node);
+        //                result = (node != null);
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);
+        //        Token token = prep.getToken();           //-- unary-expression
+        //        result = (token.type == TokenType.MINUSMINUS);
+        //        if (result)
+        //        {
+        //            node = parseUnaryExpression();
+        //            result = (node != null);
+        //            if (result)
+        //            {
+        //                node = arbor.makeMinusMinusExprNode(node);
+        //                result = (node != null);
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);                   //unary-operator cast-expression
+        //        UnaryOperatorNode uniOp = parseUnaryOperator();
+        //        result = (uniOp != null);
+        //        if (result)
+        //        {
+        //            ExprNode castExpr = parseCastExpression();
+        //            result = (castExpr != null);
+        //            if (result)
+        //            {
+        //                node = arbor.makeUnaryCastExprNode(uniOp, castExpr);
+        //                result = (node != null);
+        //            }
+
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);
+        //        Token token = prep.getToken();           //sizeof unary-expression
+        //        result = (token.type == TokenType.SIZEOF);
+        //        if (result)
+        //        {
+        //            node = parseUnaryExpression();
+        //            result = (node != null);
+        //            if (result)
+        //            {
+        //                node = arbor.makeSizeofUnaryExprNode(node);
+        //                result = (node != null);
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);
+        //        Token token = prep.getToken();           //sizeof ( type-name )
+        //        result = (token.type == TokenType.SIZEOF);
+        //        if (result)
+        //        {
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.LPAREN);
+        //            if (result)
+        //            {
+        //                TypeNameNode name = pdeclar.parseTypeName();
+        //                if (result)
+        //                {
+        //                    token = prep.getToken();
+        //                    result = (token.type == TokenType.RPAREN);
+        //                    result = (node != null);
+        //                    if (result)
+        //                    {
+        //                        node = arbor.makeSizeofTypeExprNode(name);
+        //                        result = (node != null);
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+        //    if (!result)
+        //    {
+        //        prep.rewind(cuepoint);
+        //    }
+        //    return node;
+            return null;
+        }
+
+        /*(6.5.3) 
+         unary-operator: one of
+            & * + - ~ !
+         */
+        public Expression parseUnaryOperator()
+        {
+        //    UnaryOperatorNode node = null;
+        //    int cuepoint = prep.record();
+        //    Token token = prep.getToken();
+        //    switch (token.ToString())
+        //    {
+        //        case "AMPERSAND":
+        //            node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.AMPERSAND);
+        //            break;
+
+        //        case "ASTERISK":
+        //            node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.ASTERISK);
+        //            break;
+
+        //        case "PLUS":
+        //            node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.PLUS);
+        //            break;
+
+        //        case "MINUS":
+        //            node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.MINUS);
+        //            break;
+
+        //        case "TILDE":
+        //            node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.TILDE);
+        //            break;
+
+        //        case "EXCLAIM":
+        //            node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.EXCLAIM);
+        //            break;
+        //    }
+        //    if (node == null)
+        //    {
+        //        prep.rewind(cuepoint);
+        //    }
+        //    return node;
+            return null;
+        }
+
+        /*(6.5.4) 
+         cast-expression:
+            unary-expression
+            ( type-name ) cast-expression
+         */
+        public Expression parseCastExpression()
+        {
+        //    ExprNode node = parseUnaryExpression();
+        //    bool result = (node != null);
+        //    if (!result)
+        //    {
+        //        int cuepoint2 = prep.record();
+        //        Token token = prep.getToken();
+        //        result = (token.type == TokenType.LPAREN);
+        //        if (result)
+        //        {
+        //            TypeNameNode name = pdeclar.parseTypeName();
+        //            result = (name != null);
+        //            if (result)
+        //            {
+        //                token = prep.getToken();
+        //                result = (token.type == TokenType.RPAREN);
+        //                if (result)
+        //                {
+        //                    ExprNode rhs = parseCastExpression();
+        //                    result = (rhs != null);
+        //                    if (result)
+        //                    {
+        //                        node = arbor.makeCastExprNode(name, rhs);
+        //                        result = (node != null);
+        //                    }
+        //                }
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //        }
+        //    }
+        //    return node;
+            return null;
+        }
+
+        /*(6.5.5) 
+         multiplicative-expression:
+            cast-expression
+            multiplicative-expression * cast-expression
+            multiplicative-expression / cast-expression
+            multiplicative-expression % cast-expression
+         */
+        public Expression parseMultExpression()
+        {
+        //    ExprNode lhs = parseCastExpression();
+        //    bool result = (lhs != null);
+        //    while (result)
+        //    {
+        //        int cuepoint2 = prep.record();
+        //        Token token = prep.getToken();
+        //        result = (token.type == TokenType.STAR);
+        //        if (result)
+        //        {
+        //            ExprNode rhs = parseCastExpression();
+        //            result = (rhs != null);
+        //            if (result)
+        //            {
+        //                lhs = arbor.makeMultiplyExprNode(lhs, rhs);
+        //                result = (lhs != null);
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.SLASH);
+        //            if (result)
+        //            {
+        //                ExprNode rhs = parseCastExpression();
+        //                result = (rhs != null);
+        //                if (result)
+        //                {
+        //                    lhs = arbor.makeDivideExprNode(lhs, rhs);
+        //                    result = (lhs != null);
+        //                }
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.PERCENT);
+        //            if (result)
+        //            {
+        //                ExprNode rhs = parseCastExpression();
+        //                result = (rhs != null);
+        //                if (result)
+        //                {
+        //                    lhs = arbor.makeModuloExprNode(lhs, rhs);
+        //                    result = (lhs != null);
+        //                }
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //        }
+        //    }
+        //    return lhs;
+            return null;
+        }
+
+        /*(6.5.6) 
+         additive-expression:
+            multiplicative-expression
+            additive-expression + multiplicative-expression
+            additive-expression - multiplicative-expression
+         */
+        public Expression parseAddExpression()
+        {
+        //    ExprNode lhs = parseMultExpression();
+        //    bool result = (lhs != null);
+        //    while (result)
+        //    {
+        //        int cuepoint2 = prep.record();
+        //        Token token = prep.getToken();
+        //        result = (token.type == TokenType.PLUS);
+        //        if (result)
+        //        {
+        //            ExprNode rhs = parseMultExpression();
+        //            result = (rhs != null);
+        //            if (result)
+        //            {
+        //                lhs = arbor.makeAddExprNode(lhs, rhs);
+        //                result = (lhs != null);
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.MINUS);
+        //            if (result)
+        //            {
+        //                ExprNode rhs = parseMultExpression();
+        //                result = (rhs != null);
+        //                if (result)
+        //                {
+        //                    lhs = arbor.makeSubtractExprNode(lhs, rhs);
+        //                    result = (lhs != null);
+        //                }
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //        }
+        //    }
+        //    return lhs;
+            return null;
+        }
+
+        /*(6.5.7) 
+         shift-expression:
+            additive-expression
+            shift-expression << additive-expression
+            shift-expression >> additive-expression
+         */
+        public Expression parseShiftExpression()
+        {
+        //    ExprNode lhs = parseAddExpression();
+        //    bool result = (lhs != null);
+        //    bool empty = result;
+        //    while (result)
+        //    {
+        //        int cuepoint2 = prep.record();
+        //        Token token = prep.getToken();
+        //        result = (token.type == TokenType.LEFTSHIFT);
+        //        if (result)
+        //        {
+        //            ExprNode rhs = parseAddExpression();
+        //            result = (rhs != null);
+        //            if (result)
+        //            {
+        //                lhs = arbor.makeShiftLeftExprNode(lhs, rhs);
+        //                result = (lhs != null);
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.RIGHTSHIFT);
+        //            if (result)
+        //            {
+        //                ExprNode rhs = parseAddExpression();
+        //                result = (rhs != null);
+        //                if (result)
+        //                {
+        //                    lhs = arbor.makeShiftRightExprNode(lhs, rhs);
+        //                    result = (lhs != null);
+        //                }
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //        }
+        //    }
+        //    return lhs;
+            return null;
+        }
+
+        /*(6.5.8) 
+         relational-expression:
+            shift-expression
+            relational-expression < shift-expression
+            relational-expression > shift-expression
+            relational-expression <= shift-expression
+            relational-expression >= shift-expression
+         */
+        public Expression parseRelationalExpression()
+        {
+        //    ExprNode lhs = parseShiftExpression();
+        //    bool result = (lhs != null);
+        //    while (result)
+        //    {
+        //        int cuepoint2 = prep.record();
+        //        Token token = prep.getToken();
+        //        result = (token.type == TokenType.LESSTHAN);
+        //        if (result)
+        //        {
+        //            ExprNode rhs = parseShiftExpression();
+        //            result = (rhs != null);
+        //            if (result)
+        //            {
+        //                lhs = arbor.makeLessThanExprNode(lhs, rhs);
+        //                result = (lhs != null);
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.GTRTHAN);
+        //            if (result)
+        //            {
+        //                ExprNode rhs = parseShiftExpression();
+        //                result = (rhs != null);
+        //                if (result)
+        //                {
+        //                    lhs = arbor.makeGreaterThanExprNode(lhs, rhs);
+        //                    result = (lhs != null);
+        //                }
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.LESSEQUAL);
+        //            if (result)
+        //            {
+        //                ExprNode rhs = parseShiftExpression();
+        //                result = (rhs != null);
+        //                if (result)
+        //                {
+        //                    lhs = arbor.makeLessEqualExprNode(lhs, rhs);
+        //                    result = (lhs != null);
+        //                }
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.GTREQUAL);
+        //            if (result)
+        //            {
+        //                ExprNode rhs = parseShiftExpression();
+        //                result = (rhs != null);
+        //                if (result)
+        //                {
+        //                    lhs = arbor.makeGreaterEqualExprNode(lhs, rhs);
+        //                    result = (lhs != null);
+        //                }
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //        }
+        //    }
+        //    return lhs;
+            return null;
+        }
+
+        /*(6.5.9) 
+         equality-expression:
+            relational-expression
+            equality-expression == relational-expression
+            equality-expression != relational-expression
+         */
+        public Expression parseEqualityExpression()
+        {
+        //    ExprNode lhs = parseRelationalExpression();
+        //    bool result = (lhs != null);
+        //    while (result)
+        //    {
+        //        int cuepoint2 = prep.record();
+        //        Token token = prep.getToken();
+        //        result = (token.type == TokenType.EQUALEQUAL);
+        //        if (result)
+        //        {
+        //            ExprNode rhs = parseRelationalExpression();
+        //            result = (rhs != null);
+        //            if (result)
+        //            {
+        //                lhs = arbor.makeEqualsExprNode(lhs, rhs);
+        //                result = (lhs != null);
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //            token = prep.getToken();
+        //            result = (token.type == TokenType.NOTEQUAL);
+        //            if (result)
+        //            {
+        //                ExprNode rhs = parseRelationalExpression();
+        //                result = (rhs != null);
+        //                if (result)
+        //                {
+        //                    lhs = arbor.makeNotEqualsExprNode(lhs, rhs);
+        //                    result = (lhs != null);
+        //                }
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //        }
+        //    }
+        //    return lhs;
+            return null;
+        }
+
+        /*(6.5.10) 
+         AND-expression:
+            equality-expression
+            AND-expression & equality-expression
+         */
+        public Expression parseANDExpression()
+        {
+        //    ExprNode lhs = parseEqualityExpression();
+        //    bool result = (lhs != null);
+        //    while (result)
+        //    {
+        //        int cuepoint2 = prep.record();
+        //        Token token = prep.getToken();
+        //        result = (token.type == TokenType.AMPERSAND);
+        //        if (result)
+        //        {
+        //            ExprNode rhs = parseEqualityExpression();
+        //            result = (rhs != null);
+        //            if (result)
+        //            {
+        //                lhs = arbor.makeANDExprNode(lhs, rhs);
+        //                result = (lhs != null);
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //        }
+        //    }
+        //    return lhs;
+            return null;
+        }
+
+        /*(6.5.11) 
+         exclusive-OR-expression:
+            AND-expression
+            exclusive-OR-expression ^ AND-expression
+         */
+        public Expression parseXORExpression()
+        {
+        //    ExprNode lhs = parseANDExpression();
+        //    bool result = (lhs != null);
+        //    while (result)
+        //    {
+        //        int cuepoint2 = prep.record();
+        //        Token token = prep.getToken();
+        //        result = (token.type == TokenType.tCARET);
+        //        if (result)
+        //        {
+        //            ExprNode rhs = parseANDExpression();
+        //            result = (rhs != null);
+        //            if (result)
+        //            {
+        //                lhs = arbor.makeXORExprNode(lhs, rhs);
+        //                result = (lhs != null);
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //        }
+        //    }
+        //    return lhs;
+            return null;
+        }
+
+        /*(6.5.12) 
+         inclusive-OR-expression:
+            exclusive-OR-expression
+            inclusive-OR-expression | exclusive-OR-expression
+         */
+        public Expression parseORExpression()
+        {
+        //    ExprNode lhs = parseXORExpression();
+        //    bool result = (lhs != null);
+        //    while (result)
+        //    {
+        //        int cuepoint2 = prep.record();
+        //        Token token = prep.getToken();
+        //        result = (token.type == TokenType.BAR);
+        //        if (result)
+        //        {
+        //            ExprNode rhs = parseXORExpression();
+        //            result = (rhs != null);
+        //            if (result)
+        //            {
+        //                lhs = arbor.makeORExprNode(lhs, rhs);
+        //                result = (lhs != null);
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //        }
+        //    }
+        //    return lhs;
+            return null;
+        }
+
+        /*(6.5.13) 
+         logical-AND-expression:
+            inclusive-OR-expression
+            logical-AND-expression && inclusive-OR-expression
+         */
+        public Expression parseLogicalANDExpression()
+        {
+        //    ExprNode lhs = parseORExpression();
+        //    bool result = (lhs != null);
+        //    while (result)
+        //    {
+        //        int cuepoint2 = prep.record();
+        //        Token token = prep.getToken();
+        //        result = (token.type == TokenType.DOUBLEAMP);
+        //        if (result)
+        //        {
+        //            ExprNode rhs = parseORExpression();
+        //            result = (rhs != null);
+        //            if (result)
+        //            {
+        //                lhs = arbor.makeLogicalANDExprNode(lhs, rhs);
+        //                result = (lhs != null);
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //        }
+        //    }
+        //    return lhs;
+            return null;
+        }
+
+        /*(6.5.14) 
+         logical-OR-expression:
+            logical-AND-expression
+            logical-OR-expression || logical-AND-expression
+         */
+        public Expression parseLogicalORExpression()
+        {
+        //    ExprNode lhs = parseLogicalANDExpression();
+        //    bool result = (lhs != null);
+        //    while (result)
+        //    {
+        //        int cuepoint2 = prep.record();
+        //        Token token = prep.getToken();
+        //        result = (token.type == TokenType.DOUBLEBAR);
+        //        if (result)
+        //        {
+        //            ExprNode rhs = parseLogicalANDExpression();
+        //            result = (rhs != null);
+        //            if (result)
+        //            {
+        //                lhs = arbor.makeLogicalORExprNode(lhs, rhs);
+        //                result = (lhs != null);
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //        }
+        //    }
+        //    return lhs;
+            return null;
+        }
+
+        /*(6.5.15) 
+         conditional-expression:
+            logical-OR-expression
+            logical-OR-expression ? expression : conditional-expression
+         */
+        public Expression parseConditionalExpression()
+        {
+        //    ExprNode lhs = parseLogicalORExpression();
+        //    bool result = (lhs != null);
+        //    if (result)
+        //    {
+        //        int cuepoint2 = prep.record();
+        //        Token token = prep.getToken();
+        //        bool result2 = (token.type == TokenType.QUESTION);
+        //        if (result2)
+        //        {
+        //            ExpressionNode expr = parseExpression();
+        //            result = (expr != null);
+        //            if (result2)
+        //            {
+        //                token = prep.getToken();
+        //                result2 = (token.type == TokenType.COLON);
+        //                if (result2)
+        //                {
+        //                    ExprNode condit = parseConditionalExpression();
+        //                    result = (condit != null);
+        //                    if (result)
+        //                    {
+        //                        lhs = arbor.makeConditionalExprNode(lhs, expr, condit);
+        //                        result = (lhs != null);
+        //                    }
+        //                }
+        //            }
+        //        }
+        //        if (!result2)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //        }
+        //    }
+        //    return lhs;
+            return null;
+        }
+
+        //the last three productions in this section are referenced by productions in other sections
+        //so they return specific node types instead of <ExprNode> which in internal to Expressions
+
+        /*(6.5.16) 
+         assignment-expression:
+            conditional-expression
+            unary-expression assignment-operator assignment-expression
+         */
+        //for parsing purposes, we change the second rule to:
+        //conditional-expression assignment-operator assignment-expression
+        public Expression parseAssignExpression()
+        {
+        //    ExprNode lhs = parseConditionalExpression();
+        //    AssignOperatorNode oper = null;
+        //    ExprNode rhs = null;
+        //    bool result = (lhs != null);
+        //    if (result)
+        //    {
+        //        int cuepoint = prep.record();
+        //        oper = parseAssignOperator();
+        //        bool result2 = (oper != null);
+        //        if (result2)
+        //        {
+        //            rhs = parseAssignExpression();
+        //            result = (rhs != null);
+        //        }
+        //        if (!result2)
+        //        {
+        //            prep.rewind(cuepoint);
+        //        }
+        //    }
+        //    return arbor.makeAssignExpressionNode(lhs, oper, rhs);
+            return null;
+        }
+
+        /* (6.5.16) 
+         assignment-operator: one of
+            = *= /= %= += -= <<= >>= &= ^= |=
+         */
+        public Expression parseAssignOperator()
+        {
+        //    AssignOperatorNode node = null;
+        //    int cuepoint = prep.record();
+        //    Token token = prep.getToken();
+        //    switch (token.ToString())
+        //    {
+        //        case "EQUAL":
+        //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.EQUAL);
+        //            break;
+
+        //        case "MULTEQUAL":
+        //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.MULTEQUAL);
+        //            break;
+
+        //        case "SLASHEQUAL":
+        //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.SLASHEQUAL);
+        //            break;
+
+        //        case "PERCENTEQUAL":
+        //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.PERCENTEQUAL);
+        //            break;
+
+        //        case "PLUSEQUAL":
+        //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.PLUSEQUAL);
+        //            break;
+
+        //        case "MINUSEQUAL":
+        //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.MINUSEQUAL);
+        //            break;
+
+        //        case "LSHIFTEQUAL":
+        //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.LSHIFTEQUAL);
+        //            break;
+
+        //        case "RSHIFTEQUAL":
+        //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.RSHIFTEQUAL);
+        //            break;
+
+        //        case "AMPEQUAL":
+        //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.AMPEQUAL);
+        //            break;
+
+        //        case "CARETEQUAL":
+        //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.CARETEQUAL);
+        //            break;
+
+        //        case "BAREQUAL":
+        //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.BAREQUAL);
+        //            break;
+        //    }
+        //    if (node == null)
+        //    {
+        //        prep.rewind(cuepoint);
+        //    }
+        //    return node;
+            return null;
+        }
+
+        /*(6.5.17) 
+         expression:
+            assignment-expression
+            expression , assignment-expression
+         */
+        public Expression parseExpression()
+        {
+        //    ExpressionNode node = null;
+        //    AssignExpressionNode expr = parseAssignExpression();
+        //    bool result = (expr != null);
+        //    if (result)
+        //    {
+        //        node = arbor.makeExpressionNode(null, expr);
+        //    }
+        //    while (result)
+        //    {
+        //        int cuepoint2 = prep.record();
+        //        Token token = prep.getToken();
+        //        result = (token.type == TokenType.COMMA);
+        //        if (result)
+        //        {
+        //            expr = parseAssignExpression();
+        //            if (result)
+        //            {
+        //                node = arbor.makeExpressionNode(node, expr);
+        //            }
+        //        }
+        //        if (!result)
+        //        {
+        //            prep.rewind(cuepoint2);
+        //        }
+        //    }
+        //    return node;
+            return null;
+        }
+
+        /*(6.6) 
+         constant-expression:
+            conditional-expression
+         */
+        public Expression parseConstantExpression()
+        {
+        //    ExprNode condit = parseConditionalExpression();
+        //    return arbor.makeConstantExprNode(condit);
+            return null;
+        }
     }
 }
 
