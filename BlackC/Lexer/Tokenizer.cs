@@ -99,8 +99,6 @@ namespace BlackC.Lexer
             frags.Enqueue(frag);
         }
 
-        //- fragment parsing --------------------------------------------------
-
         //the number fragment we get from the scanner should be well-formed
         public Token ParseNumber(String numstr)
         {

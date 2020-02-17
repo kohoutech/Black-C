@@ -33,61 +33,135 @@ namespace BlackC.Lexer
         public Fragment curFrag;
         bool atLineStart;
 
-        //public List<SourceBuffer> sourceStack;
-        //public bool inMacro;
-        //public Macro currentMacro;
-
-        //public HashSet<String> oncelerList;
+        public List<Scanner> sourceStack;
 
         public Preprocessor(Parser _parser, string filename)
         {
             parser = _parser;
-            scan = new Scanner(parser, filename);
+
+            Macro.initMacros();
+
+            sourceStack = new List<Scanner>();
+            scan = new Scanner(parser, filename, null);           //open main source file
+            sourceStack.Add(scan);                          //and add it to bottom of include stack
+
             curFrag = null;
-            //    sourceStack = new List<SourceBuffer>();
-
             atLineStart = true;
-
-            //    Macro.initMacros();
-            //    inMacro = false;
-            //    currentMacro = null;
-
-            //    oncelerList = new HashSet<string>();        
         }
 
-        public void setMainSourceFile(string filename)
-        {
-            //    SourceBuffer srcbuf = new SourceBuffer(".", filename);
-            //    sourceStack.Add(srcbuf);
-            //    scanner.setSource(srcbuf);
-        }
+        //- preprocessing only ------------------------------------------------
 
         public void preprocessFile(String filename)
         {
-            using (StreamWriter prepFile = new StreamWriter(filename))
+            List<String> lines = new List<string>();
+            StringBuilder line = new StringBuilder();
+
+            Fragment frag = getFrag();
+            while (frag.type != FragType.EOF)
             {
-                Fragment frag = scan.getFrag();
-                while (frag.type != FragType.EOF)
+                if (frag.type == FragType.EOLN)
                 {
-                    if (frag.type == FragType.EOLN)
-                    {
-                        prepFile.WriteLine();
-                    }
-                    else
-                    {
-                        prepFile.Write(frag.ToString());
-                    }
-                    frag = scan.getFrag();
+                    lines.Add(line.ToString());
+                    line.Clear();
+                }
+                else
+                {
+                    line.Append(frag.ToString());
+                }
+                frag = getFrag();                
+            }
+            if (line.Length > 0)
+            {
+                lines.Add(line.ToString());
+            }
+
+            //if not saving spaces in output, compress multiple blank lines into one blank line
+            if (!parser.options.saveSpaces)
+            {
+                lines = removeBlankLines(lines);
+            }
+
+            File.WriteAllLines(filename, lines);
+        }
+
+        public List<string> removeBlankLines(List<string> lines)
+        {
+            List<string> newLines = new List<string>();
+            bool lastLineWasBlank = false;
+            foreach (string line in lines)
+            {
+                bool thisLineIsBlank = lineIsBlank(line);
+                if (!lastLineWasBlank || !thisLineIsBlank)
+                {
+                    newLines.Add(line);
+                }
+                lastLineWasBlank = thisLineIsBlank;
+            }
+            return newLines;
+        }
+
+        public bool lineIsBlank(string line)
+        {
+            foreach (char ch in line)
+            {
+                if (ch != ' ')
+                {
+                    return false;
                 }
             }
+            return true;
         }
 
         //- fragment stream handling ------------------------------------------
 
+        //handles macro expansion & eof in include files
         public Fragment getFrag()
         {
-            Fragment frag = getScannerFrag();
+            Fragment frag = null;
+            bool done = false;
+
+            while (!done)
+            {
+                done = true;
+                if (Macro.inMacro())
+                {
+                    frag = Macro.getfrag();
+                }
+                else
+                {
+                    frag = getScannerFrag();
+                }
+
+                //check for a macro
+                if (frag.type == FragType.WORD)
+                {
+                    Macro macro = Macro.lookupMacro(frag.str);
+                    if (macro != null)
+                    {
+                        invokeMacro(macro);                 //start macro running
+                        done = false;                       //and loop around to get first macro fragment (if not empty)
+                    }
+                }
+
+                //check if we've hit the end of file. if this is an include file, pull it off the stack 
+                //and resume scanning at the point we stopped in the including file
+                //we return the EOF token from the main file only
+                if ((frag.type == FragType.EOF) && (sourceStack.Count > 1))
+                {
+                    Console.WriteLine("closing include file " + sourceStack[sourceStack.Count - 1].filename);
+                    sourceStack.RemoveAt(sourceStack.Count - 1);
+                    scan = sourceStack[sourceStack.Count - 1];
+                    done = false;                                           //get next token from including source if not at main file
+                }
+            }
+
             return frag;
+        }
+
+        //not handling function-like macros yet
+        public void invokeMacro(Macro macro)
+        {
+            Macro.setCurrentMacro(macro, null);
         }
 
         //handle directives in the scanner's fragment stream, will be sent to tokenizer as EOLN fragments
@@ -108,67 +182,13 @@ namespace BlackC.Lexer
                     atLineStart = (curFrag.type == FragType.SPACE);
                 }
             }
-            if (curFrag.type == FragType.EOLN)
+            if ((curFrag.type == FragType.EOLN) || (curFrag.type == FragType.EOF))
             {
                 atLineStart = true;
             }
 
             return curFrag;
         }
-
-        //public Token getToken()
-        //{
-
-        //    Token token = null;
-        //    //bool done = true;
-        //    //do
-        //    //{
-        //    //    if (inMacro)
-        //    //    {
-        //    //        token = currentMacro.getToken();
-        //    //        inMacro = currentMacro.atEnd();
-        //    //    }
-        //    //    else
-        //    //    {
-        //            token = scanner.scanToken();
-        //        //}
-        //        //done = true;
-
-        //        ////check for a directive
-        //        //if ((token.type == TokenType.tHASH) && (token.atBOL))
-        //        //{
-        //        //    handleDirective();
-        //        //    done = false;        //get token following directive's eoln
-        //        //}
-
-        //        ////check for a macro
-        //        //else if (token.type == TokenType.tIDENTIFIER)
-        //        //{
-        //        //    Macro macro = Macro.lookupMacro(token);
-        //        //    if (macro != null)
-        //        //    {
-        //        //        inMacro = true;
-        //        //        currentMacro = macro;
-        //        //        macro.invokeMacro(scanner);         //start macro running
-        //        //        done = false;                       //and get first token from macro definition
-        //        //    }
-        //        //}
-
-        //    //    //we've hit the end of file. if this is an include file, pull it off the stack 
-        //    //    //and resume scanning at the point we stopped in the including file
-        //    //    //we return the EOF token from the main file only
-        //    //    else if ((token.type == TokenType.tEOF) && (sourceStack.Count > 1))
-        //    //    {
-        //    //        Console.WriteLine("closing include file " + sourceStack[sourceStack.Count - 1].fullname);
-        //    //        sourceStack.RemoveAt(sourceStack.Count - 1);
-        //    //        scanner.setSource(sourceStack[sourceStack.Count - 1]);
-        //    //        done = false;                                           //get next token from including source
-        //    //    }
-
-        //    //} while (!done);
-
-        //    return token;
-        //}
 
         //- directive handling ------------------------------------------------
 
@@ -242,90 +262,101 @@ namespace BlackC.Lexer
 
                     default:
                         parser.error("saw unknown directive #" + curFrag.str + " at " + curFrag.loc.ToString());
-                        skipRestOfLine();
+                        readRestOfDirective(false);
                         break;
                 }
             }
             else
             {
                 parser.error("invalid directive #" + curFrag.str + " at " + curFrag.loc.ToString());
-                skipRestOfLine();
+                readRestOfDirective(false);
             }
         }
 
-        public void skipRestOfLine()
+        public List<Fragment> readRestOfDirective(bool keepSpaces)
         {
+            List<Fragment> frags = new List<Fragment>();
+            curFrag = scan.getFrag();
             while (curFrag.type != FragType.EOLN)
             {
-                curFrag = scan.getFrag();        //skip remaining fragments in source line
+                if ((curFrag.type != FragType.SPACE) || keepSpaces)
+                {
+                    frags.Add(curFrag);
+                }
+                curFrag = scan.getFrag();
             }
+            return frags;
         }
+
+        //- source inclusion --------------------------------------------------
 
         public void handleIncludeDirective()
         {
-            //    Token token = scanner.scanToken();
-            //    String filename = "";
+            //Console.WriteLine("saw #include");
+            SourceLocation includeLoc = curFrag.loc;
+            List<Fragment> frags = readRestOfDirective(false);
 
-            //    if (token.type == TokenType.tSTRINGCONST)
-            //    {
-            //        filename = token.chars;
-            //    }
-            //    else
-            //    {
-            //        token = scanner.scanToken();
-            //        while (token.type != TokenType.tGTRTHAN)
-            //        {
-            //            filename += token.chars;
-            //            token = scanner.scanToken();
-            //        }
-            //    }
-            Console.WriteLine("saw #include");
-            curFrag = scan.getFrag();
-            skipRestOfLine();
+            String filename = "";
+            bool quoted = false;
 
-            //    if (!oncelerList.Contains(filename))        //if file hasn't been marked with "pragma once"
-            //    {
-            //        SourceBuffer includeBuf = SourceBuffer.getIncludeFile(filename, parser.includePaths);
-            //        sourceStack.Add(includeBuf);
-            //        scanner.saveSource();
-            //        scanner.setSource(includeBuf);
-            //    }
+            if (frags[0].type == FragType.STRING)
+            {
+                filename = frags[0].str;
+                int ofs = filename[0] == 'L' ? 2 : 1;
+                filename = filename.Substring(ofs, filename.Length - (ofs + 1));
+                quoted = true;
+            }
+            else
+            {
+                int i = 1;
+                while ((frags[i].type != FragType.PUNCT) || (frags[i].str[0] != '>'))
+                {
+                    filename += frags[i++].str;
+                }
+            }
+
+            String pathname = findSourceFile(filename, quoted);
+            scan = new Scanner(parser, pathname, includeLoc);           //open include source file & make it current scanner
+            sourceStack.Add(scan);
         }
+
+        //this will search a list of include paths at some point
+        public string findSourceFile(string filename, bool quoted)
+        {
+            return filename;
+        }
+
+        //- macro definition --------------------------------------------------
 
         public void handleDefineDirective()
         {
-            Console.WriteLine("saw #define");
-            curFrag = scan.getFrag();
-            skipRestOfLine();
-
-            //    Token token = scanner.scanToken();
-            //    Macro macro = Macro.defineMacro(token);
-            //    macro.scanMacroDefinition(scanner);
+            //Console.WriteLine("saw #define");
+            List<Fragment> frags = readRestOfDirective(true);
+            Macro.defineMacro(frags);
         }
 
         public void handleUndefDirective()
         {
             Console.WriteLine("saw #undef");
-            curFrag = scan.getFrag();
-            skipRestOfLine();
+            List<Fragment> frags = readRestOfDirective(false);
 
             //    Token token = scanner.scanToken();
             //    Macro.undefineMacro(token);
         }
 
+        //- conditional compilation -----------------------------------
+
         public void handleIfDirective()
         {
             Console.WriteLine("saw #if");
-            curFrag = scan.getFrag();
-            skipRestOfLine();
+            List<Fragment> frags = readRestOfDirective(false);
 
         }
 
         public void handleIfdefDirective()
         {
             Console.WriteLine("saw #ifdef");
-            curFrag = scan.getFrag();
-            skipRestOfLine();
+            List<Fragment> frags = readRestOfDirective(false);
             //    Token token = scanner.scanToken();
             //    Macro macro = Macro.lookupMacro(token);
         }
@@ -333,8 +364,7 @@ namespace BlackC.Lexer
         public void handleIfndefDirective()
         {
             Console.WriteLine("saw #ifndef");
-            curFrag = scan.getFrag();
-            skipRestOfLine();
+            List<Fragment> frags = readRestOfDirective(false);
 
             //    Token token = scanner.scanToken();
             //    Macro macro = Macro.lookupMacro(token);
@@ -343,52 +373,40 @@ namespace BlackC.Lexer
         public void handleElifDirective()
         {
             Console.WriteLine("saw #elif");
-            curFrag = scan.getFrag();
-            skipRestOfLine();
+            List<Fragment> frags = readRestOfDirective(false);
         }
 
         public void handleElseDirective()
         {
             Console.WriteLine("saw #else");
-            curFrag = scan.getFrag();
-            skipRestOfLine();
+            List<Fragment> frags = readRestOfDirective(false);
         }
 
         public void handleEndifDirective()
         {
             Console.WriteLine("saw #endif");
-            curFrag = scan.getFrag();
-            skipRestOfLine();
+            List<Fragment> frags = readRestOfDirective(false);
         }
+
+        //- miscellaneous -----------------------------------------------------
 
         public void handleLineDirective()
         {
             Console.WriteLine("saw #line");
-            curFrag = scan.getFrag();
-            skipRestOfLine();
+            List<Fragment> frags = readRestOfDirective(false);
         }
 
         public void handleErrorDirective()
         {
             Console.WriteLine("saw #error");
-            curFrag = scan.getFrag();
-            skipRestOfLine();
+            List<Fragment> frags = readRestOfDirective(false);
         }
 
         public void handlePragmaDirective()
         {
-            Console.WriteLine("saw #pragma");
-            curFrag = scan.getFrag();
-            skipRestOfLine();
-            //    Token token = scanner.scanToken();        //get pragma name
-
-            //    switch (token.chars)
-            //    {
-            //        case "once" :
-            //            String filename = sourceStack[sourceStack.Count - 1].filename;
-            //            oncelerList.Add(filename);
-            //            break;
-            //    }
+            //Console.WriteLine("saw #pragma");
+            List<Fragment> frags = readRestOfDirective(true);
+            parser.handlePragma(frags);
         }
     }
 }

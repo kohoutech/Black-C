@@ -29,21 +29,22 @@ namespace BlackC.Lexer
     {
         public Parser parser;
 
-        string filename;
+        public string filename;
+        public SourceLocation caller;
         String source;
 
         int srcpos;
         List<SourceNote> sourceMap;
         int sourceMapPos;
+        bool saveSpaces;
+        StringBuilder spstr;
 
-        int spaceCount;
-        int spaceLines;
-        int tabCount;
-
-        public Scanner(Parser _parser, String _filename)
+        public Scanner(Parser _parser, String _filename, SourceLocation _caller)
         {
             parser = _parser;
             filename = _filename;
+            caller = _caller;
+
             try
             {
                 source = File.ReadAllText(filename);        //read entire file as single string
@@ -56,10 +57,8 @@ namespace BlackC.Lexer
 
             srcpos = 0;
             sourceMapPos = 0;
-
-            spaceCount = 0;
-            spaceLines = 0;
-            tabCount = 4;
+            saveSpaces = parser.options.saveSpaces;
+            spstr = new StringBuilder();
         }
 
         //- source transformation ---------------------------------------------
@@ -144,8 +143,10 @@ namespace BlackC.Lexer
                 //skip any whitespace
                 if ((ch == ' ') || (ch == '\t') || (ch == '\f') || (ch == '\v') || (ch == '\r'))
                 {
-                    //tabs are <tabCount> spaces, carriage returns are 0 spaces, everything else is one space
-                    spaceCount += (ch == '\t') ? tabCount : (ch == '\r') ? 0 : 1;
+                    if ((ch == ' ') || (ch == '\t'))        //keep tabs on spaces
+                    {
+                        spstr.Append(ch);
+                    }
                     ch = source[++srcpos];
                     continue;
                 }
@@ -186,25 +187,27 @@ namespace BlackC.Lexer
         public void skipBlockComment()
         {
             srcpos += 2;
-            spaceCount += 2;
+            int mark = spstr.Length;
+            spstr.Append("  ");
             char ch = source[srcpos];
             while (!((ch == '\0') || ((ch == '*') && (source[srcpos + 1] == '/'))))
             {
                 if (ch == '\n')
                 {
-                    spaceLines++;
-                    spaceCount = 0;
+                    spstr = spstr.Remove(mark,spstr.Length - mark);       //discard all the comment chars in this line
+                    spstr.Append('\n');
+                    mark++;
                 }
                 else
                 {
-                    spaceCount++;
+                    spstr.Append(' ');
                 }
                 ch = source[++srcpos];
             }
             if (ch != '\0')         //if we haven't reached eof, then skip '*/' chars
             {
                 srcpos += 2;
-                spaceCount += 2;
+                spstr.Append("  ");
             }
         }
 
@@ -618,7 +621,7 @@ namespace BlackC.Lexer
             }
             int linenum = sourceMap[sourceMapPos].linenum;
             int linepos = (srcpos - sourceMap[sourceMapPos].newpos) + sourceMap[sourceMapPos].linepos;
-            return new SourceLocation(filename, linenum, linepos);
+            return new SourceLocation(filename, linenum, linepos, caller);
         }
 
         //(5.1.1.2) translation phase 3 : scan source line into preprocessing tokens
@@ -626,8 +629,7 @@ namespace BlackC.Lexer
         {
             Fragment frag = null;
             SourceLocation loc = getFragLocation();
-            spaceCount = 0;
-            spaceLines = 0;
+            spstr.Clear();
 
             char ch = source[srcpos];
             while (true)
@@ -635,9 +637,7 @@ namespace BlackC.Lexer
                 if (isSpace(ch))
                 {
                     skipWhitespace();
-                    frag = new Fragment(FragType.SPACE, "<space>");
-                    frag.spCount = spaceCount;
-                    frag.spLines = spaceLines;
+                    frag = new Fragment(FragType.SPACE, (saveSpaces ? spstr.ToString() : " "));
                     break;
                 }
 
@@ -771,26 +771,7 @@ namespace BlackC.Lexer
         public override string ToString()
         {
             //return str + " at " + loc.ToString();
-            string result = "";
-            if (type == FragType.SPACE)
-            {
-                StringBuilder s = new StringBuilder();
-                for (int i = 0; i < spLines; i++)
-                {
-                    s.Append("\n");
-                }
-                for (int i = 0; i < spCount; i++)
-                {
-                    s.Append(" ");
-                }
-                result = s.ToString();
-            }
-            else 
-            {
-            result = str;
-            }
-
-            return result;
+            return str;
         }
     }
 
@@ -815,17 +796,25 @@ namespace BlackC.Lexer
         public string filename;
         public int linenum;
         public int linepos;
+        public SourceLocation caller;
 
-        public SourceLocation(string fname, int lnum, int lpos)
+        public SourceLocation(string fname, int lnum, int lpos, SourceLocation _caller)
         {
             filename = fname;
             linenum = lnum;
             linepos = lpos;
+            caller = _caller;
         }
 
         public override string ToString()
         {
-            return filename + '(' + linenum + ':' + linepos + ')';
+            string result = filename + '(' + linenum + ':' + linepos + ')';
+            if (caller != null)
+            {
+                result += (" included from " + caller.ToString());
+            }
+
+            return result;
         }
     }
 }

@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using Origami.OIL;
+
 namespace BlackC
 {
     class BlackC
@@ -30,12 +32,17 @@ namespace BlackC
         {
             Options options = new Options(args);            //parse the cmd line args
 
-            //            foreach (String filename in options.filenames)
-            //            {
             String filename = args[0];
             Parser parser = new Parser(options);        //create a parser
-            parser.parseFile(filename);                 //and parse the source file
-            //            }
+
+            try
+            {
+                parser.parseFile(filename);         //and parse the source file                
+            }
+            catch (ParserException e)
+            {
+                Console.WriteLine("had fatal exception: " + e.Message);
+            }            
         }
     }
 }

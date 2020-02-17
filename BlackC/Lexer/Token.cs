@@ -35,7 +35,6 @@ namespace BlackC.Lexer
         public string strval;
         public int intval;
         public double floatval;
-        public String stringval;
 
         //public Token(TokenType _type, String _chars, SourceLocation _loc)
         //{
@@ -52,7 +51,6 @@ namespace BlackC.Lexer
             strval = "";
             intval = 0;
             floatval = 0.0;
-            stringval = "";
         }
 
         //these must be int he same order as the TokenType enum
