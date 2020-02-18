@@ -37,7 +37,8 @@ namespace BlackC
 
             try
             {
-                parser.parseFile(filename);         //and parse the source file                
+                Module module = parser.parseFile(filename);         //and parse the source file
+                OILCan.saveOILCan(module, "module.oil.txt");
             }
             catch (ParserException e)
             {
