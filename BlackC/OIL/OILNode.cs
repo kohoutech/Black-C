@@ -574,7 +574,7 @@ namespace Origami.OIL
 
     public class StatementNode : OILNode
     {
-        public Expression expr;
+        public ExprNode expr;
     }
 
     public class LabelStatementNode : StatementNode
@@ -639,7 +639,7 @@ namespace Origami.OIL
 
     //- expressions -----------------------------------------------------------
 
-    public class Expression : OILNode
+    public class ExprNode : OILNode
     {
         public IntConstant retval;
     }
