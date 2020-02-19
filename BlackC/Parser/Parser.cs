@@ -153,7 +153,7 @@ namespace BlackC
             {
                 List<Declaration> oldparamlist = parseDeclarationList();
                 StatementNode block = parseCompoundStatement();
-                declar = arbor.makeFuncDefNode((FuncDeclNode)declar, oldparamlist, block);
+                declar = arbor.completeFuncDef((FuncDeclNode)declar, oldparamlist, block);
             }
             return declar;
         }
@@ -198,7 +198,7 @@ namespace BlackC
             declarator
             declarator = initializer
          */
-        //parse the declarator list if needed, then return the next declarator in the list if not empty
+        //parse the current declarator list if needed, then return the next declarator in the list if not empty
         public Declaration parseDeclaration()
         {
             Declaration decl = null;
@@ -246,7 +246,8 @@ namespace BlackC
                 }
                 else
                 {
-                    VarDeclNode vardecl = arbor.makeVarDeclNode(declarspecs, declarnode, null);             //declarator
+                    //this could be either a var decl or an incomplete func def
+                    Declaration vardecl = arbor.makeVarOrFuncNode(declarspecs, declarnode);             //declarator
                     curDeclaratorList.Add(vardecl);
                 }
 
@@ -304,8 +305,14 @@ namespace BlackC
         */
         public DeclSpecNode parseDeclarationSpecs()
         {
-            DeclSpecNode specs = new DeclSpecNode();
-            while (true)
+            List<Token> storageClassSpecs = new List<Token>();
+            List<TypeDeclNode> typeDefs = new List<TypeDeclNode>();
+            List<Token> baseTypeModifiers = new List<Token>();
+            List<Token> typeQuals = new List<Token>();
+            List<Token> functionSpecs = new List<Token>();
+
+            bool done = false;
+            while (!done)
             {
                 Token token = prep.getToken();
                 switch (token.type)
@@ -315,7 +322,7 @@ namespace BlackC
                     case TokenType.STATIC:
                     case TokenType.AUTO:
                     case TokenType.REGISTER:
-                        arbor.setStorageClassSpec(specs, token);
+                        storageClassSpecs.Add(token);
                         continue;
 
                     case TokenType.VOID:
@@ -324,48 +331,49 @@ namespace BlackC
                     case TokenType.FLOAT:
                     case TokenType.DOUBLE:
                         TypeDeclNode toktype = arbor.GetTypeDef(token);
-                        arbor.setBaseTypeSpec(specs, toktype);
+                        typeDefs.Add(toktype);
                         continue;
 
                     case TokenType.SHORT:
                     case TokenType.LONG:
                     case TokenType.SIGNED:
                     case TokenType.UNSIGNED:
-                        arbor.setBaseTypeModifier(specs, token);
+                        baseTypeModifiers.Add(token);
                         continue;
 
                     case TokenType.STRUCT:
                     case TokenType.UNION:
                         StructDeclNode structdecl = parseStructOrUnionSpec();
-                        arbor.setBaseTypeSpec(specs, structdecl);
+                        typeDefs.Add(structdecl);
                         continue;
 
                     case TokenType.ENUM:
                         EnumDeclNode enumdecl = parseEnumeratorSpec();
-                        arbor.setBaseTypeSpec(specs, enumdecl);
+                        typeDefs.Add(enumdecl);
                         continue;
 
                     case TokenType.TYPENAME:
                         TypeDeclNode typename = arbor.GetTypeDef(token.strval);
-                        arbor.setBaseTypeSpec(specs, typename);
+                        typeDefs.Add(typename);
                         continue;
 
                     case TokenType.CONST:
                     case TokenType.RESTRICT:
                     case TokenType.VOLATILE:
-                        arbor.setTypeQual(specs, token);
+                        typeQuals.Add(token);
                         continue;
 
                     case TokenType.INLINE:
-                        arbor.setFunctionSpec(specs, token);
+                        functionSpecs.Add(token);
                         continue;
 
                     default:
                         prep.putTokenBack(token);
+                        done = true;
                         break;
                 }
             }
-            arbor.finishDeclSpecs(specs);
+            DeclSpecNode specs = arbor.makeDeclSpecs(storageClassSpecs, baseTypeModifiers, typeDefs, typeQuals, functionSpecs);
             return specs;            
         }
 
@@ -879,17 +887,13 @@ namespace BlackC
         public DeclaratorNode parseDeclarator(bool isAbstract)
         {
             Token token = prep.getToken();
-            if (token.type == TokenType.STAR)
+            if (nextTokenIs(TokenType.STAR))
             {
                 //        prep.next();
                 //        TypeQualNode qualList = parseTypeQualList();
                 //        DeclaratorNode declar = parseDeclarator(isAbstract);
                 //        DeclaratorNode node = arbor.makePointerNode(qualList, declar);
                 //        return node;
-            }
-            else
-            {
-                prep.putTokenBack(token);
             }
             return parseDirectDeclarator(isAbstract);
         }
@@ -919,15 +923,15 @@ namespace BlackC
         public DeclaratorNode parseDirectDeclarator(bool isAbstract)
         {
             DeclaratorNode node = null;
-                Token token = prep.getToken();
+            Token token = prep.getToken();
 
-                //identifier
-                //if (!isAbstract && (token.type == TokenType.IDENT))
-                //{
-                //    Declaration idnode = arbor.makeIdentDeclaratorNode(token.strval);
-                //    node = parseDirectDeclaratorTail(idnode, isAbstract);
-                //    return node;
-                //}
+            //identifier
+            if (!isAbstract && (token.type == TokenType.IDENT))
+            {
+                DeclaratorNode idnode = arbor.makeIdentDeclaratorNode(token.strval);
+                node = parseDirectDeclaratorTail(idnode, isAbstract);
+                return node;
+            }
 
             //    //in direct-abstract-declarator[opt] [...] if the direct-abstract-declarator is omitted, the first token
             //    //we see is the '[' of the declarator tail, so call parseDirectDeclaratorTail() with no base declarator
@@ -937,9 +941,9 @@ namespace BlackC
             //        return node;
             //    }
 
-                //similarly, in direct-abstract-declarator[opt] ( parameter-type-list[opt] ), we see the '(' if the 
-                //direct-abstract-declarator is omitted, BUT this also may be ( declarator ) or ( abstract-declarator )
-                //so test for param list or '()' first and if not, then its a parenthesized declarator
+            //similarly, in direct-abstract-declarator[opt] ( parameter-type-list[opt] ), we see the '(' if the 
+            //direct-abstract-declarator is omitted, BUT this also may be ( declarator ) or ( abstract-declarator )
+            //so test for param list or '()' first and if not, then its a parenthesized declarator
             //    if (token.type == TokenType.LPAREN)
             //    {
             //        prep.next();
@@ -964,14 +968,14 @@ namespace BlackC
             //        }
             //    }
 
-            //    return node;
-            return null;
+            return node;
+
         }
 
         //parse one or more declarator clauses recursively
-        public Declaration parseDirectDeclaratorTail(Declaration head, bool isAbstract)
+        public DeclaratorNode parseDirectDeclaratorTail(DeclaratorNode head, bool isAbstract)
         {
-            Declaration node = null;
+            DeclaratorNode node = null;
             Token token = prep.getToken();
 
             //array index declarator clause
@@ -1497,7 +1501,7 @@ namespace BlackC
             }
             else if (token.type == TokenType.CASE)          //case constant-expression : statement
             {
-                Expression expr = parseConstantExpression();
+                ExprNode expr = parseConstantExpression();
                 token = prep.getToken();
                 StatementNode casestmt = parseStatement();
                 stmt = arbor.makeCaseStatementNode(expr, casestmt);
@@ -1580,7 +1584,7 @@ namespace BlackC
         public StatementNode parseExpressionStatement()
         {
             StatementNode stmt = null;
-            Expression expr = parseExpression();
+            ExprNode expr = parseExpression();
             if (expr != null)
             {
                 Token token = prep.getToken();                      //skip ending ';'
@@ -1614,7 +1618,7 @@ namespace BlackC
             if (token.type == TokenType.IF)                     //if ( expression ) statement
             {
                 token = prep.getToken();                        //skip opening '('
-                Expression ifexpr = parseExpression();
+                ExprNode ifexpr = parseExpression();
                 token = prep.getToken();                        //skip closing ')'
                 StatementNode thenstmt = parseStatement();
                 StatementNode elsestmt = null;
@@ -1632,7 +1636,7 @@ namespace BlackC
             else if (token.type == TokenType.SWITCH)            //switch ( expression ) statement
             {
                 token = prep.getToken();                        //skip opening '('
-                Expression expr = parseExpression();
+                ExprNode expr = parseExpression();
                 token = prep.getToken();                        //skip closing ')'
                 StatementNode swstmt = parseStatement();
                 stmt = arbor.makeSwitchStatementNode(expr, swstmt);
@@ -1658,7 +1662,7 @@ namespace BlackC
             if (token.type == TokenType.WHILE)             //while ( expression ) statement
             {
                 token = prep.getToken();
-                Expression expr = parseExpression();
+                ExprNode expr = parseExpression();
                 token = prep.getToken();
                 StatementNode stmt = parseStatement();
                 node = arbor.makeWhileStatementNode(expr, stmt);
@@ -1668,7 +1672,7 @@ namespace BlackC
                 StatementNode stmt = parseStatement();
                 token = prep.getToken();
                 token = prep.getToken();
-                Expression expr = parseExpression();
+                ExprNode expr = parseExpression();
                 token = prep.getToken();
                 token = prep.getToken();
                 node = arbor.makeDoStatementNode(stmt, expr);
@@ -1682,9 +1686,9 @@ namespace BlackC
                     exprOrDecl1 = parseDeclaration();
                 }
                 token = prep.getToken();
-                Expression expr2 = parseExpression();
+                ExprNode expr2 = parseExpression();
                 token = prep.getToken();
-                Expression expr3 = parseExpression();
+                ExprNode expr3 = parseExpression();
                 token = prep.getToken();
                 StatementNode stmt = parseStatement();
                 node = arbor.makeForStatementNode(exprOrDecl1, expr2, expr3, stmt);
@@ -1726,7 +1730,7 @@ namespace BlackC
             }
             else if (token.type == TokenType.RETURN)        //return expression[opt] ;
             {
-                Expression expr = parseExpression();
+                ExprNode expr = parseExpression();
                 stmt = arbor.makeReturnStatementNode(expr);
                 token = prep.getToken();
             }
@@ -1746,7 +1750,7 @@ namespace BlackC
             string-literal
             ( expression )
          */
-        public Expression parsePrimaryExpression()
+        public ExprNode parsePrimaryExpression()
         {
             //    int cuepoint = prep.record();
             //    Token token = prep.getToken();
@@ -1828,7 +1832,7 @@ namespace BlackC
             postfix-expression ++
             postfix-expression --
          */
-        public Expression parsePostfixExpression()
+        public ExprNode parsePostfixExpression()
         {
             //    int cuepoint = prep.record();
             //    ExprNode node = parsePrimaryExpression();         //primary-expression
@@ -1998,7 +2002,7 @@ namespace BlackC
             assignment-expression
             argument-expression-list , assignment-expression
          */
-        public List<Expression> parseArgExpressionList()
+        public List<ExprNode> parseArgExpressionList()
         {
             //    List<AssignExpressionNode> list = null;
             //    AssignExpressionNode node = parseAssignExpression();
@@ -2040,7 +2044,7 @@ namespace BlackC
             sizeof unary-expression
             sizeof ( type-name )
          */
-        public Expression parseUnaryExpression()
+        public ExprNode parseUnaryExpression()
         {
             //    int cuepoint = prep.record();
             //    ExprNode node = parsePostfixExpression();         //postfix-expression
@@ -2147,7 +2151,7 @@ namespace BlackC
          unary-operator: one of
             & * + - ~ !
          */
-        public Expression parseUnaryOperator()
+        public ExprNode parseUnaryOperator()
         {
             //    UnaryOperatorNode node = null;
             //    int cuepoint = prep.record();
@@ -2191,7 +2195,7 @@ namespace BlackC
             unary-expression
             ( type-name ) cast-expression
          */
-        public Expression parseCastExpression()
+        public ExprNode parseCastExpression()
         {
             //    ExprNode node = parseUnaryExpression();
             //    bool result = (node != null);
@@ -2236,7 +2240,7 @@ namespace BlackC
             multiplicative-expression / cast-expression
             multiplicative-expression % cast-expression
          */
-        public Expression parseMultExpression()
+        public ExprNode parseMultExpression()
         {
             //    ExprNode lhs = parseCastExpression();
             //    bool result = (lhs != null);
@@ -2302,7 +2306,7 @@ namespace BlackC
             additive-expression + multiplicative-expression
             additive-expression - multiplicative-expression
          */
-        public Expression parseAddExpression()
+        public ExprNode parseAddExpression()
         {
             //    ExprNode lhs = parseMultExpression();
             //    bool result = (lhs != null);
@@ -2352,9 +2356,9 @@ namespace BlackC
             shift-expression << additive-expression
             shift-expression >> additive-expression
          */
-        public Expression parseShiftExpression()
+        public ExprNode parseShiftExpression()
         {
-            Expression lhs = parseAddExpression();
+            ExprNode lhs = parseAddExpression();
             if (lhs != null)
             {
                 while (true)
@@ -2362,13 +2366,13 @@ namespace BlackC
                     Token token = prep.getToken();
                     if (token.type == TokenType.LESSLESS)
                     {
-                        Expression rhs = parseAddExpression();
+                        ExprNode rhs = parseAddExpression();
                         lhs = arbor.makeShiftLeftExprNode(lhs, rhs);
                         continue;
                     }
                     if (token.type == TokenType.GTRGTR)
                     {
-                        Expression rhs = parseAddExpression();
+                        ExprNode rhs = parseAddExpression();
                         lhs = arbor.makeShiftRightExprNode(lhs, rhs);
                         continue;
                     }
@@ -2387,7 +2391,7 @@ namespace BlackC
             relational-expression <= shift-expression
             relational-expression >= shift-expression
          */
-        public Expression parseRelationalExpression()
+        public ExprNode parseRelationalExpression()
         {
             //    ExprNode lhs = parseShiftExpression();
             //    bool result = (lhs != null);
@@ -2469,9 +2473,9 @@ namespace BlackC
             equality-expression == relational-expression
             equality-expression != relational-expression
          */
-        public Expression parseEqualityExpression()
+        public ExprNode parseEqualityExpression()
         {
-            Expression lhs = parseRelationalExpression();
+            ExprNode lhs = parseRelationalExpression();
             if (lhs != null)
             {
                 while (true)
@@ -2479,13 +2483,13 @@ namespace BlackC
                     Token token = prep.getToken();
                     if (token.type == TokenType.EQUALEQUAL)
                     {
-                        Expression rhs = parseRelationalExpression();
+                        ExprNode rhs = parseRelationalExpression();
                         lhs = arbor.makeEqualsExprNode(lhs, rhs);
                         continue;
                     }
                     if (token.type == TokenType.NOTEQUAL)
                     {
-                        Expression rhs = parseRelationalExpression();
+                        ExprNode rhs = parseRelationalExpression();
                         lhs = arbor.makeNotEqualsExprNode(lhs, rhs);
                         continue;
                     }
@@ -2501,7 +2505,7 @@ namespace BlackC
             equality-expression
             AND-expression & equality-expression
          */
-        public Expression parseANDExpression()
+        public ExprNode parseANDExpression()
         {
             //    ExprNode lhs = parseEqualityExpression();
             //    bool result = (lhs != null);
@@ -2534,7 +2538,7 @@ namespace BlackC
             AND-expression
             exclusive-OR-expression ^ AND-expression
          */
-        public Expression parseXORExpression()
+        public ExprNode parseXORExpression()
         {
             //    ExprNode lhs = parseANDExpression();
             //    bool result = (lhs != null);
@@ -2567,7 +2571,7 @@ namespace BlackC
             exclusive-OR-expression
             inclusive-OR-expression | exclusive-OR-expression
          */
-        public Expression parseORExpression()
+        public ExprNode parseORExpression()
         {
             //    ExprNode lhs = parseXORExpression();
             //    bool result = (lhs != null);
@@ -2600,7 +2604,7 @@ namespace BlackC
             inclusive-OR-expression
             logical-AND-expression && inclusive-OR-expression
          */
-        public Expression parseLogicalANDExpression()
+        public ExprNode parseLogicalANDExpression()
         {
             //    ExprNode lhs = parseORExpression();
             //    bool result = (lhs != null);
@@ -2633,7 +2637,7 @@ namespace BlackC
             logical-AND-expression
             logical-OR-expression || logical-AND-expression
          */
-        public Expression parseLogicalORExpression()
+        public ExprNode parseLogicalORExpression()
         {
             //    ExprNode lhs = parseLogicalANDExpression();
             //    bool result = (lhs != null);
@@ -2666,7 +2670,7 @@ namespace BlackC
             logical-OR-expression
             logical-OR-expression ? expression : conditional-expression
          */
-        public Expression parseConditionalExpression()
+        public ExprNode parseConditionalExpression()
         {
             //    ExprNode lhs = parseLogicalORExpression();
             //    bool result = (lhs != null);
@@ -2714,7 +2718,7 @@ namespace BlackC
          */
         //for parsing purposes, we change the second rule to:
         //conditional-expression assignment-operator assignment-expression
-        public Expression parseAssignExpression()
+        public ExprNode parseAssignExpression()
         {
             //    ExprNode lhs = parseConditionalExpression();
             //    AssignOperatorNode oper = null;
@@ -2743,7 +2747,7 @@ namespace BlackC
          assignment-operator: one of
             = *= /= %= += -= <<= >>= &= ^= |=
          */
-        public Expression parseAssignOperator()
+        public ExprNode parseAssignOperator()
         {
             //    AssignOperatorNode node = null;
             //    int cuepoint = prep.record();
@@ -2807,7 +2811,7 @@ namespace BlackC
             assignment-expression
             expression , assignment-expression
          */
-        public Expression parseExpression()
+        public ExprNode parseExpression()
         {
             //    ExpressionNode node = null;
             //    AssignExpressionNode expr = parseAssignExpression();
@@ -2842,7 +2846,7 @@ namespace BlackC
          constant-expression:
             conditional-expression
          */
-        public Expression parseConstantExpression()
+        public ExprNode parseConstantExpression()
         {
             //    ExprNode condit = parseConditionalExpression();
             //    return arbor.makeConstantExprNode(condit);
