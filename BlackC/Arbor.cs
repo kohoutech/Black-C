@@ -71,7 +71,11 @@ namespace BlackC
 
         public FuncDeclNode makeFuncDeclNode(DeclSpecNode declarspecs, DeclaratorNode declarator)
         {
-            return new FuncDeclNode();
+            FuncDeclNode func = new FuncDeclNode();
+            func.name = declarator.ident;
+            func.returnType = declarspecs;
+            func.paramList = declarator.paramList;
+            return func;
         }
 
         public FuncDeclNode completeFuncDef(FuncDeclNode declar, List<Declaration> oldparamlist, StatementNode block)
@@ -83,7 +87,10 @@ namespace BlackC
             List<Token> typeQuals, List<Token> functionSpecs)
         {
             DeclSpecNode declspec = new DeclSpecNode();
-            declspec.baseType = typeDefs[0];
+            if (typeDefs.Count > 0)
+            {
+                declspec.baseType = typeDefs[0];
+            }
             return declspec;
         }
 
@@ -129,10 +136,15 @@ namespace BlackC
         //    return new InitDeclaratorNode(declar, initial);
         //}
 
-        //internal DeclaratorNode makeDirectIndexNode(DeclaratorNode head, int mode, TypeQualNode qualList, AssignExpressionNode assign)
-        //{
-        //    throw new NotImplementedException();
-        //}
+        public DeclaratorNode makeDirectIndexNode(DeclaratorNode head, int mode, Declaration qualList, Declaration assign)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void addParameterList(DeclaratorNode head, List<ParamDeclNode> paramlist)
+        {
+            head.paramList = paramlist;
+        }
 
         //public bool handleTypeDef(DeclarationNode declar)
         //{
@@ -282,7 +294,9 @@ namespace BlackC
 
         public DeclaratorNode makeIdentDeclaratorNode(string ident)
         {
-            return new DeclaratorNode();
+            DeclaratorNode node = new DeclaratorNode();
+            node.ident = ident;
+            return node;
         }
 
         ////these only return new ident nodes

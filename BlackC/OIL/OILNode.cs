@@ -53,7 +53,7 @@ namespace Origami.OIL
     {
     }
 
-    public class DeclSpecNode
+    public class DeclSpecNode : Declaration
     {
         public Declaration baseType;
     }
@@ -77,9 +77,32 @@ namespace Origami.OIL
         }
     }
 
+    public class ParamDeclNode : Declaration
+    {
+        private string p;
+
+        public ParamDeclNode(string p)
+        {
+            // TODO: Complete member initialization
+            this.p = p;
+        }
+        //     DeclarSpecNode specs;
+        //     DeclaratorNode declar;
+        //     AbstractDeclaratorNode absdeclar;
+
+        //     public ParamDeclarNode(DeclarSpecNode _specs, DeclaratorNode _declar, AbstractDeclaratorNode _absdeclar)
+        //     {
+        //         specs = _specs;
+        //         declar = _declar;
+        //         absdeclar = _absdeclar;
+        //     }
+    }
+
     public class FuncDeclNode : Declaration
     {
         public String name;
+        public Declaration returnType;
+        public List<ParamDeclNode> paramList;
         public StatementNode stmt;
 
         public FuncDeclNode()
@@ -430,10 +453,10 @@ namespace Origami.OIL
 
     public class DeclaratorNode : Declaration
     {
+        public String ident;
         //     public PointerNode ptr;
         //     public DirectDeclaratorNode declar;
         public List<ParamDeclNode> paramList;
-
 
              public DeclaratorNode()
              {
@@ -509,20 +532,6 @@ namespace Origami.OIL
     //         hasElipsis = _hasElipsis;
     //     }
     // }
-
-     public class ParamDeclNode : Declaration
-     {
-    //     DeclarSpecNode specs;
-    //     DeclaratorNode declar;
-    //     AbstractDeclaratorNode absdeclar;
-
-    //     public ParamDeclarNode(DeclarSpecNode _specs, DeclaratorNode _declar, AbstractDeclaratorNode _absdeclar)
-    //     {
-    //         specs = _specs;
-    //         declar = _declar;
-    //         absdeclar = _absdeclar;
-    //     }
-     }
 
     // public class TypeNameNode : ParseNode
     // {

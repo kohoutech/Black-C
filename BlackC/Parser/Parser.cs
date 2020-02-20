@@ -39,8 +39,6 @@ namespace BlackC
 
         public List<String> includePaths;
 
-        public List<Declaration> curDeclaratorList;
-
         public Parser(Options _options)
         {
             options = _options;
@@ -49,9 +47,7 @@ namespace BlackC
             arbor = new Arbor(this);
 
             //    includePaths = new List<string>() { "." };          //start with current dir
-            //    includePaths.AddRange(options.includePaths);        //add search paths from command line
-
-            curDeclaratorList = new List<Declaration>();
+            //    includePaths.AddRange(options.includePaths);        //add search paths from command line            
         }
 
         public void handlePragma(List<Fragment> args)
@@ -103,7 +99,7 @@ namespace BlackC
             return result;
         }
 
-        public void consumeToken(TokenType ttype)
+        public void consumeToken()
         {
             Token token = prep.getToken();
         }
@@ -118,22 +114,24 @@ namespace BlackC
         public Module parseTranslationUnit()
         {
             Module module = new Module();
-            Declaration extdef = null;
             while (!nextTokenIs(TokenType.EOF))
             {
-                extdef = parseExternalDef();
-                if (extdef != null)
+                List<Declaration> extdefs = parseExternalDef();
+                foreach (Declaration extdef in extdefs)
                 {
-                    if (extdef.type == OILType.VarDecl)
+                    if (extdef != null)
                     {
-                        module.globals.Add((VarDeclNode)extdef);
-                    }
-                    else
-                    {
-                        module.funcs.Add((FuncDeclNode)extdef);
+                        if (extdef.type != OILType.FuncDecl)
+                        {
+                            module.globals.Add((VarDeclNode)extdef);
+                        }
+                        else
+                        {
+                            module.funcs.Add((FuncDeclNode)extdef);
+                        }
                     }
                 }
-            } 
+            }
             return module;
         }
 
@@ -146,16 +144,16 @@ namespace BlackC
          function-definition:
             declaration-specifiers declarator declaration-list[opt] compound-statement          
         */
-        public Declaration parseExternalDef()
+        public List<Declaration> parseExternalDef()
         {
-            Declaration declar = parseDeclaration();
-            if (declar != null && declar.type == OILType.FuncDecl)
+            List<Declaration> declList = parseDeclaration();
+            if (declList.Count == 1 && declList[0].type == OILType.FuncDecl)
             {
                 List<Declaration> oldparamlist = parseDeclarationList();
                 StatementNode block = parseCompoundStatement();
-                declar = arbor.completeFuncDef((FuncDeclNode)declar, oldparamlist, block);
+                declList[0] = arbor.completeFuncDef((FuncDeclNode)declList[0], oldparamlist, block);
             }
-            return declar;
+            return declList;
         }
 
         /*(6.9.1) 
@@ -166,19 +164,14 @@ namespace BlackC
         //old-style function parameter defs - here for completeness
         public List<Declaration> parseDeclarationList()
         {
-            List<Declaration> declarList = null;
-            Declaration declar = parseDeclaration();
-            if (declar != null)
+            List<Declaration> declarList = new List<Declaration>();
+            List<Declaration> decls = parseDeclaration();
+            while (decls.Count > 0)
             {
-                declarList = new List<Declaration>();
-                declarList.Add(declar);
+                declarList.AddRange(decls);
+                decls = parseDeclaration();
             }
-            while (declar != null)
-            {
-                declar = parseDeclaration();
-                declarList.Add(declar);
-            }
-            return declarList;            
+            return declarList;
         }
 
         //- declarations ------------------------------------------------------
@@ -198,67 +191,58 @@ namespace BlackC
             declarator
             declarator = initializer
          */
-        //parse the current declarator list if needed, then return the next declarator in the list if not empty
-        public Declaration parseDeclaration()
+        public List<Declaration> parseDeclaration()
         {
-            Declaration decl = null;
-            if (curDeclaratorList.Count == 0)
-            {
-                parseDeclaratorList();
-            }
-            if (curDeclaratorList.Count != 0)
-            {
-                decl = curDeclaratorList[0];
-                curDeclaratorList.RemoveAt(0);
-            }
-            return decl;
-        }
-
-        public void parseDeclaratorList()
-        {
-            DeclSpecNode declarspecs = parseDeclarationSpecs();
+            List<Declaration> declList = new List<Declaration>();
+            DeclSpecNode declSpecs = parseDeclarationSpecs();
 
             //if decl spec followed by a ';' (no var list) then it's a type definition, like struct foo {...}; or enum bar {...};
             if (nextTokenIs(TokenType.SEMICOLON))
             {
-                consumeToken(TokenType.SEMICOLON);
-                TypeDeclNode typdecl = arbor.makeTypeDeclNode(declarspecs);
-                curDeclaratorList.Add(typdecl);
-                return;
+                consumeToken();                                                 //skip ';'
+                TypeDeclNode typdecl = arbor.makeTypeDeclNode(declSpecs);
+                declList.Add(typdecl);
+                return declList;
             }
 
             //now we have a declarator list or a func definition
             while (true)
             {
                 DeclaratorNode declarnode = parseDeclarator(false);
+                if (declarnode == null)
+                {
+                    return declList;
+                }
+
                 if (nextTokenIs(TokenType.LBRACE))
                 {
-                    FuncDeclNode funcdecl = arbor.makeFuncDeclNode(declarspecs, declarnode);         //declaration-specifiers declarator {...
-                    curDeclaratorList.Add(funcdecl);
-                    return;
+                    FuncDeclNode funcdecl = arbor.makeFuncDeclNode(declSpecs, declarnode);         //declaration-specifiers declarator {...
+                    declList.Add(funcdecl);
+                    return declList;
                 }
                 else if (nextTokenIs(TokenType.EQUAL))
                 {
-                    consumeToken(TokenType.EQUAL);
+                    consumeToken();                                             //skip '='
                     InitializerNode initialnode = parseInitializer();
-                    VarDeclNode vardecl = arbor.makeVarDeclNode(declarspecs, declarnode, initialnode);       //declarator = initializer
-                    curDeclaratorList.Add(vardecl);
+                    VarDeclNode vardecl = arbor.makeVarDeclNode(declSpecs, declarnode, initialnode);       //declarator = initializer
+                    declList.Add(vardecl);
                 }
                 else
                 {
                     //this could be either a var decl or an incomplete func def
-                    Declaration vardecl = arbor.makeVarOrFuncNode(declarspecs, declarnode);             //declarator
-                    curDeclaratorList.Add(vardecl);
+                    Declaration vardecl = arbor.makeVarOrFuncNode(declSpecs, declarnode);             //declarator
+                    declList.Add(vardecl);
                 }
 
                 if (nextTokenIs(TokenType.COMMA))           //not at end of declarator list yet
                 {
-                    consumeToken(TokenType.COMMA);
+                    consumeToken();                         //skip ','
                     continue;
                 }
-                consumeToken(TokenType.SEMICOLON);          //at list end
+                consumeToken();          //at list end - skip ';'
                 break;
             }
+            return declList;
         }
 
         /* (6.7) 
@@ -374,7 +358,7 @@ namespace BlackC
                 }
             }
             DeclSpecNode specs = arbor.makeDeclSpecs(storageClassSpecs, baseTypeModifiers, typeDefs, typeQuals, functionSpecs);
-            return specs;            
+            return specs;
         }
 
         /*(6.7.7) 
@@ -886,10 +870,9 @@ namespace BlackC
         */
         public DeclaratorNode parseDeclarator(bool isAbstract)
         {
-            Token token = prep.getToken();
             if (nextTokenIs(TokenType.STAR))
             {
-                //        prep.next();
+                consumeToken();
                 //        TypeQualNode qualList = parseTypeQualList();
                 //        DeclaratorNode declar = parseDeclarator(isAbstract);
                 //        DeclaratorNode node = arbor.makePointerNode(qualList, declar);
@@ -933,57 +916,51 @@ namespace BlackC
                 return node;
             }
 
-            //    //in direct-abstract-declarator[opt] [...] if the direct-abstract-declarator is omitted, the first token
-            //    //we see is the '[' of the declarator tail, so call parseDirectDeclaratorTail() with no base declarator
-            //    if (isAbstract && (token.type == TokenType.LBRACKET))
-            //    {
-            //        node = parseDirectDeclaratorTail(null, isAbstract);
-            //        return node;
-            //    }
+            //in direct-abstract-declarator[opt] [...] if the direct-abstract-declarator is omitted, the first token
+            //we see is the '[' of the declarator tail, so call parseDirectDeclaratorTail() with no base declarator
+            if (isAbstract && (token.type == TokenType.LBRACKET))
+            {
+                node = parseDirectDeclaratorTail(null, isAbstract);
+                return node;
+            }
 
             //similarly, in direct-abstract-declarator[opt] ( parameter-type-list[opt] ), we see the '(' if the 
             //direct-abstract-declarator is omitted, BUT this also may be ( declarator ) or ( abstract-declarator )
             //so test for param list or '()' first and if not, then its a parenthesized declarator
-            //    if (token.type == TokenType.LPAREN)
-            //    {
-            //        prep.next();
-            //        if (isAbstract)
-            //        {
-            //            ParamTypeListNode paramlist = parseParameterTypeList();
-            //            if ((paramlist != null) || (prep.getToken().type == TokenType.RPAREN))
-            //            {
-            //                DeclaratorNode funcDeclar = arbor.makeFuncDeclarNode(null, paramlist);
-            //                node = parseDirectDeclaratorTail(funcDeclar, isAbstract);
-            //                return node;
-            //            }
-            //        }
+            if (token.type == TokenType.LPAREN)
+            {
+                consumeToken();             //skip '('
+                if (isAbstract)
+                {
+                    //            ParamTypeListNode paramlist = parseParameterTypeList();
+                    //            if ((paramlist != null) || (prep.getToken().type == TokenType.RPAREN))
+                    //            {
+                    //                DeclaratorNode funcDeclar = arbor.makeFuncDeclarNode(null, paramlist);
+                    //                node = parseDirectDeclaratorTail(funcDeclar, isAbstract);
+                    //                return node;
+                    //            }
+                }
 
-            //        //( declarator ) or ( abstract-declarator )
-            //        DeclaratorNode declar = parseDeclarator(isAbstract);
-            //        if (prep.getToken().type == TokenType.RPAREN)
-            //        {
-            //            prep.next();
-            //            node = parseDirectDeclaratorTail(declar, isAbstract);
-            //            return node;
-            //        }
-            //    }
+                //( declarator ) or ( abstract-declarator )
+                DeclaratorNode declar = parseDeclarator(isAbstract);
+                consumeToken();                                         //skip closing ')'
+                node = parseDirectDeclaratorTail(declar, isAbstract);
+                return node;
+            }
 
+            prep.putTokenBack(token);
             return node;
-
         }
 
-        //parse one or more declarator clauses recursively
+        //parse one or more declarator clauses recursively - either array indexes or parameter lists 
         public DeclaratorNode parseDirectDeclaratorTail(DeclaratorNode head, bool isAbstract)
         {
-            DeclaratorNode node = null;
-            Token token = prep.getToken();
-
             //array index declarator clause
             //mode 1: [ type-qualifier-list[opt] assignment-expression[opt] ]
             //mode 2: [ static type-qualifier-list[opt] assignment-expression ]
             //mode 3: [ type-qualifier-list static assignment-expression ]
             //mode 4: [ * ]
-            if (token.type == TokenType.LBRACKET)
+            if (nextTokenIs(TokenType.LBRACKET))
             {
                 //int mode = 1;
                 //TypeQualNode qualList = parseTypeQualList();
@@ -1018,17 +995,16 @@ namespace BlackC
             }
 
             //parameter list declarator clause
-            else if (token.type == TokenType.LPAREN)
+            //( parameter-type-list )      --- new style param list
+            //( identifier-list[opt] )     --- old style param list 
+            //( parameter-type-list[opt] ) --- if abstract
+            else if (nextTokenIs(TokenType.LPAREN))
             {
-                //Declaration paramlist = parseParameterTypeList();
-                //token = prep.getToken();
-                //Declaration funcDeclar = arbor.makeFuncDeclNode(head, paramlist);
-                //node = parseDirectDeclaratorTail(funcDeclar, isAbstract);
-                //return node;
-            }
-            else
-            {
-                prep.putTokenBack(token);
+                consumeToken();                                                     //skip opening '('
+                List<ParamDeclNode> paramlist = parseParameterList(isAbstract);
+                arbor.addParameterList(head, paramlist);
+                DeclaratorNode node = parseDirectDeclaratorTail(head, isAbstract);
+                return node;
             }
             return head;
         }
@@ -1063,11 +1039,6 @@ namespace BlackC
             return null;
         }
 
-        /*(6.7.5) 
-         parameter-type-list:
-            parameter-list
-            parameter-list , ...
-         */
         public Declaration parseParameterTypeList()
         {
             //    ParamTypeListNode node = null;
@@ -1101,42 +1072,52 @@ namespace BlackC
         }
 
         /*(6.7.5) 
+         parameter-type-list:
+            parameter-list
+            parameter-list , ...
+         */
+
+        /*(6.7.5) 
          parameter-list:
             parameter-declaration
             parameter-list , parameter-declaration
          */
-        public List<Declaration> parseParameterList()
+        //parse (possibly empty) list of parameters, we've already seen the opening paren
+        public List<ParamDeclNode> parseParameterList(bool isAbstract)
         {
-            //    List<ParamDeclarNode> list = null;
-            //    ParamDeclarNode param = parseParameterDeclar();
-            //    bool result = (param != null);
-            //    if (result)
-            //    {
-            //        list = new List<ParamDeclarNode>();
-            //        list.Add(param);
-            //    }
-            //    bool notEmpty = result;
-            //    while (result)
-            //    {
-            //        int cuepoint2 = prep.record();
-            //        Token token = prep.getToken();
-            //        result = (token.type == TokenType.COMMA);
-            //        if (result)
-            //        {
-            //            param = parseParameterDeclar();
-            //            result = (param != null);
-            //            if (result)
-            //            {
-            //                list.Add(param);
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //        }
-            //    }
-            //    return list;
-            return null;
+            List<ParamDeclNode> paramList = new List<ParamDeclNode>();
+            if (nextTokenIs(TokenType.RPAREN))
+            {
+                consumeToken();             //skip ending ')'
+                return paramList;           //empty param list
+            }
+
+            while (true)
+            {
+                ParamDeclNode param = parseParameterDeclar(isAbstract);
+                paramList.Add(param);
+
+                if (nextTokenIs(TokenType.RPAREN))          //at end of param list
+                {
+                    consumeToken();                         //skip ending ')'
+                    break;
+                }
+                else if (nextTokenIs(TokenType.COMMA))
+                {
+                    consumeToken();                                             //skip ','
+                    if (nextTokenIs(TokenType.ELLIPSIS))                        //param, ...
+                    {
+                        consumeToken();                                         //skip '...'
+                        ParamDeclNode ellipsis = new ParamDeclNode("...");
+                        paramList.Add(ellipsis);
+                    }
+                    else
+                    {
+                        continue;           //no ellipsis, get the next param
+                    }
+                }
+            }
+            return paramList;
         }
 
         /*(6.7.5) 
@@ -1144,7 +1125,7 @@ namespace BlackC
             declaration-specifiers declarator
             declaration-specifiers abstract-declarator[opt]
          */
-        public Declaration parseParameterDeclar()
+        public ParamDeclNode parseParameterDeclar(bool isAbstract)
         {
             //    ParamDeclarNode node = null;
             //    DeclaratorNode absdeclar = null;
@@ -1522,59 +1503,58 @@ namespace BlackC
         /*(6.8.2) 
          compound-statement:
             { block-item-list[opt] }
-         */
-        public StatementNode parseCompoundStatement()
+         
+        (6.8.2) 
+         block-item-list:
+            block-item
+            block-item-list block-item
+         
+        (6.8.2) 
+ block-item:
+    declaration
+    statement
+ */
+
+        public CompoundStatementNode parseCompoundStatement()
         {
-            StatementNode comp = null;
-            Token token = prep.getToken();
-            if (token.type == TokenType.LBRACE)
+            CompoundStatementNode comp = null;
+            if (nextTokenIs(TokenType.LBRACE))
             {
-                StatementNode list = parseBlockItemList();
-                comp = arbor.makeCompoundStatementNode(list);
-                token = prep.getToken();                            //skip closing '}'                
-            }
-            else
-            {
-                prep.putTokenBack(token);
+                consumeToken();                                         //skip opening '}'
+                List<StatementNode> list = parseBlockItemList();
+                //comp = arbor.makeCompoundStatementNode(list);
+                consumeToken();                                         //skip closing '}'
             }
             return comp;
         }
 
-        /*(6.8.2) 
-         block-item-list:
-            block-item
-            block-item-list block-item
-         */
-        public StatementNode parseBlockItemList()
+        public List<StatementNode> parseBlockItemList()
         {
-            StatementNode list = null;
-            OILNode item = parseBlockItem();
-            if (item != null)
-            {
-                list = arbor.makeBlockItemListNode(null, item);
-                item = parseBlockItem();
-                while (item != null)
-                {
-                    list = arbor.makeBlockItemListNode(list, item);
-                    item = parseBlockItem();
-                }
-            }
-            return list;
+            //StatementNode list = null;
+            //OILNode item = parseBlockItem();
+            //if (item != null)
+            //{
+            //    list = arbor.makeBlockItemListNode(null, item);
+            //    item = parseBlockItem();
+            //    while (item != null)
+            //    {
+            //        list = arbor.makeBlockItemListNode(list, item);
+            //        item = parseBlockItem();
+            //    }
+            //}
+            //return list;
+            return null;
         }
 
-        /*(6.8.2) 
-         block-item:
-            declaration
-            statement
-         */
         public OILNode parseBlockItem()
         {
-            OILNode item = parseDeclaration();
-            if (item == null)
-            {
-                item = parseStatement();
-            }
-            return item;
+            //OILNode item = parseDeclaration();
+            //if (item == null)
+            //{
+            //    item = parseStatement();
+            //}
+            //return item;
+            return null;
         }
 
         /*(6.8.3) 
@@ -1683,7 +1663,7 @@ namespace BlackC
                 OILNode exprOrDecl1 = parseExpression();
                 if (exprOrDecl1 == null)                      //for ( declaration expression[opt] ; expression[opt] ) statement
                 {
-                    exprOrDecl1 = parseDeclaration();
+                    //exprOrDecl1 = parseDeclaration();
                 }
                 token = prep.getToken();
                 ExprNode expr2 = parseExpression();
