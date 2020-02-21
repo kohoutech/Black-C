@@ -86,9 +86,10 @@ namespace BlackC
         public DeclSpecNode makeDeclSpecs(List<Token> storageClassSpecs, List<Token> baseTypeModifiers, List<TypeDeclNode> typeDefs, 
             List<Token> typeQuals, List<Token> functionSpecs)
         {
-            DeclSpecNode declspec = new DeclSpecNode();
+            DeclSpecNode declspec = null;
             if (typeDefs.Count > 0)
             {
+                declspec = new DeclSpecNode();
                 declspec.baseType = typeDefs[0];
             }
             return declspec;
@@ -395,7 +396,7 @@ namespace BlackC
             return null;
         }
 
-        public StatementNode makeCompoundStatementNode(StatementNode list)
+        public CompoundStatementNode makeCompoundStatementNode(List<OILNode> list)
         {
             return null;
         }
@@ -686,14 +687,19 @@ namespace BlackC
             return null;
         }
 
-        public ExprNode makeExpressionNode(ExprNode node, ExprNode expr)
+        public ExpressionNode makeExpressionNode(ExpressionNode node, ExprNode expr)
         {
             return null;
         }
 
-        public ExprNode makeConstantExprNode(ExprNode condit)
+        public ConstExpressionNode makeConstantExprNode(ExprNode condit)
         {
             return null;
+        }
+
+        internal StatementNode makeEmptyStatementNode()
+        {
+            throw new NotImplementedException();
         }
     }
 }
