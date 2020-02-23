@@ -51,6 +51,7 @@ namespace Origami.OIL
     public class DeclSpecNode : OILNode
     {
         public Declaration baseType;
+        public bool hasQualfiers;
     }
 
     public class VarDeclNode : OILNode
@@ -325,7 +326,7 @@ namespace Origami.OIL
     //     }
     // }
 
-    // public class StructSpecNode : TypeSpecNode
+    //public class StructSpecNode : TypeDeclNode
     // {
     //     StructUnionNode tag;
     //     IdentNode name; 
@@ -357,19 +358,33 @@ namespace Origami.OIL
      }
      }
 
-    // public class StructDeclaratorNode : ParseNode
-    // {
-    // }
+     public class StructDeclarationNode : OILNode
+     {
+     }
+
+
+     public class StructDeclaratorNode : OILNode
+     {
+     }
 
      public class EnumDeclNode : TypeDeclNode
      {
+         private IdentNode idNode;
+
     //     public String id;
     //     public List<EnumeratorNode> enumList;
 
          public EnumDeclNode()
-             : base("struct")
+             : base("enum")
      {
      }
+
+         public EnumDeclNode(IdentNode idNode)
+             : base("enum")
+         {
+             // TODO: Complete member initialization
+             this.idNode = idNode;
+         }
 
     //     public EnumSpecNode(string _id, List<EnumeratorNode> _list)
     //     {
@@ -378,8 +393,8 @@ namespace Origami.OIL
     //     }
      }
 
-    // public class EnumeratorNode : ParseNode
-    // {
+     public class EnumeratorNode : OILNode
+     {
     //     public EnumConstantNode name;
     //     public ConstExpressionNode expr;
 
@@ -388,17 +403,17 @@ namespace Origami.OIL
     //         name = _name;
     //         expr = _expr;
     //     }
-    // }
+     }
 
-    // public class EnumConstantNode : ParseNode
-    // {
+     public class EnumConstantNode : OILNode
+     {
     //     String id;
 
     //     public EnumConstantNode(String _id)
     //     {
     //         id = _id;
     //     }
-    // }
+     }
 
     // public class TypeQualNode : ParseNode
     // {
@@ -505,8 +520,8 @@ namespace Origami.OIL
     //     }
     // }
 
-    // public class ParamTypeListNode : ParseNode
-    // {
+     public class ParamTypeListNode : OILNode
+     {
     //     List<ParamDeclarNode> list;
     //     bool hasElipsis;
 
@@ -515,14 +530,14 @@ namespace Origami.OIL
     //         list = _list;
     //         hasElipsis = _hasElipsis;
     //     }
-    // }
+     }
 
-    // public class TypeNameNode : ParseNode
-    // {
-    // }
+     public class TypeNameNode : OILNode
+     {
+     }
 
-    // public class AbstractDeclaratorNode : ParseNode
-    // {
+     public class AbstractDeclaratorNode : OILNode
+     {
     //     public PointerNode ptr;
     //     public DirectAbstractNode direct;
 
@@ -531,7 +546,7 @@ namespace Origami.OIL
     //         ptr = _ptr;
     //         direct = _direct;
     //     }
-    // }
+     }
 
     // public class DirectAbstractNode : ParseNode
     // {
@@ -555,13 +570,27 @@ namespace Origami.OIL
     //     }
     // }    
 
-    // public class DesignationNode : ParseNode
-    // {
-    // }
+     public class DesignationNode : OILNode
+     {
+     }
 
     // public class DesignatorNode : ParseNode
     // {
     // }
+
+      public class IdentNode : OILNode
+      {
+     //     public String ident;
+     //     public ParseNode def;
+     //     public SYMTYPE symtype;
+
+     //     public IdentNode(String id)
+     //     {
+     //         ident = id;
+     //         def = null;
+     //         symtype = SYMTYPE.UNSET;
+     //     }
+      }
 
     //- statements ------------------------------------------------------------
 
@@ -713,16 +742,16 @@ namespace Origami.OIL
      {
      }
 
-    // public class UnaryOperatorNode : ParseNode
-    // {
-    //     public enum OPERATOR { AMPERSAND, ASTERISK, PLUS, MINUS, TILDE, EXCLAIM };
+     public class UnaryOperatorNode : ExprNode
+     {
+         public enum OPERATOR { AMPERSAND, STAR, PLUS, MINUS, TILDE, EXCLAIM };
     //     OPERATOR op;
 
     //     public UnaryOperatorNode(OPERATOR _op)
     //     {
     //         op = _op;
     //     }
-    // }
+     }
 
      public class CastExprNode : ExprNode
      {

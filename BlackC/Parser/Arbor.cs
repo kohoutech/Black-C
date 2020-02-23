@@ -79,7 +79,7 @@ namespace BlackC
             return null;
         }
 
-        public DeclSpecNode makeDeclSpecs(List<Token> storageClassSpecs, List<Token> baseTypeModifiers, List<TypeDeclNode> typeDefs, 
+        public DeclSpecNode makeDeclSpecs(List<Token> storageClassSpecs, List<TypeDeclNode> typeDefs, 
             List<Token> typeQuals, List<Token> functionSpecs)
         {
             DeclSpecNode declspec = null;
@@ -133,14 +133,14 @@ namespace BlackC
         //    return new InitDeclaratorNode(declar, initial);
         //}
 
-        public DeclaratorNode makeDirectIndexNode(DeclaratorNode head, int mode, Declaration qualList, Declaration assign)
+        public DeclaratorNode makeDirectIndexNode(DeclaratorNode head, int mode, DeclSpecNode qualList, AssignExpressionNode assign)
         {
             throw new NotImplementedException();
         }
 
-        public void addParameterList(DeclaratorNode head, List<ParamDeclNode> paramlist)
+        public void addParameterList(DeclaratorNode head, ParamTypeListNode paramlist)
         {
-            head.paramList = paramlist;
+            //head.paramList = paramlist;
         }
 
         //public bool handleTypeDef(DeclarationNode declar)
@@ -208,15 +208,15 @@ namespace BlackC
         //    return node;
         //}
 
-        //public StructDeclarationNode makeStructDeclarationNode(List<DeclarSpecNode> specqual, List<StructDeclaratorNode> fieldnames)
-        //{
-        //    return null;
-        //}
+        public StructDeclarationNode makeStructDeclarationNode(DeclSpecNode specqual, List<StructDeclaratorNode> fieldnames)
+        {
+            return null;
+        }
 
-        //public StructDeclaratorNode makeStructDeclaractorNode(DeclaratorNode declarnode, ConstExpressionNode constexpr)
-        //{
-        //    return null;
-        //}
+        public StructDeclaratorNode makeStructDeclaractorNode(DeclaratorNode declarnode, ConstExpressionNode constexpr)
+        {
+            return null;
+        }
 
         //- enums -------------------------------------------------------------
 
@@ -239,26 +239,27 @@ namespace BlackC
         
         //- declarators -------------------------------------------------------
 
-        //public DeclaratorNode makePointerNode(TypeQualNode qualList, DeclaratorNode declar)
-        //{
+        public DeclaratorNode makePointerNode(DeclSpecNode qualList, DeclaratorNode declar)
+        {
         //    //return new DeclaratorNode(qualList, declar);
-        //    return null;
-        //}
+            return null;
+        }
 
         //public ParamTypeListNode ParamTypeListNode(List<ParamDeclarNode> list, bool hasElipsis)
         //{
         //    return new ParamTypeListNode(list, hasElipsis);
         //}
 
-        //public ParamDeclarNode makeParamDeclarNode(DeclarSpecNode declarspecs, DeclaratorNode declar, AbstractDeclaratorNode absdeclar)
-        //{
+        public ParamDeclNode makeParamDeclarNode(DeclSpecNode declarspecs, DeclaratorNode declar)
+        {
         //    return new ParamDeclarNode(declarspecs, declar, absdeclar);
-        //}
+            return null;
+        }
 
-        //public TypeNameNode makeTypeNameNode(List<DeclarSpecNode> list, AbstractDeclaratorNode declar)
-        //{
-        //    return null;
-        //}
+        public TypeNameNode makeTypeNameNode(DeclSpecNode list, DeclaratorNode declar)
+        {
+            return null;
+        }
 
         //- initializers ------------------------------------------------------
 
@@ -330,8 +331,8 @@ namespace BlackC
         //    return node;
         //}
 
-        //public IdentNode getEnumIdentNode(Token token)
-        //{
+        public IdentNode getEnumIdentNode(Token token)
+        {
         //    String id = token.chars;
         //    IdentNode node = SymbolTable.findSymbol(curSymbolTable, id, SYMTYPE.ENUM);
         //    if (node == null)
@@ -340,7 +341,8 @@ namespace BlackC
         //        node.symtype = SYMTYPE.ENUM;
         //    }
         //    return node;
-        //}
+            return null;
+        }
 
         ////these return declared ident nodes 
         //public IdentNode getDeclarIdentNode(String id)
@@ -355,10 +357,10 @@ namespace BlackC
         //    return null;
         //}
 
-        //public IdentNode getArgIdentNode(Token token)
-        //{
-        //    return null;
-        //}
+        public IdentNode getArgIdentNode(Token token)
+        {
+            return null;
+        }
 
         //public IdentNode getFieldInitializerNode(Token token)
         //{
@@ -519,7 +521,7 @@ namespace BlackC
             return null;
         }
 
-        public ExprNode makeFuncCallExprNode(ExprNode node, List<ExprNode> argList)
+        public ExprNode makeFuncCallExprNode(ExprNode node, ExprNode argList)
         {
             return null;
         }
@@ -544,7 +546,7 @@ namespace BlackC
             return null;
         }
 
-        public ExprNode makeCastExprNode(ExprNode namelist, Declaration name)
+        public ExprNode makeCastExprNode(ExprNode namelist, TypeNameNode name)
         {
             return null;
         }
@@ -574,7 +576,7 @@ namespace BlackC
             return null;
         }
 
-        public ExprNode makeSizeofTypeExprNode(String name)
+        public ExprNode makeSizeofTypeExprNode(TypeNameNode name)
         {
             return null;
         }
@@ -739,6 +741,92 @@ namespace BlackC
         }
 
         internal InitializerNode makeInitializerNode(AssignExpressionNode expr)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal InitializerNode makeInitializerNode(List<InitializerNode> list)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal List<InitializerNode> makeInitializerList(List<InitializerNode> list, DesignationNode desinode, InitializerNode initnode)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal DesignationNode makeDesignatorNode(DesignationNode node, ConstExpressionNode expr)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal DesignationNode makeDesignatorNode(DesignationNode node, IdentNode ident)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal IdentNode getFieldIdentNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal EnumConstantNode getEnumerationConstant(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal EnumeratorNode makeEnumeratorNode(EnumConstantNode enumconst, ConstExpressionNode constexpr)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal EnumDeclNode getEnumDecl(IdentNode idNode)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal EnumDeclNode makeEnumSpec(EnumDeclNode node, IdentNode idNode, EnumeratorNode enumer)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal EnumDeclNode makeEnumSpec(EnumDeclNode node, EnumeratorNode enumer)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        internal StructDeclNode getStructDecl(IdentNode idNode, bool isUnion)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal StructDeclNode makeStructSpec(StructDeclNode node, IdentNode idNode, StructDeclarationNode field, bool isUnion)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal StructDeclNode makeStructSpec(StructDeclNode node, StructDeclarationNode field)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal IdentNode getStructIdentNode(Token token)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal ParamTypeListNode makeParamList(ParamTypeListNode paramList, ParamDeclNode param)
+        {
+            throw new NotImplementedException();
+        }
+
+        public DeclaratorNode makeFuncDeclarNode(ParamTypeListNode paramList)
+        {
+            return null;
+        }
+
+        internal ExprNode makeUnaryOperatorNode(ExprNode expr, UnaryOperatorNode.OPERATOR oPERATOR)
         {
             throw new NotImplementedException();
         }

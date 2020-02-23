@@ -148,22 +148,20 @@ namespace BlackC
         /* 
          (6.7) 
          declaration:
-            declaration-specifiers init-declarator-list[opt] ;
+            declaration-specifiers (init-declarator-list)? ;
 
          (6.7) 
          init-declarator-list:
-            init-declarator
-            init-declarator-list , init-declarator
+            init-declarator (, init-declarator)*
 
          (6.7) 
          init-declarator:
-            declarator
-            declarator = initializer
+            declarator (= initializer)?
          */
         public Declaration parseDeclaration()
         {
             Declaration decl = null;
-            DeclSpecNode declSpecs = parseDeclarationSpecs();
+            DeclSpecNode declSpecs = parseDeclarationSpecs(true, true);
             if (declSpecs == null)
             {
                 return decl;
@@ -212,51 +210,30 @@ namespace BlackC
 
         /* (6.7) 
          declaration-specifiers:
-            storage-class-specifier declaration-specifiers[opt]
-            type-specifier declaration-specifiers[opt]
-            type-qualifier declaration-specifiers[opt]
-            function-specifier declaration-specifiers[opt]      
+           (storage-class-specifier | type-specifier | type-qualifier | function-specifier)+
 
          (6.7.1) 
          storage-class-specifier:
-            typedef
-            extern
-            static
-            auto
-            register
+           'TYPEDEF' | 'EXTERN' | 'STATIC' | 'AUTO' | 'REGISTER'
 
          (6.7.2) 
          type-specifier:
-            void
-            char
-            short
-            int
-            long
-            float
-            double
-            signed
-            unsigned
-            _Bool
-            _Complex
-            struct-or-union-specifier
-            enum-specifier
-            typedef-name
+           'VOID' | 'CHAR' | 'SHORT' | 'INT' | 'LONG' | 'FLOAT' | 'DOUBLE' | 'SIGNED' | 'UNSIGNED' | 
+            struct-or-union-specifier | enum-specifier | typedef-name
 
          (6.7.3) 
          type-qualifier:
-            const
-            restrict
-            volatile
-
+           'CONST' | 'RESTRICT' | 'VOLATILE'
+         
          (6.7.4) 
          function-specifier:
-            inline
+            INLINE
         */
-        public DeclSpecNode parseDeclarationSpecs()
+        public DeclSpecNode parseDeclarationSpecs(bool scAllowed, bool fsAllowed)
         {
+            DeclSpecNode specs = null;
             List<Token> storageClassSpecs = new List<Token>();
             List<TypeDeclNode> typeDefs = new List<TypeDeclNode>();
-            List<Token> baseTypeModifiers = new List<Token>();
             List<Token> typeQuals = new List<Token>();
             List<Token> functionSpecs = new List<Token>();
 
@@ -271,23 +248,29 @@ namespace BlackC
                     case TokenType.STATIC:
                     case TokenType.AUTO:
                     case TokenType.REGISTER:
-                        storageClassSpecs.Add(token);
-                        continue;
+                        if (scAllowed)
+                        {
+                            storageClassSpecs.Add(token);
+                            continue;
+                        }
+                        else
+                        {
+                            prep.putTokenBack(token);
+                            done = true;
+                            break;
+                        }
 
                     case TokenType.VOID:
                     case TokenType.CHAR:
                     case TokenType.INT:
                     case TokenType.FLOAT:
                     case TokenType.DOUBLE:
-                        TypeDeclNode toktype = arbor.GetTypeDef(token);
-                        typeDefs.Add(toktype);
-                        continue;
-
                     case TokenType.SHORT:
                     case TokenType.LONG:
                     case TokenType.SIGNED:
                     case TokenType.UNSIGNED:
-                        baseTypeModifiers.Add(token);
+                        TypeDeclNode toktype = arbor.GetTypeDef(token);
+                        typeDefs.Add(toktype);
                         continue;
 
                     case TokenType.STRUCT:
@@ -301,10 +284,19 @@ namespace BlackC
                         typeDefs.Add(enumdecl);
                         continue;
 
-                    //case TokenType.TYPENAME:
-                    //    TypeDeclNode typename = arbor.GetTypeDef(token.strval);
-                    //    typeDefs.Add(typename);
-                    //    continue;
+                    case TokenType.IDENT:
+                        TypeDeclNode typename = arbor.GetTypeDef(token.strval);
+                        if (typename != null)
+                        {
+                            typeDefs.Add(typename);
+                            continue;
+                        }
+                        else
+                        {
+                            prep.putTokenBack(token);
+                            done = true;
+                            break;
+                        }
 
                     case TokenType.CONST:
                     case TokenType.RESTRICT:
@@ -313,8 +305,17 @@ namespace BlackC
                         continue;
 
                     case TokenType.INLINE:
-                        functionSpecs.Add(token);
-                        continue;
+                        if (scAllowed)
+                        {
+                            functionSpecs.Add(token);
+                            continue;
+                        }
+                        else
+                        {
+                            prep.putTokenBack(token);
+                            done = true;
+                            break;
+                        }
 
                     default:
                         prep.putTokenBack(token);
@@ -322,157 +323,58 @@ namespace BlackC
                         break;
                 }
             }
-            DeclSpecNode specs = arbor.makeDeclSpecs(storageClassSpecs, baseTypeModifiers, typeDefs, typeQuals, functionSpecs);
+            if (storageClassSpecs.Count > 0 || typeDefs.Count > 0 || typeQuals.Count > 0 || functionSpecs.Count > 0)
+            {
+                specs = arbor.makeDeclSpecs(storageClassSpecs, typeDefs, typeQuals, functionSpecs);
+            }
             return specs;
-        }
-
-        /*(6.7.7) 
-         typedef-name:
-            identifier
-        */
-        public Declaration parseTypedefName()
-        {
-            //    Token token = prep.getToken();
-            //    IdentNode tdnode = arbor.findIdent(token);
-            //    if ((tdnode != null) && (tdnode.def != null) && (tdnode.def is TypeSpecNode))
-            //    {
-            //        prep.next();
-            //        return (TypeSpecNode)tdnode.def;
-            //    }
-            //    return null;
-            return null;
         }
 
         // stuctures/unions -----------------------------------------
 
         /*(6.7.2.1) 
          struct-or-union-specifier:
-            struct-or-union identifier[opt] { struct-declaration-list }
-            struct-or-union identifier
-
+           ('STRUCT' | 'UNION') ('identifier' | (('identifier')? '{' (struct-declaration)+ '}'))
         */
         // struct w/o ident is for anonymous struct (possibly part of a typedef)
         // struct w/o {list} is for a already defined struct type
         public StructDeclNode parseStructOrUnionSpec()
         {
-            //    Token token = prep.getToken();
-            //    StructSpecNode node = null;
-            //    int cuepoint = prep.record();
-            //    StructUnionNode tag = parseStuctOrUnion();
-            //    bool result = (tag != null);
-            //    if (result)
-            //    {
-            //        //Token token = prep.getToken();
-            //        IdentNode name = arbor.getStructIdentNode(token);
-            //        result = (name != null);
-            //        if (result)
-            //        {
-            //            int cuepoint2 = prep.record();
-            //            token = prep.getToken();
-            //            bool result2 = (token.type == TokenType.LBRACE);
-            //            if (!result2)
-            //            {
-            //                node = arbor.makeStructSpec(tag, name, null);       //struct-or-union ident
-            //            }
-            //            if (result2)
-            //            {
-            //                List<StructDeclarationNode> declarList = parseStructDeclarationList();
-            //                result2 = (declarList != null);
-            //                if (result2)
-            //                {
-            //                    token = prep.getToken();
-            //                    result2 = (token.type == TokenType.RBRACE);
-            //                    if (result2)
-            //                    {
-            //                        node = arbor.makeStructSpec(tag, name, declarList);         //struct-or-union ident struct-declar-list
-            //                    }
-            //                }
-            //            }
-            //            if (!result2)
-            //            {
-            //                prep.rewind(cuepoint2);
-            //            }
-            //        }
-            //        else
-            //        {
-            //            result = (token.type == TokenType.LBRACE);
-            //            if (result)
-            //            {
-            //                List<StructDeclarationNode> declarList = parseStructDeclarationList();
-            //                result = (declarList != null);
-            //                if (result)
-            //                {
-            //                    token = prep.getToken();
-            //                    result = (token.type == TokenType.RBRACE);
-            //                    if (result)
-            //                    {
-            //                        node = arbor.makeStructSpec(tag, null, declarList);         //struct-or-union struct-declar-list
-            //                    }
-            //                }
-            //            }
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        prep.rewind(cuepoint);
-            //    }
-            //    return node;
-            return null;
-        }
-
-        /*(6.7.2.1) 
-         struct-or-union:
-            struct
-            union
-        */
-        public Declaration parseStuctOrUnion()
-        {
-            //    StructUnionNode node = null;
-            //    int cuepoint = prep.record();
-            //    Token token = prep.getToken();
-            //    switch (token.ToString())
-            //    {
-            //        case "STRUCT":
-            //            node = new StructUnionNode(StructUnionNode.LAYOUT.STRUCT);
-            //            break;
-
-            //        case "UNION":
-            //            node = new StructUnionNode(StructUnionNode.LAYOUT.UNION);
-            //            break;
-            //    }
-            //    if (node == null)
-            //    {
-            //        prep.rewind(cuepoint);
-            //    }
-            //    return node;
-            return null;
-        }
-
-        /*(6.7.2.1) 
-         struct-declaration-list:
-            struct-declaration
-            struct-declaration-list struct-declaration
-         */
-        // the list of struct field defs
-        public List<Declaration> parseStructDeclarationList()
-        {
-            //    List<StructDeclarationNode> fieldlist = null;
-            //    StructDeclarationNode fieldnode = parseStructDeclaration();         //the first field def
-            //    if (fieldnode != null)
-            //    {
-            //        fieldlist = new List<StructDeclarationNode>();
-            //        fieldlist.Add(fieldnode);
-            //    }
-            //    while (fieldnode != null)
-            //    {
-            //        fieldnode = parseStructDeclaration();          //the next field def
-            //        if (fieldnode != null)
-            //        {
-            //            fieldlist.Add(fieldnode);
-            //        }
-            //    }
-            //    return fieldlist;
-            return null;
+            StructDeclNode node = null;
+            Token token = prep.getToken();
+            if (token.type == TokenType.STRUCT || token.type == TokenType.UNION)
+            {
+                bool isUnion = (token.type == TokenType.UNION);
+                IdentNode idNode = null;
+                token = prep.getToken();                                //either identifier or '{'
+                if (token.type == TokenType.IDENT)
+                {
+                    idNode = arbor.getStructIdentNode(token);
+                    token = prep.getToken();                            //is identifier followed by '{'
+                }
+                if (token.type == TokenType.LBRACE)
+                {
+                    StructDeclarationNode field = parseStructDeclaration();
+                    node = arbor.makeStructSpec(node, idNode, field, isUnion);
+                    field = parseStructDeclaration();
+                    while (field != null)
+                    {
+                        node = arbor.makeStructSpec(node, field);
+                        field = parseStructDeclaration();
+                    }
+                    consumeToken();                                     //skip closing '}'
+                }
+                else
+                {
+                    prep.putTokenBack(token);                           //no enum definiton, just a ref
+                    node = arbor.getStructDecl(idNode, isUnion);
+                }
+            }
+            else
+            {
+                prep.putTokenBack(token);           //not struct declar or reference
+            }
+            return node;
         }
 
         /*(6.7.2.1) 
@@ -480,340 +382,160 @@ namespace BlackC
             specifier-qualifier-list struct-declarator-list ;
          */
         // a single struct field def (can have mult fields, ie int a, b;)
-        public Declaration parseStructDeclaration()
+        public StructDeclarationNode parseStructDeclaration()
         {
-            //    StructDeclarationNode node = null;
-            //    int cuepoint = prep.record();
-            //    List<DeclarSpecNode> specqual = parseSpecQualList();          //field type
-            //    bool result = (specqual != null);
-            //    if (result)
-            //    {
-            //        List<StructDeclaratorNode> fieldnames = parseStructDeclaratorList();           //list of field names 
-            //        result = (fieldnames != null);
-            //        if (result)
-            //        {
-            //            Token token = prep.getToken();
-            //            result = (token.type == TokenType.SEMICOLON);
-            //            if (result)
-            //            {
-            //                node = arbor.makeStructDeclarationNode(specqual, fieldnames);
-            //            }
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        prep.rewind(cuepoint);
-            //    }
-            //    return node;
-            return null;
+            StructDeclarationNode node = null;
+            DeclSpecNode specqual = parseSpecQualList();          //field type
+            if (specqual != null)
+            {
+                List<StructDeclaratorNode> fieldnames = parseStructDeclaratorList();           //list of field names 
+                consumeToken();
+                node = arbor.makeStructDeclarationNode(specqual, fieldnames);
+            }
+            return node;
         }
 
         /*(6.7.2.1) 
          specifier-qualifier-list:
-            type-specifier specifier-qualifier-list[opt]
-            type-qualifier specifier-qualifier-list[opt]
+           (type-specifier | type-qualifier)+
          */
         // struct field's type - same as declaration-specifiers, w/o the storage-class-specifier or function-specifier
-        public List<Declaration> parseSpecQualList()
+        public DeclSpecNode parseSpecQualList()
         {
-            //    List<DeclarSpecNode> speclist = null;
-            //    //DeclarSpecNode specnode = parseTypeSpec();
-            //    //if (specnode == null)
-            //    //{
-            //    //    specnode = parseTypeQual();
-            //    //}
-            //    //if (specnode != null)
-            //    //{
-            //    //    speclist = new List<DeclarSpecNode>();
-            //    //    speclist.Add(specnode);
-            //    //    List<DeclarSpecNode> taillist = parseSpecQualList();
-            //    //    if (taillist != null)
-            //    //    {
-            //    //        speclist.AddRange(taillist);
-            //    //    }
-            //    //}
-            //    return speclist;
-            return null;
+            return parseDeclarationSpecs(false, false);
         }
 
         /*(6.7.2.1) 
          struct-declarator-list:
-            struct-declarator
-            struct-declarator-list , struct-declarator
+           struct-declarator (',' struct-declarator)*
          */
         // the list of field names, fx the "a, b, c" in "int a, b, c;" that def's three fields of type int
-        public List<Declaration> parseStructDeclaratorList()
+        public List<StructDeclaratorNode> parseStructDeclaratorList()
         {
-            //    List<StructDeclaratorNode> fieldlist = null;
-            //    StructDeclaratorNode fieldnode = parseStructDeclarator();      //the first field name
-            //    bool result = (fieldnode != null);
-            //    if (result)
-            //    {
-            //        fieldlist = new List<StructDeclaratorNode>();
-            //        fieldlist.Add(fieldnode);
-            //    }
-            //    while (result)
-            //    {
-            //        int cuepoint2 = prep.record();
-            //        Token token = prep.getToken();
-            //        result = (token.type == TokenType.COMMA);
-            //        if (result)
-            //        {
-            //            fieldnode = parseStructDeclarator();       //the next field name
-            //            result = (fieldnode != null);
-            //            if (result)
-            //            {
-            //                fieldlist.Add(fieldnode);
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //        }
-            //    }
-            //    return fieldlist;
-            return null;
+            List<StructDeclaratorNode> fieldlist = null;
+            StructDeclaratorNode fieldnode = parseStructDeclarator();      //the first field name
+            if (fieldnode != null)
+            {
+                fieldlist = new List<StructDeclaratorNode>();
+                fieldlist.Add(fieldnode);
+                while (true)
+                {
+                    Token token = prep.getToken();
+                    if (token.type == TokenType.COMMA)
+                    {
+                        fieldnode = parseStructDeclarator();                //the next field name
+                        fieldlist.Add(fieldnode);
+                        continue;
+                    }
+                    prep.putTokenBack(token);
+                    break;
+                }
+            }
+            return fieldlist;
         }
 
         /*(6.7.2.1) 
          struct-declarator:
-            declarator
-            declarator[opt] : constant-expression
+           declarator | ((declarator)? ':' constant-expression)
          */
-        //a single field name, possibly followed by a field width (fx foo : 4;)
-        public Declaration parseStructDeclarator()
+        //a single field, named or anonymous, possibly followed by a field width (fx foo : 4;)
+        public StructDeclaratorNode parseStructDeclarator()
         {
-            //    StructDeclaratorNode node = null;
-            //    int cuepoint = prep.record();
-            //    DeclaratorNode declarnode = parseDeclarator(false);
-            //    bool result = (declarnode != null);
-            //    if (result)
-            //    {
-            //        int cuepoint2 = prep.record();
-            //        Token token = prep.getToken();
-            //        bool result2 = (token.type == TokenType.COLON);
-            //        if (result2)
-            //        {
-            //            ConstExpressionNode constexpr = pexpr.parseConstantExpression();
-            //            result2 = (constexpr != null);
-            //            if (result2)
-            //            {
-            //                node = arbor.makeStructDeclaractorNode(declarnode, constexpr);      //declarator : constant-expression
-            //            }
-            //        }
-            //        if (!result2)
-            //        {
-            //            node = arbor.makeStructDeclaractorNode(declarnode, null);       //declarator
-            //        }
-            //        if (!result2)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        Token token = prep.getToken();
-            //        result = (token.type == TokenType.COLON);
-            //        if (result)
-            //        {
-            //            ConstExpressionNode constexpr = pexpr.parseConstantExpression();
-            //            result = (constexpr != null);
-            //            if (result)
-            //            {
-            //                //Console.WriteLine("parsed const-exp struct-declar");
-            //                node = arbor.makeStructDeclaractorNode(null, constexpr);      // : constant-expression
-            //            }
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        prep.rewind(cuepoint);
-            //    }
-            //    return node;
-            return null;
+            StructDeclaratorNode node = null;
+            DeclaratorNode declarnode = parseDeclarator(false);
+            Token token = prep.getToken();
+            ConstExpressionNode constexpr = null;
+            if (token.type == TokenType.COLON)
+            {
+                constexpr = parseConstantExpression();
+            }
+            else
+            {
+                prep.putTokenBack(token);
+            }
+            if (declarnode != null || constexpr != null)
+            {
+                node = arbor.makeStructDeclaractorNode(declarnode, constexpr);
+            }
+            return node;
         }
 
         // enumerations ---------------------------------------------
 
         /*(6.7.2.2) 
          enum-specifier:
-            enum identifier[opt] { enumerator-list }
-            enum identifier[opt] { enumerator-list , }
-            enum identifier
+           'ENUM' ('identifier' | (('identifier')? '{' enumerator (',' enumerator)* (',')? '}'))
          */
         public EnumDeclNode parseEnumeratorSpec()
         {
-            //    EnumSpecNode node = null;
-            //    int cuepoint = prep.record();
-            //    Token token = prep.getToken();
-            //    bool result = (token.type == TokenType.ENUM);
-            //    if (result)
-            //    {
-            //        token = prep.getToken();
-            //        IdentNode idNode = arbor.getEnumIdentNode(token);
-            //        result = (idNode != null);
-            //        if (result)
-            //        {
-            //            int cuepoint2 = prep.record();
-            //            token = prep.getToken();
-            //            bool result2 = (token.type == TokenType.LBRACE);             //enum identifier { enumerator-list }
-            //            if (result2)
-            //            {
-            //                List<EnumeratorNode> enumList = parseEnumeratorList();
-            //                result2 = (enumList != null);
-            //                if (result2)
-            //                {
-            //                    token = prep.getToken();
-            //                    result2 = (token.type == TokenType.RBRACE);
-            //                    if (!result2)
-            //                    {
-            //                        result2 = (token.type == TokenType.COMMA);            //enum identifier { enumerator-list , }
-            //                        if (result2)
-            //                        {
-            //                            token = prep.getToken();
-            //                            result2 = (token.type == TokenType.RBRACE);
-            //                        }
-            //                    }
-            //                    if (result2)
-            //                    {
-            //                        node = arbor.makeEnumSpec(idNode, enumList);
-            //                    }
-            //                }
-            //            }
-            //            if (!result2)
-            //            {
-            //                node = arbor.makeEnumSpec(idNode, null);        //enum identifier
-            //            }
-            //            if (!result2)
-            //            {
-            //                prep.rewind(cuepoint2);
-            //            }
-            //        }
-            //        else
-            //        {
-            //            token = prep.getToken();
-            //            result = (token.type == TokenType.LBRACE);             //enum { enumerator-list }
-            //            if (result)
-            //            {
-            //                List<EnumeratorNode> enumList = parseEnumeratorList();
-            //                result = (enumList != null);
-            //                if (result)
-            //                {
-            //                    token = prep.getToken();
-            //                    result = (token.type == TokenType.RBRACE);
-            //                    if (!result)
-            //                    {
-            //                        result = (token.type == TokenType.COMMA);            //enum { enumerator-list , }
-            //                        if (result)
-            //                        {
-            //                            token = prep.getToken();
-            //                            result = (token.type == TokenType.RBRACE);
-            //                        }
-            //                    }
-            //                    if (result)
-            //                    {
-            //                        node = arbor.makeEnumSpec(null, enumList);
-            //                    }
-            //                }
-            //            }
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        prep.rewind(cuepoint);
-            //    }
-            //    return node;
-            return null;
-        }
-
-        /*(6.7.2.2) 
-         enumerator-list:
-            enumerator
-            enumerator-list , enumerator
-         */
-        public List<Declaration> parseEnumeratorList()
-        {
-            //    List<EnumeratorNode> enumlistnode = null;
-            //    EnumeratorNode enumnode = parseEnumerator();
-            //    bool result = (enumnode != null);
-            //    if (result)
-            //    {
-            //        enumlistnode = new List<EnumeratorNode>();
-            //        enumlistnode.Add(enumnode);
-            //    }
-            //    while (result)
-            //    {
-            //        int cuepoint2 = prep.record();
-            //        Token token = prep.getToken();
-            //        result = (token.type == TokenType.COMMA);
-            //        if (result)
-            //        {
-            //            enumnode = parseEnumerator();
-            //            result = (enumnode != null);
-            //            if (result)
-            //            {
-            //                enumlistnode.Add(enumnode);
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //        }
-            //    }
-            //    return enumlistnode;
-            return null;
+            EnumDeclNode node = null;
+            Token token = prep.getToken();
+            if (token.type == TokenType.ENUM)
+            {
+                IdentNode idNode = null;
+                token = prep.getToken();                        //either identifier or '{'
+                if (token.type == TokenType.IDENT)
+                {
+                    idNode = arbor.getEnumIdentNode(token);
+                    token = prep.getToken();                    //is identifier followed by '{'
+                }
+                if (token.type == TokenType.LBRACE)
+                {
+                    EnumeratorNode enumer = parseEnumerator();
+                    node = arbor.makeEnumSpec(node, idNode, enumer);
+                    while (true)
+                    {
+                        token = prep.getToken();
+                        if (token.type == TokenType.COMMA)
+                        {
+                            enumer = parseEnumerator();
+                            if (enumer != null)                                 //could be optional trailing ','
+                            {
+                                node = arbor.makeEnumSpec(node, enumer);
+                            }
+                            continue;
+                        }
+                        prep.putTokenBack(token);
+                        break;
+                    }
+                }
+                else
+                {
+                    prep.putTokenBack(token);           //no enum definiton, just a ref
+                    node = arbor.getEnumDecl(idNode);
+                }
+            }
+            else
+            {
+                prep.putTokenBack(token);               //not enum declar or reference
+            }
+            return node;
         }
 
         /*(6.7.2.2) 
          enumerator:
-            enumeration-constant
-            enumeration-constant = constant-expression
+           enumeration-constant ('=' constant-expression)?
          */
-        public Declaration parseEnumerator()
+        public EnumeratorNode parseEnumerator()
         {
-            //    EnumeratorNode node = null;
-            //    EnumConstantNode enumconst = parseEnumerationConstant();
-            //    ConstExpressionNode constexpr = null;
-            //    bool result = (enumconst != null);
-            //    if (result)
-            //    {
-            //        int cuepoint = prep.record();
-            //        Token token = prep.getToken();
-            //        bool result2 = (token.type == TokenType.EQUAL);
-            //        if (result2)
-            //        {
-            //            constexpr = pexpr.parseConstantExpression();
-            //            result2 = (constexpr != null);
-            //        }
-            //        if (!result2)
-            //        {
-            //            prep.rewind(cuepoint);
-            //        }
-            //        node = arbor.makeEnumeratorNode(enumconst, constexpr);
-            //    }
-            //    return node;
-            return null;
-        }
-
-        /*(6.4.4.3) 
-         enumeration-constant:
-            identifier
-         */
-        public Declaration parseEnumerationConstant()
-        {
-            //    EnumConstantNode node = null;
-            //    int cuepoint = prep.record();
-            //    Token token = prep.getToken();
-            //    if (token != null)
-            //    {
-            //        node = arbor.makeEnumConstNode(token);
-            //    }
-            //    if (node == null)
-            //    {
-            //        prep.rewind(cuepoint);
-            //    }
-            //    return node;
-            return null;
+            EnumeratorNode node = null;
+            Token enumid = prep.getToken();
+            EnumConstantNode enumconst = arbor.getEnumerationConstant(enumid);
+            if (enumconst != null)
+            {
+                ConstExpressionNode constexpr = null;
+                Token token = prep.getToken();
+                if (token.type == TokenType.EQUAL)
+                {
+                    constexpr = parseConstantExpression();
+                }
+                else
+                {
+                    prep.putTokenBack(token);
+                }
+                node = arbor.makeEnumeratorNode(enumconst, constexpr);
+            }
+            return node;
         }
 
         //- declarators -------------------------------------------------------
@@ -821,27 +543,25 @@ namespace BlackC
         /*
          (6.7.5) 
          declarator:
-            pointer[opt] direct-declarator
-
-         (6.7.5) 
-         pointer:
-            * type-qualifier-list[opt]
-            * type-qualifier-list[opt] pointer         
+            (pointer)? direct-declarator
 
          (6.7.6) 
          abstract-declarator:
-            pointer
-            pointer[opt] direct-abstract-declarator
+            pointer | ((pointer)? direct-abstract-declarator)
+
+         (6.7.5) 
+         pointer:
+            ('*' (type-qualifier-list)?)+
         */
         public DeclaratorNode parseDeclarator(bool isAbstract)
         {
             if (nextTokenIs(TokenType.STAR))
             {
                 consumeToken();
-                //        TypeQualNode qualList = parseTypeQualList();
-                //        DeclaratorNode declar = parseDeclarator(isAbstract);
-                //        DeclaratorNode node = arbor.makePointerNode(qualList, declar);
-                //        return node;
+                DeclSpecNode qualList = parseTypeQualList();
+                DeclaratorNode declar = parseDeclarator(isAbstract);
+                DeclaratorNode node = arbor.makePointerNode(qualList, declar);
+                return node;
             }
             return parseDirectDeclarator(isAbstract);
         }
@@ -897,13 +617,10 @@ namespace BlackC
                 consumeToken();             //skip '('
                 if (isAbstract)
                 {
-                    //            ParamTypeListNode paramlist = parseParameterTypeList();
-                    //            if ((paramlist != null) || (prep.getToken().type == TokenType.RPAREN))
-                    //            {
-                    //                DeclaratorNode funcDeclar = arbor.makeFuncDeclarNode(null, paramlist);
-                    //                node = parseDirectDeclaratorTail(funcDeclar, isAbstract);
-                    //                return node;
-                    //            }
+                    ParamTypeListNode paramlist = parseParameterList(true);
+                    DeclaratorNode funcDeclar = arbor.makeFuncDeclarNode(paramlist);
+                    node = parseDirectDeclaratorTail(funcDeclar, isAbstract);
+                    return node;
                 }
 
                 //( declarator ) or ( abstract-declarator )
@@ -927,36 +644,35 @@ namespace BlackC
             //mode 4: [ * ]
             if (nextTokenIs(TokenType.LBRACKET))
             {
-                //int mode = 1;
-                //TypeQualNode qualList = parseTypeQualList();
-                //AssignExpressionNode assign = null;
-                //bool isStatic = (prep.getToken().type == TokenType.STATIC);
-                //if (isStatic)
-                //{
-                //    prep.next();
-                //    mode = 3;
-                //    if (qualList.isEmpty)
-                //    {
-                //        qualList = parseTypeQualList();
-                //        mode = 2;
-                //    }
-                //}
-                //if ((mode == 1) && (prep.getToken().type == TokenType.STAR))
-                //{
-                //    prep.next();
-                //    mode = 4;
-                //}
-                //else
-                //{
-                //    assign = pexpr.parseAssignExpression();
-                //}
-                //if (prep.getToken().type == TokenType.RBRACKET)
-                //{
-                //    prep.next();
-                //}
-                //DeclaratorNode index = arbor.makeDirectIndexNode(head, mode, qualList, assign);
-                //node = parseDirectDeclaratorTail(index, isAbstract);
-                //return node;
+                int mode = 1;
+                DeclSpecNode qualList = parseTypeQualList();
+                AssignExpressionNode assign = null;
+                if (nextTokenIs(TokenType.STATIC))
+                {
+                    consumeToken();
+                    mode = 3;
+                    if (!qualList.hasQualfiers)
+                    {
+                        qualList = parseTypeQualList();
+                        mode = 2;
+                    }
+                }
+                if ((mode == 1) && (nextTokenIs(TokenType.STAR)))
+                {
+                    consumeToken();
+                    mode = 4;
+                }
+                else
+                {
+                    assign = parseAssignExpression();
+                }
+                if (nextTokenIs(TokenType.RBRACKET))
+                {
+                    consumeToken();
+                }
+                DeclaratorNode index = arbor.makeDirectIndexNode(head, mode, qualList, assign);
+                DeclaratorNode node = parseDirectDeclaratorTail(index, isAbstract);
+                return node;
             }
 
             //parameter list declarator clause
@@ -966,7 +682,7 @@ namespace BlackC
             else if (nextTokenIs(TokenType.LPAREN))
             {
                 consumeToken();                                                     //skip opening '('
-                List<ParamDeclNode> paramlist = parseParameterList(isAbstract);
+                ParamTypeListNode paramlist = parseParameterList(isAbstract);
                 arbor.addParameterList(head, paramlist);
                 DeclaratorNode node = parseDirectDeclaratorTail(head, isAbstract);
                 return node;
@@ -976,91 +692,57 @@ namespace BlackC
 
         /*(6.7.5) 
          type-qualifier-list:
-            type-qualifier
-            type-qualifier-list type-qualifier
+            (type-qualifier)+
          */
-        public Declaration parseTypeQualList()
+        public DeclSpecNode parseTypeQualList()
         {
-            //    TypeQualNode specs = new TypeQualNode();
-            //    bool done = false;
-            //    while (!done)
-            //    {
-            //        Token token = prep.getToken();
-            //        switch (token.type)
-            //        {
-            //            case TokenType.CONST:
-            //            case TokenType.RESTRICT:
-            //            case TokenType.VOLATILE:
-            //                specs.setQualifer(token);
-            //                prep.next();
-            //                break;
+            DeclSpecNode specs = null;
+            List<Token> typeQuals = new List<Token>();
 
-            //            default:
-            //                done = true;
-            //                break;
-            //        }
-            //    }
-            //    return specs;
-            return null;
-        }
+            bool done = false;
+            while (!done)
+            {
+                Token token = prep.getToken();
+                switch (token.type)
+                {
+                    case TokenType.CONST:
+                    case TokenType.RESTRICT:
+                    case TokenType.VOLATILE:
+                        typeQuals.Add(token);
+                        continue;
 
-        public Declaration parseParameterTypeList()
-        {
-            //    ParamTypeListNode node = null;
-            //    List<ParamDeclarNode> list = parseParameterList();
-            //    bool result = (list != null);
-            //    if (result)
-            //    {
-            //        int cuepoint = prep.record();
-            //        Token token = prep.getToken();
-            //        bool result2 = (token.type == TokenType.COMMA);
-            //        if (result2)
-            //        {
-            //            token = prep.getToken();
-            //            result2 = (token.type == TokenType.ELLIPSIS);
-            //            if (result2)
-            //            {
-            //                node = arbor.ParamTypeListNode(list, true);
-            //            }
-            //        }
-            //        else
-            //        {
-            //            node = arbor.ParamTypeListNode(list, false);
-            //        }
-            //        if (!result2)
-            //        {
-            //            prep.rewind(cuepoint);
-            //        }
-            //    }
-            //    return node;
-            return null;
+                    default:
+                        prep.putTokenBack(token);
+                        done = true;
+                        break;
+                }
+            }
+            if (typeQuals.Count > 0)
+            {
+                specs = arbor.makeDeclSpecs(null, null, typeQuals, null);
+            }
+            return specs;
         }
 
         /*(6.7.5) 
-         parameter-type-list:
-            parameter-list
-            parameter-list , ...
-         */
-
-        /*(6.7.5) 
-         parameter-list:
-            parameter-declaration
-            parameter-list , parameter-declaration
+          parameter-type-list:
+            parameter-declaration (',' parameter-declaration)* (, ...)?
          */
         //parse (possibly empty) list of parameters, we've already seen the opening paren
-        public List<ParamDeclNode> parseParameterList(bool isAbstract)
+        public ParamTypeListNode parseParameterList(bool isAbstract)
         {
-            List<ParamDeclNode> paramList = new List<ParamDeclNode>();
+            ParamTypeListNode paramList = null;
             if (nextTokenIs(TokenType.RPAREN))
             {
-                consumeToken();             //skip ending ')'
-                return paramList;           //empty param list
+                consumeToken();                                                     //skip ending ')'
+                paramList = paramList = arbor.makeParamList(paramList, null);
+                return paramList;                                                   //empty param list
             }
 
             while (true)
             {
                 ParamDeclNode param = parseParameterDeclar(isAbstract);
-                paramList.Add(param);
+                paramList = arbor.makeParamList(paramList, param);
 
                 if (nextTokenIs(TokenType.RPAREN))          //at end of param list
                 {
@@ -1074,7 +756,7 @@ namespace BlackC
                     {
                         consumeToken();                                         //skip '...'
                         ParamDeclNode ellipsis = new ParamDeclNode("...");
-                        paramList.Add(ellipsis);
+                        paramList = arbor.makeParamList(paramList, param);
                     }
                     else
                     {
@@ -1087,105 +769,68 @@ namespace BlackC
 
         /*(6.7.5) 
          parameter-declaration:
-            declaration-specifiers declarator
-            declaration-specifiers abstract-declarator[opt]
+            declaration-specifiers (declarator | (abstract-declarator)?)
          */
         public ParamDeclNode parseParameterDeclar(bool isAbstract)
         {
-            //    ParamDeclarNode node = null;
-            //    DeclaratorNode absdeclar = null;
-            //    int cuepoint = prep.record();
-            //    DeclarSpecNode declarspecs = parseDeclarationSpecs();
-            //    bool result = (declarspecs != null);
-            //    if (result)
-            //    {
-            //        DeclaratorNode declar = parseDeclarator(false);
-            //        bool result2 = (declar != null);
-            //        if (result2)
-            //        {
-            //            //node = arbor.makeParamDeclarNode(declarspecs, declar, absdeclar);
-            //        }
-            //        else
-            //        {
-            //            absdeclar = parseDeclarator(true);
-            //            //node = arbor.makeParamDeclarNode(declarspecs, null, absdeclar);
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        prep.rewind(cuepoint);
-            //    }
-            //    return node;
-            return null;
+            ParamDeclNode node = null;
+            DeclSpecNode declarspecs = parseDeclarationSpecs(true, true);
+            if (declarspecs != null)
+            {
+                DeclaratorNode declar = parseDeclarator(true);
+                node = arbor.makeParamDeclarNode(declarspecs, declar);
+            }
+            return node;
         }
 
         /*(6.7.5) 
          identifier-list:
-            identifier
-            identifier-list , identifier
+           'identifier' (',' 'identifier')*
          */
-        public List<Declaration> parseIdentifierList()
+        public List<IdentNode> parseIdentifierList()
         {
-            //    List<IdentNode> list = null;
-            //    int cuepoint = prep.record();
-            //    Token token = prep.getToken();
-            //    IdentNode id = arbor.getArgIdentNode(token);
-            //    bool result = (id != null);
-            //    if (result)
-            //    {
-            //        list = new List<IdentNode>();
-            //        list.Add(id);
-            //    }
-            //    bool empty = !result;
-            //    while (result)
-            //    {
-            //        int cuepoint2 = prep.record();
-            //        token = prep.getToken();
-            //        result = (token.type == TokenType.COMMA);
-            //        if (!result)
-            //        {
-            //            token = prep.getToken();
-            //            id = arbor.getArgIdentNode(token);
-            //            result = (id != null);
-            //            if (result)
-            //            {
-            //                list.Add(id);
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //        }
-            //    }
-            //    if (empty)
-            //    {
-            //        prep.rewind(cuepoint);
-            //    }
-            //    return list;
-            return null;
+            List<IdentNode> list = null;
+            Token token = prep.getToken();
+            IdentNode id = arbor.getArgIdentNode(token);
+            if (id != null)
+            {
+                list = new List<IdentNode>();
+                list.Add(id);
+                while (true)
+                {
+                    token = prep.getToken();
+                    if (token.type == TokenType.COMMA)
+                    {
+                        token = prep.getToken();
+                        id = arbor.getArgIdentNode(token);
+                        list.Add(id);
+                        continue;
+                    }
+                    prep.putTokenBack(token);
+                    break;
+                }
+            }
+            else
+            {
+                prep.putTokenBack(token);
+            }
+            return list;
         }
 
         /*(6.7.6) 
          type-name:
-            specifier-qualifier-list abstract-declarator[opt]
+            specifier-qualifier-list (abstract-declarator)?
          */
-        public Declaration parseTypeName()
+        public TypeNameNode parseTypeName()
         {
-            //    TypeNameNode node = null;
-            //    List<DeclarSpecNode> list = parseSpecQualList();
-            //    bool result = (list != null);
-            //    if (result)
-            //    {
-            //        DeclaratorNode declar = parseDeclarator(true);
-            //        result = (declar != null);
-            //        if (result)
-            //        {
-            //            //Console.WriteLine("parsed spec-qual abstractor-declarator type-name");
-            //            //node = arbor.makeTypeNameNode(list, declar);
-            //        }
-            //    }
-            //    return node;
-            return null;
+            TypeNameNode node = null;
+            DeclSpecNode list = parseSpecQualList();
+            if (list != null)
+            {
+                DeclaratorNode declar = parseDeclarator(true);
+                node = arbor.makeTypeNameNode(list, declar);
+            }
+            return node;
         }
 
         //- declaration initializers ------------------------------------
@@ -1196,185 +841,91 @@ namespace BlackC
          */
         public InitializerNode parseInitializer()
         {
-                InitializerNode node = null;
-                AssignExpressionNode expr = parseAssignExpression();
+            InitializerNode node = null;
+            AssignExpressionNode expr = parseAssignExpression();
             if (expr != null)
+            {
+                node = arbor.makeInitializerNode(expr);
+            }
+            else
+            {
+                Token token = prep.getToken();
+                if (token.type == TokenType.LBRACE)
                 {
-                    node = arbor.makeInitializerNode(expr);
+                    List<InitializerNode> list = parseInitializerList();
+                    token = prep.getToken();
+                    if (token.type == TokenType.COMMA)
+                    {
+                        token = prep.getToken();            //skip optional ','
+                    }
+                    node = arbor.makeInitializerNode(list);
                 }
                 else
                 {
-                    Token token = prep.getToken();
-            if (token.type == TokenType.LBRACE)
-                    {
-            //            List<InitializerNode> list = parseInitializerList();
-            //            result = (list != null);
-            //            if (result)
-            //            {
-            //                token = prep.getToken();
-            //                result = (token.type == TokenType.RBRACE);
-            //                if (!result)
-            //                {
-            //                    result = (token.type == TokenType.COMMA);
-            //                    if (result)
-            //                    {
-            //                        token = prep.getToken();
-            //                        result = (token.type == TokenType.RBRACE);
-            //                    }
-            //                }
-            //                if (result)
-            //                {
-            //                    node = arbor.makeInitializerNode(list);
-            //                }
-            //            }
-                    }
-                else
-                    {
-            prep.putTokenBack(token);
-                    }
+                    prep.putTokenBack(token);
                 }
-                return node;            
+            }
+            return node;
         }
 
         /*(6.7.8) 
          initializer-list:
-            designation[opt] initializer
-            initializer-list , designation[opt] initializer
+           (designation)? initializer (',' (designation)? initializer)*
          */
-        public List<Declaration> parseInitializerList()
+        public List<InitializerNode> parseInitializerList()
         {
-            //    List<InitializerNode> list = null;
-            //    DesignationNode desinode = parseDesignation();
-            //    InitializerNode initnode = parseInitializer();
-            //    bool result = (initnode != null);
-            //    if (result)
-            //    {
-            //        list = new List<InitializerNode>();
-            //        initnode.addDesignation(desinode);
-            //        list.Add(initnode);
-            //    }
-            //    while (result)
-            //    {
-            //        int cuepoint = prep.record();
-            //        Token token = prep.getToken();
-            //        result = (token.type == TokenType.COMMA);
-            //        if (result)
-            //        {
-            //            desinode = parseDesignation();
-            //            initnode = parseInitializer();
-            //            result = (initnode != null);
-            //            if (result)
-            //            {
-            //                initnode.addDesignation(desinode);
-            //                list.Add(initnode);
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint);
-            //        }
-            //    }
-            //    return list;
-            return null;
+            List<InitializerNode> list = null;
+            DesignationNode desinode = parseDesignation();
+            InitializerNode initnode = parseInitializer();
+            if (initnode != null)
+            {
+                list = arbor.makeInitializerList(list, desinode, initnode);
+                while (true)
+                {
+                    Token token = prep.getToken();
+                    if (token.type == TokenType.COMMA)
+                    {
+                        desinode = parseDesignation();
+                        initnode = parseInitializer();
+                        list = arbor.makeInitializerList(list, desinode, initnode);
+                        continue;
+                    }
+                    prep.putTokenBack(token);
+                    break;
+                }
+            }
+            return list;
         }
 
         /*(6.7.8) 
-         designation:
-            designator-list =
+         (('[' constant-expression ']') | ('.' 'identifier'))+ '='
          */
-        public Declaration parseDesignation()
+        public DesignationNode parseDesignation()
         {
-            //    DesignationNode node = null;
-            //    int cuepoint = prep.record();
-            //    List<DesignatorNode> list = parseDesignatorList();
-            //    bool result = (list != null);
-            //    if (result)
-            //    {
-            //        Token token = prep.getToken();
-            //        result = (token.type == TokenType.EQUAL);
-            //        if (result)
-            //        {
-            //            node = arbor.makeDesignationNode(list);
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        prep.rewind(cuepoint);
-            //    }
-            //    return node;
-            return null;
-        }
-
-        /*(6.7.8) 
-         designator-list:
-            designator
-            designator-list designator
-         */
-        public List<Declaration> parseDesignatorList()
-        {
-            //    List<DesignatorNode> list = null;
-            //    DesignatorNode node = parseDesignator();
-            //    if (node != null)
-            //    {
-            //        list = new List<DesignatorNode>();
-            //        list.Add(node);
-            //    }
-            //    while (node != null)
-            //    {
-            //        node = parseDesignator();
-            //        if (node != null)
-            //        {
-            //            list.Add(node);
-            //        }
-            //    }
-            //    return list;
-            return null;
-        }
-
-        /*(6.7.8) 
-         designator:
-            [ constant-expression ]
-            . identifier
-         */
-        public Declaration parseDesignator()
-        {
-            //    DesignatorNode node = null;
-            //    int cuepoint = prep.record();
-            //    Token token = prep.getToken();
-            //    bool result = (token.type == TokenType.LBRACKET);
-            //    if (result)
-            //    {
-            //        ConstExpressionNode expr = pexpr.parseConstantExpression();
-            //        if (result)
-            //        {
-            //            token = prep.getToken();
-            //            result = (token.type == TokenType.RBRACKET);
-            //            if (result)
-            //            {
-            //                node = arbor.makeDesignatorNode(expr);              //[ constant-expression ]
-            //            }
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        result = (token.type == TokenType.PERIOD);
-            //        if (result)
-            //        {
-            //            token = prep.getToken();
-            //            IdentNode ident = arbor.getFieldInitializerNode(token);
-            //            result = (ident != null);
-            //            if (result)
-            //            {
-            //                node = arbor.makeDesignatorNode(ident);             //. identifier
-            //            }
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        prep.rewind(cuepoint);
-            //    }
-            //    return node;
-            return null;
+            DesignationNode node = null;
+            while (true)
+            {
+                Token token = prep.getToken();
+                if (token.type == TokenType.LBRACKET)
+                {
+                    ConstExpressionNode expr = parseConstantExpression();
+                    consumeToken();
+                    node = arbor.makeDesignatorNode(node, expr);              //[ constant-expression ]
+                }
+                if (token.type == TokenType.PERIOD)
+                {
+                    Token idtoken = prep.getToken();
+                    IdentNode ident = arbor.getFieldIdentNode(idtoken);
+                    node = arbor.makeDesignatorNode(node, ident);             //. identifier
+                }
+                prep.putTokenBack(token);
+                break;
+            }
+            if (node != null)
+            {
+                consumeToken();                 //skip ending '='
+            }
+            return node;
         }
 
         //- statements --------------------------------------------------------
@@ -1667,164 +1218,92 @@ namespace BlackC
 
         /*(6.5.2) 
          postfix-expression:
-           (primary-expression | ('(' type-name ')' '{' initializer-list (',')? '}')) |
-           (('[' expression ']') | ('(' (argument-expression-list)? ')') | ('.' 'identifier') | ('->' 'identifier') | '++' | '--')*
+           (primary-expression | ('(' type-name ')' '{' initializer-list (',')? '}')) 
          */
         public ExprNode parsePostfixExpression()
         {
-            ExprNode node = parsePrimaryExpression();         //primary-expression
-            if (node == null)
+            ExprNode expr = parsePrimaryExpression();         //primary-expression
+            if (expr == null)
             {
                 Token token = prep.getToken();           //( type-name ) { initializer-list }
                 if (token.type == TokenType.LPAREN)
                 {
-                    Declaration name = parseTypeName();
-                    consumeToken();
-                    consumeToken();
-                    //List<InitializerNode> initList = parseInitializerList();
-                    //                        result = (initList != null);
-                    //                        if (result)
-                    //                        {
-                    //                            token = prep.getToken();
-                    //                            result = (token.type == TokenType.RBRACE);
-                    //                            if (!result)
-                    //                            {
-                    //                                result = (token.type == TokenType.COMMA);             //the comma is optional
-                    //                                if (result)
-                    //                                {
-                    //                                    token = prep.getToken();
-                    //                                    result = (token.type == TokenType.RBRACE);
-                    //                                    if (result)
-                    //                                    {
-                    //                                        node = arbor.makeTypeInitExprNode(node);
-                    //                                        result = (node != null);
-                    //                                    }
-
-                    //                                }
-                    //                            }
-                    //                        }
-                    //                    }
-                    //                }
-                    //            }
-                    //        }
-                    //        if (!result)
-                    //        {
-                    //            prep.rewind(cuepoint2);
-                    //        }
-                    //    }
-                    //    bool notEmpty = result;
-                    //    while (result)
-                    //    {
-                    //        int cuepoint2 = prep.record();           //postfix-expression [ expression ]
-                    //        Token token = prep.getToken();
-                    //        result = (token.type == TokenType.LBRACKET);
-                    //        if (result)
-                    //        {
-                    //            ExpressionNode expr = parseExpression();
-                    //            result = (expr != null);
-                    //            if (result)
-                    //            {
-                    //                token = prep.getToken();
-                    //                result = (token.type == TokenType.RBRACKET);
-                    //                if (result)
-                    //                {
-                    //                    node = arbor.makeIndexExprNode(node, expr);
-                    //                    result = (node != null);
-                    //                }
-                    //            }
-                    //        }
-                    //        if (!result)
-                    //        {
-                    //            prep.rewind(cuepoint2);                  //postfix-expression ( argument-expression-list[opt] )
-                    //            token = prep.getToken();
-                    //            result = (token.type == TokenType.LPAREN);
-                    //            if (result)
-                    //            {
-                    //                List<AssignExpressionNode> argList = parseArgExpressionList();
-                    //                token = prep.getToken();
-                    //                result = (token.type == TokenType.RPAREN);
-                    //                if (result)
-                    //                {
-                    //                    node = arbor.makeFuncCallExprNode(node, argList);
-                    //                    result = (node != null);
-                    //                }
-
-                    //            }
-                    //        }
-                    //        if (!result)
-                    //        {
-                    //            prep.rewind(cuepoint2);                  //postfix-expression . identifier
-                    //            token = prep.getToken();
-                    //            result = (token.type == TokenType.PERIOD);
-                    //            if (result)
-                    //            {
-                    //                token = prep.getToken();
-                    //                IdentNode idNode = arbor.getFieldIdentNode(token);
-                    //                result = (idNode != null);
-                    //                if (result)
-                    //                {
-                    //                    node = arbor.makeFieldExprNode(node, idNode);
-                    //                    result = (node != null);
-                    //                }
-                    //            }
-                    //        }
-                    //        if (!result)
-                    //        {
-                    //            prep.rewind(cuepoint2);                  //postfix-expression -> identifier
-                    //            token = prep.getToken();
-                    //            result = (token.type == TokenType.ARROW);
-                    //            if (result)
-                    //            {
-                    //                token = prep.getToken();
-                    //                IdentNode idNode = arbor.getFieldIdentNode(token);
-                    //                result = (idNode != null);
-                    //                if (result)
-                    //                {
-                    //                    node = arbor.makeRefFieldExprNode(node, idNode);
-                    //                    result = (node != null);
-                    //                }
-                    //            }
-                    //        }
-                    //        if (!result)
-                    //        {
-                    //            prep.rewind(cuepoint2);                  //postfix-expression ++
-                    //            token = prep.getToken();
-                    //            result = (token.type == TokenType.PLUSPLUS);
-                    //            result = (node != null);
-                    //            if (result)
-                    //            {
-                    //                node = arbor.makePostPlusPlusExprNode(node);
-                    //                result = (node != null);
-                    //            }
-                    //        }
-                    //        if (!result)
-                    //        {
-                    //            prep.rewind(cuepoint2);                  //postfix-expression --
-                    //            token = prep.getToken();
-                    //            result = (token.type == TokenType.MINUSMINUS);
-                    //            result = (node != null);
-                    //            if (result)
-                    //            {
-                    //                node = arbor.makePostMinusMinusExprNode(node);
-                    //                result = (node != null);
-                    //            }
-                    //            if (!result)
-                    //            {
-                    //                prep.rewind(cuepoint2);
-                    //            }
-                    //        }
+                    TypeNameNode name = parseTypeName();
+                    consumeToken();                                             //skip ')'
+                    consumeToken();                                             //skip '{'
+                    List<InitializerNode> initList = parseInitializerList();
+                    token = prep.getToken();
+                    if (token.type == TokenType.COMMA)             //the comma is optional
+                    {
+                        token = prep.getToken();
+                    }
+                    expr = arbor.makeTypeInitExprNode(expr);
                 }
                 else
                 {
                     prep.putTokenBack(token);
                 }
             }
-            return node;
+            if (expr != null)
+            {
+                expr = parsePostfixExpressionTail(expr);
+            }
+            return expr;
         }
 
-        public ExprNode parsePostfixExpressionTail()
+        /*
+           (('[' expression ']') | ('(' (argument-expression-list)? ')') | ('.' 'identifier') | ('->' 'identifier') | '++' | '--')*
+        */
+        public ExprNode parsePostfixExpressionTail(ExprNode head)
         {
-            return null;
+            while (true)
+            {
+                if (nextTokenIs(TokenType.LBRACKET))            //postfix-expression [ expression ]
+                {
+                    ExpressionNode expr = parseExpression();
+                    consumeToken();
+                    head = arbor.makeIndexExprNode(head, expr);
+                    continue;
+                }
+
+                else if (nextTokenIs(TokenType.LPAREN))              //postfix-expression ( argument-expression-list[opt] )
+                {
+                    ExprNode argList = parseArgExpressionList();
+                    consumeToken();
+                    head = arbor.makeFuncCallExprNode(head, argList);
+                    continue;
+                }
+
+                else if (nextTokenIs(TokenType.PERIOD))              //postfix-expression . identifier
+                {
+                    Token token = prep.getToken();
+                    IdentNode idNode = arbor.getFieldIdentNode(token);
+                    head = arbor.makeFieldExprNode(head, idNode);
+                    continue;
+                }
+
+                else if (nextTokenIs(TokenType.ARROW))               //postfix-expression -> identifier
+                {
+                    Token idtoken = prep.getToken();
+                    IdentNode idNode = arbor.getFieldIdentNode(idtoken);
+                    head = arbor.makeRefFieldExprNode(head, idNode);
+                    continue;
+                }
+
+                else if (nextTokenIs(TokenType.PLUSPLUS))            //postfix-expression ++
+                {
+                    head = arbor.makePostPlusPlusExprNode(head);
+                    continue;
+                }
+
+                else if (nextTokenIs(TokenType.MINUSMINUS))          //postfix-expression --
+                {
+                    head = arbor.makePostMinusMinusExprNode(head);
+                    continue;
+                }
+                break;
+            }
+            return head;
         }
 
         /*(6.5.2) 
@@ -1854,6 +1333,8 @@ namespace BlackC
 
         /*(6.5.3) 
          unary-expression:
+           ('++'| '--'|'SIZEOF')* postfix-expression | (('&'|'*'|'+'|'-'|'~'|'!') cast-expression) | ('SIZEOF' '(' type-name ')')
+
             postfix-expression
             ++ unary-expression
             -- unary-expression
@@ -1863,148 +1344,83 @@ namespace BlackC
          */
         public ExprNode parseUnaryExpression()
         {
-            //    int cuepoint = prep.record();
-            //    ExprNode node = parsePostfixExpression();         //postfix-expression
-            //    bool result = (node != null);
-            //    if (!result)
-            //    {
-            //        Token token = prep.getToken();           //++ unary-expression
-            //        result = (token.type == TokenType.PLUSPLUS);
-            //        if (result)
-            //        {
-            //            node = parseUnaryExpression();
-            //            result = (node != null);
-            //            if (result)
-            //            {
-            //                node = arbor.makePlusPlusExprNode(node);
-            //                result = (node != null);
-            //            }
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        prep.rewind(cuepoint);
-            //        Token token = prep.getToken();           //-- unary-expression
-            //        result = (token.type == TokenType.MINUSMINUS);
-            //        if (result)
-            //        {
-            //            node = parseUnaryExpression();
-            //            result = (node != null);
-            //            if (result)
-            //            {
-            //                node = arbor.makeMinusMinusExprNode(node);
-            //                result = (node != null);
-            //            }
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        prep.rewind(cuepoint);                   //unary-operator cast-expression
-            //        UnaryOperatorNode uniOp = parseUnaryOperator();
-            //        result = (uniOp != null);
-            //        if (result)
-            //        {
-            //            ExprNode castExpr = parseCastExpression();
-            //            result = (castExpr != null);
-            //            if (result)
-            //            {
-            //                node = arbor.makeUnaryCastExprNode(uniOp, castExpr);
-            //                result = (node != null);
-            //            }
+            ExprNode node = node = parsePostfixExpression();            //postfix-expression
+            if (node == null)
+            {
+                if (nextTokenIs(TokenType.PLUSPLUS))                    //++ unary-expression
+                {
+                    consumeToken();
+                    ExprNode expr = parseUnaryExpression();
+                    node = arbor.makePlusPlusExprNode(expr);
+                }
 
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        prep.rewind(cuepoint);
-            //        Token token = prep.getToken();           //sizeof unary-expression
-            //        result = (token.type == TokenType.SIZEOF);
-            //        if (result)
-            //        {
-            //            node = parseUnaryExpression();
-            //            result = (node != null);
-            //            if (result)
-            //            {
-            //                node = arbor.makeSizeofUnaryExprNode(node);
-            //                result = (node != null);
-            //            }
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        prep.rewind(cuepoint);
-            //        Token token = prep.getToken();           //sizeof ( type-name )
-            //        result = (token.type == TokenType.SIZEOF);
-            //        if (result)
-            //        {
-            //            token = prep.getToken();
-            //            result = (token.type == TokenType.LPAREN);
-            //            if (result)
-            //            {
-            //                TypeNameNode name = pdeclar.parseTypeName();
-            //                if (result)
-            //                {
-            //                    token = prep.getToken();
-            //                    result = (token.type == TokenType.RPAREN);
-            //                    result = (node != null);
-            //                    if (result)
-            //                    {
-            //                        node = arbor.makeSizeofTypeExprNode(name);
-            //                        result = (node != null);
-            //                    }
-            //                }
-            //            }
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        prep.rewind(cuepoint);
-            //    }
-            //    return node;
-            return null;
-        }
+                else if (nextTokenIs(TokenType.MINUSMINUS))             //-- unary-expression
+                {
+                    consumeToken();
+                    ExprNode expr = parseUnaryExpression();
+                    node = arbor.makeMinusMinusExprNode(expr);
+                }
 
-        /*(6.5.3) 
-         unary-operator: one of
-            & * + - ~ !
-         */
-        public ExprNode parseUnaryOperator()
-        {
-            //    UnaryOperatorNode node = null;
-            //    int cuepoint = prep.record();
-            //    Token token = prep.getToken();
-            //    switch (token.ToString())
-            //    {
-            //        case "AMPERSAND":
-            //            node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.AMPERSAND);
-            //            break;
+                //unary-operator cast-expression
+                else if (nextTokenIs(TokenType.AMPERSAND))
+                {
+                    consumeToken();
+                    ExprNode expr = parseCastExpression();
+                    node = arbor.makeUnaryOperatorNode(expr, UnaryOperatorNode.OPERATOR.AMPERSAND);
+                }
 
-            //        case "ASTERISK":
-            //            node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.ASTERISK);
-            //            break;
+                else if (nextTokenIs(TokenType.STAR))
+                {
+                    consumeToken();
+                    ExprNode expr = parseCastExpression();
+                    node = arbor.makeUnaryOperatorNode(expr, UnaryOperatorNode.OPERATOR.STAR);
+                }
 
-            //        case "PLUS":
-            //            node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.PLUS);
-            //            break;
+                else if (nextTokenIs(TokenType.PLUS))
+                {
+                    consumeToken();
+                    ExprNode expr = parseCastExpression();
+                    node = arbor.makeUnaryOperatorNode(expr, UnaryOperatorNode.OPERATOR.PLUS);
+                }
 
-            //        case "MINUS":
-            //            node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.MINUS);
-            //            break;
+                else if (nextTokenIs(TokenType.MINUS))
+                {
+                    consumeToken();
+                    ExprNode expr = parseCastExpression();
+                    node = arbor.makeUnaryOperatorNode(expr, UnaryOperatorNode.OPERATOR.MINUS);
+                }
 
-            //        case "TILDE":
-            //            node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.TILDE);
-            //            break;
+                else if (nextTokenIs(TokenType.TILDE))
+                {
+                    consumeToken();
+                    ExprNode expr = parseCastExpression();
+                    node = arbor.makeUnaryOperatorNode(expr, UnaryOperatorNode.OPERATOR.TILDE);
+                }
 
-            //        case "EXCLAIM":
-            //            node = new UnaryOperatorNode(UnaryOperatorNode.OPERATOR.EXCLAIM);
-            //            break;
-            //    }
-            //    if (node == null)
-            //    {
-            //        prep.rewind(cuepoint);
-            //    }
-            //    return node;
-            return null;
+                else if (nextTokenIs(TokenType.EXCLAIM))
+                {
+                    consumeToken();
+                    ExprNode expr = parseCastExpression();
+                    node = arbor.makeUnaryOperatorNode(expr, UnaryOperatorNode.OPERATOR.EXCLAIM);
+                }
+
+                else if (nextTokenIs(TokenType.SIZEOF))
+                {
+                    if (nextTokenIs(TokenType.LPAREN))         //sizeof ( type-name )
+                    {
+                        consumeToken();
+                        TypeNameNode name = parseTypeName();
+                        consumeToken();
+                        node = arbor.makeSizeofTypeExprNode(name);
+                    }
+                    else                                 //sizeof unary-expression                        
+                    {
+                        ExprNode expr = parseUnaryExpression();
+                        node = arbor.makeSizeofUnaryExprNode(expr);
+                    }
+                }
+            }
+            return node;
         }
 
         /*(6.5.4) 
@@ -2019,7 +1435,7 @@ namespace BlackC
             while (token.type == TokenType.LPAREN)
             {
                 consumeToken();
-                Declaration name = parseTypeName();
+                TypeNameNode name = parseTypeName();
                 consumeToken();
                 nameList = arbor.makeCastExprNode(nameList, name);
                 token = prep.getToken();

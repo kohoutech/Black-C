@@ -31,21 +31,6 @@ namespace BlackC
     {
     }
 
-   // public class IdentNode : Node
-   // {
-   //     public String ident;
-   //     public ParseNode def;
-   //     public SYMTYPE symtype;
-
-   //     public IdentNode(String id)
-   //     {
-   //         ident = id;
-   //         def = null;
-   //         symtype = SYMTYPE.UNSET;
-   //     }
-   // }
-
-
    //- external defs ---------------------------------------------------------
 
    // public class TranslationUnit : ParseNode
