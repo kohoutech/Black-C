@@ -39,8 +39,6 @@ namespace BlackC
 
         public List<String> includePaths;
 
-        List<Declaration> curDeclarationList;
-
         public Parser(Options _options)
         {
             options = _options;
@@ -50,8 +48,6 @@ namespace BlackC
 
             //    includePaths = new List<string>() { "." };          //start with current dir
             //    includePaths.AddRange(options.includePaths);        //add search paths from command line         
-
-            curDeclarationList = new List<Declaration>();
         }
 
         public void handlePragma(List<Fragment> args)
@@ -111,68 +107,40 @@ namespace BlackC
         //- external definitions ----------------------------------------------
 
         /*(6.9) 
-         translation-unit:
-            external-declaration
-            translation-unit external-declaration 
+          translation-unit:
+            (function-definition | declaration)+
+          
+          function-definition:
+            declaration-specifiers declarator (declaration)* compound-statement
         */
         public Module parseTranslationUnit()
         {
             Module module = new Module();
-            while (!nextTokenIs(TokenType.EOF))
+            do
             {
-                Declaration extdef = parseExternalDef();
-                if (extdef != null)
+                Declaration decl = parseDeclaration();
+                if (decl != null && decl.isFuncDef)
                 {
-                    if (extdef.type != OILType.FuncDecl)
+                    DeclSpecNode declspecs = decl.declspecs;
+                    DeclaratorNode declar = decl.declar[0];
+                    List<Declaration> oldparamlist = new List<Declaration>();
+                    Declaration pdecl = parseDeclaration();
+                    while (pdecl != null)
                     {
-                        module.globals.Add((VarDeclNode)extdef);
+                        oldparamlist.Add(pdecl);
+                        pdecl = parseDeclaration();
                     }
-                    else
-                    {
-                        module.funcs.Add((FuncDeclNode)extdef);
-                    }
+                    StatementNode block = parseCompoundStatement();
+                    FuncDefinition funcdef = arbor.completeFuncDef(declspecs, declar, oldparamlist, block);
+                    arbor.addFuncDefToModule(module, funcdef);
+                }
+                else
+                {
+                    arbor.addDeclToModule(module, decl);
                 }
             }
+            while (!nextTokenIs(TokenType.EOF));
             return module;
-        }
-
-        /* (6.9)     
-         external-declaration:
-            declaration
-            function-definition
-
-         (6.9.1)
-         function-definition:
-            declaration-specifiers declarator declaration-list[opt] compound-statement          
-        */
-        public Declaration parseExternalDef()
-        {
-            Declaration decl = parseDeclaration();
-            if (decl != null && decl.type == OILType.FuncDecl)
-            {
-                List<Declaration> oldparamlist = parseDeclarationList();
-                StatementNode block = parseCompoundStatement();
-                decl = arbor.completeFuncDef((FuncDeclNode)decl, oldparamlist, block);
-            }
-            return decl;
-        }
-
-        /*(6.9.1) 
-         declaration-list:
-            declaration
-            declaration-list declaration
-        */
-        //old-style function parameter defs - here for completeness
-        public List<Declaration> parseDeclarationList()
-        {
-            List<Declaration> declarList = new List<Declaration>();
-            Declaration decl = parseDeclaration();
-            while (decl != null)
-            {
-                declarList.Add(decl);
-                decl = parseDeclaration();
-            }
-            return declarList;
         }
 
         //- declarations ------------------------------------------------------
@@ -195,33 +163,18 @@ namespace BlackC
         public Declaration parseDeclaration()
         {
             Declaration decl = null;
-            if (curDeclarationList.Count == 0)
-            {
-                parseDeclaratorList();
-            }
-            if (curDeclarationList.Count > 0)
-            {
-                decl = curDeclarationList[0];
-                curDeclarationList.RemoveAt(0);
-            }
-            return decl;
-        }
-
-        public void parseDeclaratorList()
-        {
             DeclSpecNode declSpecs = parseDeclarationSpecs();
             if (declSpecs == null)
             {
-                return;
+                return decl;
             }
 
             //if decl spec followed by a ';' (no var list) then it's a type definition, like struct foo {...}; or enum bar {...};
             if (nextTokenIs(TokenType.SEMICOLON))
             {
                 consumeToken();                                                 //skip ';'
-                TypeDeclNode typdecl = arbor.makeTypeDeclNode(declSpecs);
-                curDeclarationList.Add(typdecl);
-                return;
+                decl = arbor.makeTypeDeclNode(declSpecs);
+                return decl;
             }
 
             //now we have a declarator list or a func definition
@@ -231,22 +184,19 @@ namespace BlackC
 
                 if (nextTokenIs(TokenType.LBRACE))
                 {
-                    FuncDeclNode funcdecl = arbor.makeFuncDeclNode(declSpecs, declarnode);         //declaration-specifiers declarator {...
-                    curDeclarationList.Add(funcdecl);
-                    return;
+                    decl = arbor.makeFuncDeclNode(declSpecs, declarnode);         //declaration-specifiers declarator {...
+                    return decl;
                 }
                 else if (nextTokenIs(TokenType.EQUAL))
                 {
                     consumeToken();                                             //skip '='
                     InitializerNode initialnode = parseInitializer();
-                    VarDeclNode vardecl = arbor.makeVarDeclNode(declSpecs, declarnode, initialnode);       //declarator = initializer
-                    curDeclarationList.Add(vardecl);
+                    decl = arbor.makeVarDeclNode(decl, declSpecs, declarnode, initialnode);       //declarator = initializer
+
                 }
                 else
                 {
-                    //this could be either a var decl or an incomplete func def
-                    Declaration vardecl = arbor.makeVarOrFuncNode(declSpecs, declarnode);             //declarator
-                    curDeclarationList.Add(vardecl);
+                    decl = arbor.makeVarDeclNode(decl, declSpecs, declarnode, null);             //declarator
                 }
 
                 if (nextTokenIs(TokenType.COMMA))           //not at end of declarator list yet
@@ -257,6 +207,7 @@ namespace BlackC
                 consumeToken();          //at list end - skip ';'
                 break;
             }
+            return decl;
         }
 
         /* (6.7) 
@@ -350,10 +301,10 @@ namespace BlackC
                         typeDefs.Add(enumdecl);
                         continue;
 
-                    case TokenType.TYPENAME:
-                        TypeDeclNode typename = arbor.GetTypeDef(token.strval);
-                        typeDefs.Add(typename);
-                        continue;
+                    //case TokenType.TYPENAME:
+                    //    TypeDeclNode typename = arbor.GetTypeDef(token.strval);
+                    //    typeDefs.Add(typename);
+                    //    continue;
 
                     case TokenType.CONST:
                     case TokenType.RESTRICT:
@@ -1241,26 +1192,21 @@ namespace BlackC
 
         /*(6.7.8) 
          initializer:
-            assignment-expression
-            { initializer-list }
-            { initializer-list , }
+           assignment-expression | ('{' initializer-list (',')? '}')
          */
         public InitializerNode parseInitializer()
         {
-            //    InitializerNode node = null;
-            //    AssignExpressionNode expr = pexpr.parseAssignExpression();
-            //    bool result = (expr != null);
-            //    if (result)
-            //    {
-            //        node = arbor.makeInitializerNode(expr);
-            //    }
-            //    else
-            //    {
-            //        int cuepoint = prep.record();
-            //        Token token = prep.getToken();
-            //        result = (token.type == TokenType.LBRACE);
-            //        if (result)
-            //        {
+                InitializerNode node = null;
+                AssignExpressionNode expr = parseAssignExpression();
+            if (expr != null)
+                {
+                    node = arbor.makeInitializerNode(expr);
+                }
+                else
+                {
+                    Token token = prep.getToken();
+            if (token.type == TokenType.LBRACE)
+                    {
             //            List<InitializerNode> list = parseInitializerList();
             //            result = (list != null);
             //            if (result)
@@ -1281,14 +1227,13 @@ namespace BlackC
             //                    node = arbor.makeInitializerNode(list);
             //                }
             //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint);
-            //        }
-            //    }
-            //    return node;
-            return null;
+                    }
+                else
+                    {
+            prep.putTokenBack(token);
+                    }
+                }
+                return node;            
         }
 
         /*(6.7.8) 
@@ -1435,13 +1380,8 @@ namespace BlackC
         //- statements --------------------------------------------------------
 
         /* (6.8)
-         statement:
-             labeled-statement
-             compound-statement
-             expression-statement
-             selection-statement
-             iteration-statement
-             jump-statement
+           statement:
+             labeled-statement | compound-statement | expression-statement | selection-statement | iteration-statement | jump-statement
         */
         public StatementNode parseStatement()
         {
@@ -1450,18 +1390,18 @@ namespace BlackC
             {
                 node = parseCompoundStatement();
             }
-            //if (node == null)
-            //{
-            //    node = parseExpressionStatement();
-            //}
-            //if (node == null)
-            //{
-            //    node = parseSelectionStatement();
-            //}
-            //if (node == null)
-            //{
-            //    node = parseIterationStatement();
-            //}
+            if (node == null)
+            {
+                node = parseExpressionStatement();
+            }
+            if (node == null)
+            {
+                node = parseSelectionStatement();
+            }
+            if (node == null)
+            {
+                node = parseIterationStatement();
+            }
             if (node == null)
             {
                 node = parseJumpStatement();
@@ -1470,59 +1410,48 @@ namespace BlackC
         }
 
         /*(6.8.1) 
-         labeled-statement:
-            identifier : statement
-            case constant-expression : statement
-            default : statement
+          labeled-statement:
+            ('identifier' ':' statement) | 
+            ('CASE' constant-expression ':' statement) | 
+            ('DEFAULT' ':' statement)
          */
         public StatementNode parseLabeledStatement()
         {
             StatementNode stmt = null;
-
             if (nextTokenIs(TokenType.IDENT))                       //identifier : statement
             {
                 Token labelid = prep.getToken();
                 if (nextTokenIs(TokenType.COLON))
                 {
+                    consumeToken();
                     StatementNode labelstmt = parseStatement();
                     stmt = arbor.makeLabelStatementNode(labelid, labelstmt);
                     return stmt;
                 }
             }
-
             if (nextTokenIs(TokenType.CASE))                        //case constant-expression : statement
             {
+                consumeToken();
                 ExprNode expr = parseConstantExpression();
                 consumeToken();                                     //skip ':'
                 StatementNode casestmt = parseStatement();
                 stmt = arbor.makeCaseStatementNode(expr, casestmt);
                 return stmt;
             }
-            
             if (nextTokenIs(TokenType.DEFAULT))                     //default : statement
             {
+                consumeToken();                                     //skip 'default';
                 consumeToken();                                     //skip ':'
                 StatementNode defstmt = parseStatement();
                 stmt = arbor.makeDefaultStatementNode(defstmt);
                 return stmt;
             }
-
             return stmt;
         }
 
         /*(6.8.2) 
          compound-statement:
-            { block-item-list[opt] }
-         
-          (6.8.2) 
-         block-item-list:
-            block-item
-            block-item-list block-item
-         
-          (6.8.2) 
-          block-item:
-              declaration
-              statement
+           '{' (declaration | statement)* '}'         
         */
         public CompoundStatementNode parseCompoundStatement()
         {
@@ -1530,21 +1459,23 @@ namespace BlackC
             if (nextTokenIs(TokenType.LBRACE))
             {
                 consumeToken();                                 //skip opening '{'
-                List<OILNode> list = null;
+                comp = new CompoundStatementNode();             //compound stmt may be empty
                 while (true)
                 {
-                    OILNode item = parseDeclaration();
-                    if (item == null)
+                    Declaration decl = parseDeclaration();
+                    if (decl != null)
                     {
-                        item = parseStatement();
+                        comp = arbor.makeCompoundStatementNode(comp, decl);
+                        continue;
                     }
-                    if (item == null)
+                    StatementNode stmt = parseStatement();
+                    if (stmt != null)
                     {
-                        break;
+                        comp = arbor.makeCompoundStatementNode(comp, stmt);
+                        continue;
                     }
-                    list.Add(item);
+                    break;
                 }
-                comp = arbor.makeCompoundStatementNode(list);
                 consumeToken();                                 //skip closing '}'
             }
             return comp;
@@ -1552,7 +1483,7 @@ namespace BlackC
 
         /*(6.8.3) 
          expression-statement:
-            expression[opt] ;
+           (expression)? ;
          */
         public StatementNode parseExpressionStatement()
         {
@@ -1563,42 +1494,41 @@ namespace BlackC
                 consumeToken();                                     //skip ending ';'
                 stmt = arbor.makeExpressionStatementNode(expr);
             }
-            else
+            else if (nextTokenIs(TokenType.SEMICOLON))
             {
-                if (nextTokenIs(TokenType.SEMICOLON))
-                {
-                    consumeToken();                                 //skip ending ';'
-                    stmt = arbor.makeEmptyStatementNode();
-                }
+                consumeToken();                                     //skip ending ';'
+                stmt = arbor.makeEmptyStatementNode();
             }
             return stmt;
         }
 
         /*(6.8.4) 
          selection-statement:
-            if ( expression ) statement
-            if ( expression ) statement else statement
-            switch ( expression ) statement
+           ('IF' '(' expression ')' statement ('ELSE' statement)?) | 
+           ('SWITCH' '(' expression ')' statement)
          */
         public StatementNode parseSelectionStatement()
         {
             StatementNode stmt = null;
-            if (nextTokenIs(TokenType.IF))                     //if ( expression ) statement
+            if (nextTokenIs(TokenType.IF))                      //if ( expression ) statement
             {
+                consumeToken();                                 //skip 'if'
                 consumeToken();                                 //skip opening '('
                 ExprNode ifexpr = parseExpression();
                 consumeToken();                                 //skip closing ')'
                 StatementNode thenstmt = parseStatement();
                 StatementNode elsestmt = null;
                 consumeToken();
-                if (nextTokenIs(TokenType.ELSE))               //if ( expression ) statement else statement
+                if (nextTokenIs(TokenType.ELSE))                //if ( expression ) statement else statement
                 {
+                    consumeToken();                             //skip 'else'
                     elsestmt = parseStatement();
                 }
                 stmt = arbor.makeIfStatementNode(ifexpr, thenstmt, elsestmt);
             }
             else if (nextTokenIs(TokenType.SWITCH))             //switch ( expression ) statement
             {
+                consumeToken();                                 //skip 'switch'
                 consumeToken();                                 //skip opening '('
                 ExprNode expr = parseExpression();
                 consumeToken();                                 //skip closing ')'
@@ -1610,48 +1540,123 @@ namespace BlackC
 
         /*(6.8.5) 
          iteration-statement:
-            while ( expression ) statement
-            do statement while ( expression ) ;
-            for ( expression[opt] ; expression[opt] ; expression[opt] ) statement
-            for ( declaration expression[opt] ; expression[opt] ) statement
+           ('WHILE' '(' expression ')' statement) | 
+           ('DO' statement 'WHILE' '(' expression ')' ';') | 
+           ('FOR' '(' (declaration | ((expression)? ';')) (expression)? ';' (expression)? ')' statement)
          */
         public StatementNode parseIterationStatement()
         {
-            StatementNode node = null;
-            Token token = prep.getToken();
-            if (token.type == TokenType.WHILE)             //while ( expression ) statement
+            StatementNode stmt = null;
+            if (nextTokenIs(TokenType.WHILE))                   //while ( expression ) statement
             {
-                token = prep.getToken();
+                consumeToken();                                 //skip 'while'
+                consumeToken();                                 //skip opening '('
                 ExprNode expr = parseExpression();
-                token = prep.getToken();
-                StatementNode stmt = parseStatement();
-                node = arbor.makeWhileStatementNode(expr, stmt);
+                consumeToken();                                 //skip opening ')'
+                StatementNode body = parseStatement();
+                stmt = arbor.makeWhileStatementNode(expr, body);
             }
-            else if (token.type == TokenType.DO)            //do statement while ( expression ) ;
+            else if (nextTokenIs(TokenType.DO))                 //do statement while ( expression ) ;
             {
-                StatementNode stmt = parseStatement();
-                token = prep.getToken();
-                token = prep.getToken();
+                consumeToken();                                 //skip 'do'
+                StatementNode body = parseStatement();
+                consumeToken();                                 //skip 'WHILE'
+                consumeToken();                                 //skip opening '('
                 ExprNode expr = parseExpression();
-                token = prep.getToken();
-                token = prep.getToken();
-                node = arbor.makeDoStatementNode(stmt, expr);
+                consumeToken();                                 //skip closing ')'
+                consumeToken();                                 //skip ';'
+                stmt = arbor.makeDoStatementNode(body, expr);
             }
-            else if (token.type == TokenType.FOR)       //for ( expression[opt] ; expression[opt] ; expression[opt] ) statement                                                        
+            else if (nextTokenIs(TokenType.FOR))                //for ( expression[opt] ; expression[opt] ; expression[opt] ) statement                                                        
             {
-                token = prep.getToken();
-                OILNode exprOrDecl1 = parseExpression();
-                if (exprOrDecl1 == null)                      //for ( declaration expression[opt] ; expression[opt] ) statement
+                consumeToken();                                 //skip 'for'
+                consumeToken();                                 //skip opening '('
+                ExprNode expr1 = parseExpression();
+                Declaration decl = null;
+                if (expr1 == null)                              //for ( declaration expression[opt] ; expression[opt] ) statement
                 {
-                    //exprOrDecl1 = parseDeclaration();
+                    decl = parseDeclaration();
                 }
-                token = prep.getToken();
+                consumeToken();                                 //skip ';'
                 ExprNode expr2 = parseExpression();
-                token = prep.getToken();
+                consumeToken();                                 //skip ';'
                 ExprNode expr3 = parseExpression();
-                token = prep.getToken();
-                StatementNode stmt = parseStatement();
-                node = arbor.makeForStatementNode(exprOrDecl1, expr2, expr3, stmt);
+                consumeToken();                                 //skip closing ')'
+                StatementNode body = parseStatement();
+                stmt = (expr1 != null) ? arbor.makeForStatementNode(expr1, expr2, expr3, body) :
+                                         arbor.makeForStatementNode(decl, expr2, expr3, body);
+            }
+            return stmt;
+        }
+
+        /*(6.8.6) 
+         jump-statement:
+           (('GOTO' 'identifier') | 'CONTINUE' | 'BREAK' | ('RETURN' (expression)?)) ;
+         */
+        public StatementNode parseJumpStatement()
+        {
+            StatementNode stmt = null;
+            if (nextTokenIs(TokenType.GOTO))                //goto identifier ;
+            {
+                consumeToken();                             //skip 'goto'
+                Token labelid = prep.getToken();
+                stmt = arbor.makeGotoStatementNode(labelid);
+            }
+            else if (nextTokenIs(TokenType.CONTINUE))       //continue ;
+            {
+                consumeToken();                             //skip 'continue'
+                stmt = arbor.makeContinueStatementNode();
+            }
+            else if (nextTokenIs(TokenType.BREAK))          //break ;
+            {
+                consumeToken();                             //skip 'break'
+                stmt = arbor.makeBreakStatementNode();
+            }
+            else if (nextTokenIs(TokenType.RETURN))         //return expression[opt] ;
+            {
+                consumeToken();                             //skip 'return'
+                ExprNode expr = parseExpression();
+                stmt = arbor.makeReturnStatementNode(expr);
+            }
+            consumeToken();                                 //skip ending ';'
+            return stmt;
+        }
+
+        //- expressions -------------------------------------------------------
+
+        /*(6.5.1) 
+         primary-expression:
+           'identifier' | 'constant' | 'string-literal' | ('(' expression ')')
+         */
+        public ExprNode parsePrimaryExpression()
+        {
+            ExprNode node = null;
+            Token token = prep.getToken();
+            if (token.type == TokenType.IDENT)
+            {
+                node = arbor.getExprIdentNode(token);
+            }
+            else if (token.type == TokenType.INTCONST)
+            {
+                node = arbor.makeIntegerConstantNode(token);
+            }
+            else if (token.type == TokenType.FLOATCONST)
+            {
+                node = arbor.makeFloatConstantNode(token);
+            }
+            else if (token.type == TokenType.CHARCONST)
+            {
+                node = arbor.makeCharConstantNode(token);
+            }
+            else if (token.type == TokenType.STRINGCONST)
+            {
+                node = arbor.makeStringConstantNode(token);
+            }
+            else if (token.type == TokenType.LPAREN)            //( expression )
+            {
+                ExpressionNode expr = parseExpression();
+                consumeToken();                                 //skip ')'
+                node = arbor.makeSubexpressionNode(expr);
             }
             else
             {
@@ -1660,336 +1665,191 @@ namespace BlackC
             return node;
         }
 
-        /*(6.8.6) 
-         jump-statement:
-            goto identifier ;
-            continue ;
-            break ;
-            return expression[opt] ;
-         */
-        public StatementNode parseJumpStatement()
-        {
-            StatementNode stmt = null;
-
-            Token token = prep.getToken();
-            if (token.type == TokenType.GOTO)               //goto identifier ;
-            {
-                Token labelid = prep.getToken();
-                stmt = arbor.makeGotoStatementNode(labelid);
-            }
-            else if (token.type == TokenType.CONTINUE)      //continue ;
-            {
-                stmt = arbor.makeContinueStatementNode();                
-            }
-            else if (token.type == TokenType.BREAK)         //break ;
-            {
-                stmt = arbor.makeBreakStatementNode();                
-            }
-            else if (token.type == TokenType.RETURN)        //return expression[opt] ;
-            {
-                ExprNode expr = parseExpression();
-                stmt = arbor.makeReturnStatementNode(expr);                
-            }
-            else
-            {
-                prep.putTokenBack(token);
-            }
-            consumeToken();            //skip ending ';'
-            return stmt;
-        }
-
-        //- expressions -------------------------------------------------------
-
-        /*(6.5.1) 
-         primary-expression:
-            identifier
-            constant
-            string-literal
-            ( expression )
-         */
-        public ExprNode parsePrimaryExpression()
-        {
-            //    int cuepoint = prep.record();
-            //    Token token = prep.getToken();
-            //    ExprNode node = arbor.getExprIdentNode(token);
-            //    bool result = (node != null);
-            //    if (!result)
-            //    {
-            //        result = (token.type == TokenType.INTCONST);
-            //        if (result)
-            //        {
-            //            node = arbor.makeIntegerConstantNode(token);
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        result = (token.type == TokenType.FLOATCONST);
-            //        if (result)
-            //        {
-            //            node = arbor.makeFloatConstantNode(token);
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        result = (token.type == TokenType.CHARCONST);
-            //        if (result)
-            //        {
-            //            node = arbor.makeCharConstantNode(token);
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        result = (token.type == TokenType.STRINGCONST);
-            //        if (result)
-            //        {
-            //            node = arbor.makeStringConstantNode(token);
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        node = arbor.getExprEnumNode(token);
-            //        result = (node != null);
-            //    }
-            //    if (!result)
-            //    {
-            //        prep.rewind(cuepoint);                   //( expression )
-            //        token = prep.getToken();
-            //        result = (token.type == TokenType.LPAREN);
-            //        if (result)
-            //        {
-            //            ExpressionNode expr = parseExpression();
-            //            if (result)
-            //            {
-            //                token = prep.getToken();
-            //                result = (token.type == TokenType.RPAREN);
-            //                if (result)
-            //                {
-            //                    node = arbor.makeSubexpressionNode(expr);
-            //                }
-            //            }
-            //        }
-            //    }
-            //    if (!result)
-            //    {
-            //        prep.rewind(cuepoint);
-            //    }
-            //    return node;
-            return null;
-        }
-
         /*(6.5.2) 
          postfix-expression:
-            primary-expression
-            ( type-name ) { initializer-list }
-            ( type-name ) { initializer-list , }
-            postfix-expression [ expression ]
-            postfix-expression ( argument-expression-list[opt] )
-            postfix-expression . identifier
-            postfix-expression -> identifier
-            postfix-expression ++
-            postfix-expression --
+           (primary-expression | ('(' type-name ')' '{' initializer-list (',')? '}')) |
+           (('[' expression ']') | ('(' (argument-expression-list)? ')') | ('.' 'identifier') | ('->' 'identifier') | '++' | '--')*
          */
         public ExprNode parsePostfixExpression()
         {
-            //    int cuepoint = prep.record();
-            //    ExprNode node = parsePrimaryExpression();         //primary-expression
-            //    bool result = (node != null);
-            //    if (!result)
-            //    {
-            //        int cuepoint2 = prep.record();
-            //        Token token = prep.getToken();           //( type-name ) { initializer-list }
-            //        result = (token.type == TokenType.LPAREN);
-            //        if (result)
-            //        {
-            //            TypeNameNode name = pdeclar.parseTypeName();
-            //            result = (name != null);
-            //            if (result)
-            //            {
-            //                token = prep.getToken();
-            //                result = (token.type == TokenType.RPAREN);
-            //                if (result)
-            //                {
-            //                    token = prep.getToken();
-            //                    result = (token.type == TokenType.LBRACE);
-            //                    if (result)
-            //                    {
-            //                        List<InitializerNode> initList = pdeclar.parseInitializerList();
-            //                        result = (initList != null);
-            //                        if (result)
-            //                        {
-            //                            token = prep.getToken();
-            //                            result = (token.type == TokenType.RBRACE);
-            //                            if (!result)
-            //                            {
-            //                                result = (token.type == TokenType.COMMA);             //the comma is optional
-            //                                if (result)
-            //                                {
-            //                                    token = prep.getToken();
-            //                                    result = (token.type == TokenType.RBRACE);
-            //                                    if (result)
-            //                                    {
-            //                                        node = arbor.makeTypeInitExprNode(node);
-            //                                        result = (node != null);
-            //                                    }
+            ExprNode node = parsePrimaryExpression();         //primary-expression
+            if (node == null)
+            {
+                Token token = prep.getToken();           //( type-name ) { initializer-list }
+                if (token.type == TokenType.LPAREN)
+                {
+                    Declaration name = parseTypeName();
+                    consumeToken();
+                    consumeToken();
+                    //List<InitializerNode> initList = parseInitializerList();
+                    //                        result = (initList != null);
+                    //                        if (result)
+                    //                        {
+                    //                            token = prep.getToken();
+                    //                            result = (token.type == TokenType.RBRACE);
+                    //                            if (!result)
+                    //                            {
+                    //                                result = (token.type == TokenType.COMMA);             //the comma is optional
+                    //                                if (result)
+                    //                                {
+                    //                                    token = prep.getToken();
+                    //                                    result = (token.type == TokenType.RBRACE);
+                    //                                    if (result)
+                    //                                    {
+                    //                                        node = arbor.makeTypeInitExprNode(node);
+                    //                                        result = (node != null);
+                    //                                    }
 
-            //                                }
-            //                            }
-            //                        }
-            //                    }
-            //                }
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //        }
-            //    }
-            //    bool notEmpty = result;
-            //    while (result)
-            //    {
-            //        int cuepoint2 = prep.record();           //postfix-expression [ expression ]
-            //        Token token = prep.getToken();
-            //        result = (token.type == TokenType.LBRACKET);
-            //        if (result)
-            //        {
-            //            ExpressionNode expr = parseExpression();
-            //            result = (expr != null);
-            //            if (result)
-            //            {
-            //                token = prep.getToken();
-            //                result = (token.type == TokenType.RBRACKET);
-            //                if (result)
-            //                {
-            //                    node = arbor.makeIndexExprNode(node, expr);
-            //                    result = (node != null);
-            //                }
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);                  //postfix-expression ( argument-expression-list[opt] )
-            //            token = prep.getToken();
-            //            result = (token.type == TokenType.LPAREN);
-            //            if (result)
-            //            {
-            //                List<AssignExpressionNode> argList = parseArgExpressionList();
-            //                token = prep.getToken();
-            //                result = (token.type == TokenType.RPAREN);
-            //                if (result)
-            //                {
-            //                    node = arbor.makeFuncCallExprNode(node, argList);
-            //                    result = (node != null);
-            //                }
+                    //                                }
+                    //                            }
+                    //                        }
+                    //                    }
+                    //                }
+                    //            }
+                    //        }
+                    //        if (!result)
+                    //        {
+                    //            prep.rewind(cuepoint2);
+                    //        }
+                    //    }
+                    //    bool notEmpty = result;
+                    //    while (result)
+                    //    {
+                    //        int cuepoint2 = prep.record();           //postfix-expression [ expression ]
+                    //        Token token = prep.getToken();
+                    //        result = (token.type == TokenType.LBRACKET);
+                    //        if (result)
+                    //        {
+                    //            ExpressionNode expr = parseExpression();
+                    //            result = (expr != null);
+                    //            if (result)
+                    //            {
+                    //                token = prep.getToken();
+                    //                result = (token.type == TokenType.RBRACKET);
+                    //                if (result)
+                    //                {
+                    //                    node = arbor.makeIndexExprNode(node, expr);
+                    //                    result = (node != null);
+                    //                }
+                    //            }
+                    //        }
+                    //        if (!result)
+                    //        {
+                    //            prep.rewind(cuepoint2);                  //postfix-expression ( argument-expression-list[opt] )
+                    //            token = prep.getToken();
+                    //            result = (token.type == TokenType.LPAREN);
+                    //            if (result)
+                    //            {
+                    //                List<AssignExpressionNode> argList = parseArgExpressionList();
+                    //                token = prep.getToken();
+                    //                result = (token.type == TokenType.RPAREN);
+                    //                if (result)
+                    //                {
+                    //                    node = arbor.makeFuncCallExprNode(node, argList);
+                    //                    result = (node != null);
+                    //                }
 
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);                  //postfix-expression . identifier
-            //            token = prep.getToken();
-            //            result = (token.type == TokenType.PERIOD);
-            //            if (result)
-            //            {
-            //                token = prep.getToken();
-            //                IdentNode idNode = arbor.getFieldIdentNode(token);
-            //                result = (idNode != null);
-            //                if (result)
-            //                {
-            //                    node = arbor.makeFieldExprNode(node, idNode);
-            //                    result = (node != null);
-            //                }
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);                  //postfix-expression -> identifier
-            //            token = prep.getToken();
-            //            result = (token.type == TokenType.ARROW);
-            //            if (result)
-            //            {
-            //                token = prep.getToken();
-            //                IdentNode idNode = arbor.getFieldIdentNode(token);
-            //                result = (idNode != null);
-            //                if (result)
-            //                {
-            //                    node = arbor.makeRefFieldExprNode(node, idNode);
-            //                    result = (node != null);
-            //                }
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);                  //postfix-expression ++
-            //            token = prep.getToken();
-            //            result = (token.type == TokenType.PLUSPLUS);
-            //            result = (node != null);
-            //            if (result)
-            //            {
-            //                node = arbor.makePostPlusPlusExprNode(node);
-            //                result = (node != null);
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);                  //postfix-expression --
-            //            token = prep.getToken();
-            //            result = (token.type == TokenType.MINUSMINUS);
-            //            result = (node != null);
-            //            if (result)
-            //            {
-            //                node = arbor.makePostMinusMinusExprNode(node);
-            //                result = (node != null);
-            //            }
-            //            if (!result)
-            //            {
-            //                prep.rewind(cuepoint2);
-            //            }
-            //        }
-            //    }
-            //    if (!notEmpty)
-            //    {
-            //        prep.rewind(cuepoint);
-            //    }
-            //    return node;
+                    //            }
+                    //        }
+                    //        if (!result)
+                    //        {
+                    //            prep.rewind(cuepoint2);                  //postfix-expression . identifier
+                    //            token = prep.getToken();
+                    //            result = (token.type == TokenType.PERIOD);
+                    //            if (result)
+                    //            {
+                    //                token = prep.getToken();
+                    //                IdentNode idNode = arbor.getFieldIdentNode(token);
+                    //                result = (idNode != null);
+                    //                if (result)
+                    //                {
+                    //                    node = arbor.makeFieldExprNode(node, idNode);
+                    //                    result = (node != null);
+                    //                }
+                    //            }
+                    //        }
+                    //        if (!result)
+                    //        {
+                    //            prep.rewind(cuepoint2);                  //postfix-expression -> identifier
+                    //            token = prep.getToken();
+                    //            result = (token.type == TokenType.ARROW);
+                    //            if (result)
+                    //            {
+                    //                token = prep.getToken();
+                    //                IdentNode idNode = arbor.getFieldIdentNode(token);
+                    //                result = (idNode != null);
+                    //                if (result)
+                    //                {
+                    //                    node = arbor.makeRefFieldExprNode(node, idNode);
+                    //                    result = (node != null);
+                    //                }
+                    //            }
+                    //        }
+                    //        if (!result)
+                    //        {
+                    //            prep.rewind(cuepoint2);                  //postfix-expression ++
+                    //            token = prep.getToken();
+                    //            result = (token.type == TokenType.PLUSPLUS);
+                    //            result = (node != null);
+                    //            if (result)
+                    //            {
+                    //                node = arbor.makePostPlusPlusExprNode(node);
+                    //                result = (node != null);
+                    //            }
+                    //        }
+                    //        if (!result)
+                    //        {
+                    //            prep.rewind(cuepoint2);                  //postfix-expression --
+                    //            token = prep.getToken();
+                    //            result = (token.type == TokenType.MINUSMINUS);
+                    //            result = (node != null);
+                    //            if (result)
+                    //            {
+                    //                node = arbor.makePostMinusMinusExprNode(node);
+                    //                result = (node != null);
+                    //            }
+                    //            if (!result)
+                    //            {
+                    //                prep.rewind(cuepoint2);
+                    //            }
+                    //        }
+                }
+                else
+                {
+                    prep.putTokenBack(token);
+                }
+            }
+            return node;
+        }
+
+        public ExprNode parsePostfixExpressionTail()
+        {
             return null;
         }
 
         /*(6.5.2) 
          argument-expression-list:
-            assignment-expression
-            argument-expression-list , assignment-expression
+           assignment-expression  (',' assignment-expression)*
          */
-        public List<ExprNode> parseArgExpressionList()
+        public ExprNode parseArgExpressionList()
         {
-            //    List<AssignExpressionNode> list = null;
-            //    AssignExpressionNode node = parseAssignExpression();
-            //    bool result = (node != null);
-            //    if (result)
-            //    {
-            //        list = new List<AssignExpressionNode>();
-            //        list.Add(node);
-            //    }
-            //    while (result)
-            //    {
-            //        int cuepoint2 = prep.record();
-            //        Token token = prep.getToken();
-            //        result = (token.type == TokenType.COMMA);
-            //        if (result)
-            //        {
-            //            node = parseAssignExpression();
-            //            result = (node != null);
-            //            if (result)
-            //            {
-            //                list.Add(node);
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //        }
-            //    }
-            //    return list;
-            return null;
+            ExprNode list = parseAssignExpression();
+            if (list != null)
+            {
+                while (true)
+                {
+                    Token token = prep.getToken();
+                    if (token.type == TokenType.COMMA)
+                    {
+                        ExprNode expr = parseAssignExpression();
+                        list = arbor.makeArgumentExprList(list, expr);
+                        continue;
+                    }
+                    prep.putTokenBack(token);
+                    break;
+                }
+            }
+            return list;
         }
 
         /*(6.5.3) 
@@ -2154,48 +2014,28 @@ namespace BlackC
          */
         public ExprNode parseCastExpression()
         {
-            //    ExprNode node = parseUnaryExpression();
-            //    bool result = (node != null);
-            //    if (!result)
-            //    {
-            //        int cuepoint2 = prep.record();
-            //        Token token = prep.getToken();
-            //        result = (token.type == TokenType.LPAREN);
-            //        if (result)
-            //        {
-            //            TypeNameNode name = pdeclar.parseTypeName();
-            //            result = (name != null);
-            //            if (result)
-            //            {
-            //                token = prep.getToken();
-            //                result = (token.type == TokenType.RPAREN);
-            //                if (result)
-            //                {
-            //                    ExprNode rhs = parseCastExpression();
-            //                    result = (rhs != null);
-            //                    if (result)
-            //                    {
-            //                        node = arbor.makeCastExprNode(name, rhs);
-            //                        result = (node != null);
-            //                    }
-            //                }
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //        }
-            //    }
-            //    return node;
-            return null;
+            ExprNode nameList = null;
+            Token token = prep.getToken();
+            while (token.type == TokenType.LPAREN)
+            {
+                consumeToken();
+                Declaration name = parseTypeName();
+                consumeToken();
+                nameList = arbor.makeCastExprNode(nameList, name);
+                token = prep.getToken();
+            }
+            prep.putTokenBack(token);
+            ExprNode node = parseUnaryExpression();
+            if (nameList != null)
+            {
+                node = arbor.makeCastExprNode(nameList, node);
+            }
+            return node;
         }
 
         /*(6.5.5) 
          multiplicative-expression:
-            cast-expression
-            multiplicative-expression * cast-expression
-            multiplicative-expression / cast-expression
-            multiplicative-expression % cast-expression
+           cast-expression ('*'|'/'|'%' cast-expression)*
          */
         public ExprNode parseMultExpression()
         {
@@ -2211,13 +2051,13 @@ namespace BlackC
                         lhs = arbor.makeMultiplyExprNode(lhs, rhs);
                         continue;
                     }
-                    if (token.type == TokenType.SLASH)
+                    else if (token.type == TokenType.SLASH)
                     {
                         ExprNode rhs = parseCastExpression();
                         lhs = arbor.makeDivideExprNode(lhs, rhs);
                         continue;
                     }
-                    if (token.type == TokenType.PERCENT)
+                    else if (token.type == TokenType.PERCENT)
                     {
                         ExprNode rhs = parseCastExpression();
                         lhs = arbor.makeModuloExprNode(lhs, rhs);
@@ -2232,9 +2072,7 @@ namespace BlackC
 
         /*(6.5.6) 
          additive-expression:
-            multiplicative-expression
-            additive-expression + multiplicative-expression
-            additive-expression - multiplicative-expression
+           multiplicative-expression ('+'|'-' multiplicative-expression)*
          */
         public ExprNode parseAddExpression()
         {
@@ -2244,13 +2082,13 @@ namespace BlackC
                 while (true)
                 {
                     Token token = prep.getToken();
-                    if (token.type == TokenType.PLUS) 
+                    if (token.type == TokenType.PLUS)
                     {
                         ExprNode rhs = parseMultExpression();
                         lhs = arbor.makeAddExprNode(lhs, rhs);
                         continue;
                     }
-                    if (token.type == TokenType.MINUS) 
+                    if (token.type == TokenType.MINUS)
                     {
                         ExprNode rhs = parseMultExpression();
                         lhs = arbor.makeSubtractExprNode(lhs, rhs);
@@ -2265,9 +2103,7 @@ namespace BlackC
 
         /*(6.5.7) 
          shift-expression:
-            additive-expression
-            shift-expression << additive-expression
-            shift-expression >> additive-expression
+           additive-expression ('<<'|'>>' additive-expression)*
          */
         public ExprNode parseShiftExpression()
         {
@@ -2298,93 +2134,50 @@ namespace BlackC
 
         /*(6.5.8) 
          relational-expression:
-            shift-expression
-            relational-expression < shift-expression
-            relational-expression > shift-expression
-            relational-expression <= shift-expression
-            relational-expression >= shift-expression
+           shift-expression (('<'|'>'|'<='|'>=') shift-expression)*
          */
         public ExprNode parseRelationalExpression()
         {
-            //    ExprNode lhs = parseShiftExpression();
-            //    bool result = (lhs != null);
-            //    while (result)
-            //    {
-            //        int cuepoint2 = prep.record();
-            //        Token token = prep.getToken();
-            //        result = (token.type == TokenType.LESSTHAN);
-            //        if (result)
-            //        {
-            //            ExprNode rhs = parseShiftExpression();
-            //            result = (rhs != null);
-            //            if (result)
-            //            {
-            //                lhs = arbor.makeLessThanExprNode(lhs, rhs);
-            //                result = (lhs != null);
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //            token = prep.getToken();
-            //            result = (token.type == TokenType.GTRTHAN);
-            //            if (result)
-            //            {
-            //                ExprNode rhs = parseShiftExpression();
-            //                result = (rhs != null);
-            //                if (result)
-            //                {
-            //                    lhs = arbor.makeGreaterThanExprNode(lhs, rhs);
-            //                    result = (lhs != null);
-            //                }
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //            token = prep.getToken();
-            //            result = (token.type == TokenType.LESSEQUAL);
-            //            if (result)
-            //            {
-            //                ExprNode rhs = parseShiftExpression();
-            //                result = (rhs != null);
-            //                if (result)
-            //                {
-            //                    lhs = arbor.makeLessEqualExprNode(lhs, rhs);
-            //                    result = (lhs != null);
-            //                }
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //            token = prep.getToken();
-            //            result = (token.type == TokenType.GTREQUAL);
-            //            if (result)
-            //            {
-            //                ExprNode rhs = parseShiftExpression();
-            //                result = (rhs != null);
-            //                if (result)
-            //                {
-            //                    lhs = arbor.makeGreaterEqualExprNode(lhs, rhs);
-            //                    result = (lhs != null);
-            //                }
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //        }
-            //    }
-            //    return lhs;
-            return null;
+            ExprNode lhs = parseShiftExpression();
+            if (lhs != null)
+            {
+                while (true)
+                {
+                    Token token = prep.getToken();
+                    if (token.type == TokenType.LESSTHAN)
+                    {
+                        ExprNode rhs = parseShiftExpression();
+                        lhs = arbor.makeLessThanExprNode(lhs, rhs);
+                        continue;
+                    }
+                    if (token.type == TokenType.GTRTHAN)
+                    {
+                        ExprNode rhs = parseShiftExpression();
+                        lhs = arbor.makeGreaterThanExprNode(lhs, rhs);
+                        continue;
+                    }
+                    if (token.type == TokenType.LESSEQUAL)
+                    {
+                        ExprNode rhs = parseShiftExpression();
+                        lhs = arbor.makeLessEqualExprNode(lhs, rhs);
+                        continue;
+                    }
+                    if (token.type == TokenType.GTREQUAL)
+                    {
+                        ExprNode rhs = parseShiftExpression();
+                        lhs = arbor.makeGreaterEqualExprNode(lhs, rhs);
+                        continue;
+                    }
+                    prep.putTokenBack(token);
+                    break;
+                }
+            }
+            return lhs;
         }
 
         /*(6.5.9) 
          equality-expression:
-            relational-expression
-            equality-expression == relational-expression
-            equality-expression != relational-expression
+           relational-expression (('=='|'!=') relational-expression)*
          */
         public ExprNode parseEqualityExpression()
         {
@@ -2415,210 +2208,149 @@ namespace BlackC
 
         /*(6.5.10) 
          AND-expression:
-            equality-expression
-            AND-expression & equality-expression
+           equality-expression ('&' equality-expression)*
          */
         public ExprNode parseANDExpression()
         {
-            //    ExprNode lhs = parseEqualityExpression();
-            //    bool result = (lhs != null);
-            //    while (result)
-            //    {
-            //        int cuepoint2 = prep.record();
-            //        Token token = prep.getToken();
-            //        result = (token.type == TokenType.AMPERSAND);
-            //        if (result)
-            //        {
-            //            ExprNode rhs = parseEqualityExpression();
-            //            result = (rhs != null);
-            //            if (result)
-            //            {
-            //                lhs = arbor.makeANDExprNode(lhs, rhs);
-            //                result = (lhs != null);
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //        }
-            //    }
-            //    return lhs;
-            return null;
+            ExprNode lhs = parseEqualityExpression();
+            if (lhs != null)
+            {
+                while (true)
+                {
+                    Token token = prep.getToken();
+                    if (token.type == TokenType.AMPERSAND)
+                    {
+                        ExprNode rhs = parseEqualityExpression();
+                        lhs = arbor.makeANDExprNode(lhs, rhs);
+                        continue;
+                    }
+                    prep.putTokenBack(token);
+                    break;
+                }
+            }
+            return lhs;
         }
 
         /*(6.5.11) 
          exclusive-OR-expression:
-            AND-expression
-            exclusive-OR-expression ^ AND-expression
+           AND-expression ('^' AND-expression)*
          */
         public ExprNode parseXORExpression()
         {
-            //    ExprNode lhs = parseANDExpression();
-            //    bool result = (lhs != null);
-            //    while (result)
-            //    {
-            //        int cuepoint2 = prep.record();
-            //        Token token = prep.getToken();
-            //        result = (token.type == TokenType.tCARET);
-            //        if (result)
-            //        {
-            //            ExprNode rhs = parseANDExpression();
-            //            result = (rhs != null);
-            //            if (result)
-            //            {
-            //                lhs = arbor.makeXORExprNode(lhs, rhs);
-            //                result = (lhs != null);
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //        }
-            //    }
-            //    return lhs;
-            return null;
+            ExprNode lhs = parseANDExpression();
+            if (lhs != null)
+            {
+                while (true)
+                {
+                    Token token = prep.getToken();
+                    if (token.type == TokenType.CARET)
+                    {
+                        ExprNode rhs = parseANDExpression();
+                        lhs = arbor.makeXORExprNode(lhs, rhs);
+                        continue;
+                    }
+                    prep.putTokenBack(token);
+                    break;
+                }
+            }
+            return lhs;
         }
 
         /*(6.5.12) 
          inclusive-OR-expression:
-            exclusive-OR-expression
-            inclusive-OR-expression | exclusive-OR-expression
+           exclusive-OR-expression ('|' exclusive-OR-expression)*
          */
         public ExprNode parseORExpression()
         {
-            //    ExprNode lhs = parseXORExpression();
-            //    bool result = (lhs != null);
-            //    while (result)
-            //    {
-            //        int cuepoint2 = prep.record();
-            //        Token token = prep.getToken();
-            //        result = (token.type == TokenType.BAR);
-            //        if (result)
-            //        {
-            //            ExprNode rhs = parseXORExpression();
-            //            result = (rhs != null);
-            //            if (result)
-            //            {
-            //                lhs = arbor.makeORExprNode(lhs, rhs);
-            //                result = (lhs != null);
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //        }
-            //    }
-            //    return lhs;
-            return null;
+            ExprNode lhs = parseXORExpression();
+            if (lhs != null)
+            {
+                while (true)
+                {
+                    Token token = prep.getToken();
+                    if (token.type == TokenType.BAR)
+                    {
+                        ExprNode rhs = parseXORExpression();
+                        lhs = arbor.makeORExprNode(lhs, rhs);
+                        continue;
+                    }
+                    prep.putTokenBack(token);
+                    break;
+                }
+            }
+            return lhs;
         }
 
         /*(6.5.13) 
          logical-AND-expression:
-            inclusive-OR-expression
-            logical-AND-expression && inclusive-OR-expression
+           inclusive-OR-expression ('&&' inclusive-OR-expression)*
          */
         public ExprNode parseLogicalANDExpression()
         {
-            //    ExprNode lhs = parseORExpression();
-            //    bool result = (lhs != null);
-            //    while (result)
-            //    {
-            //        int cuepoint2 = prep.record();
-            //        Token token = prep.getToken();
-            //        result = (token.type == TokenType.DOUBLEAMP);
-            //        if (result)
-            //        {
-            //            ExprNode rhs = parseORExpression();
-            //            result = (rhs != null);
-            //            if (result)
-            //            {
-            //                lhs = arbor.makeLogicalANDExprNode(lhs, rhs);
-            //                result = (lhs != null);
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //        }
-            //    }
-            //    return lhs;
-            return null;
+            ExprNode lhs = parseORExpression();
+            if (lhs != null)
+            {
+                while (true)
+                {
+                    Token token = prep.getToken();
+                    if (token.type == TokenType.AMPAMP)
+                    {
+                        ExprNode rhs = parseORExpression();
+                        lhs = arbor.makeLogicalANDExprNode(lhs, rhs);
+                        continue;
+                    }
+                    prep.putTokenBack(token);
+                    break;
+                }
+            }
+            return lhs;
         }
 
         /*(6.5.14) 
          logical-OR-expression:
-            logical-AND-expression
-            logical-OR-expression || logical-AND-expression
+           logical-AND-expression ('||' logical-AND-expression)*
          */
         public ExprNode parseLogicalORExpression()
         {
-            //    ExprNode lhs = parseLogicalANDExpression();
-            //    bool result = (lhs != null);
-            //    while (result)
-            //    {
-            //        int cuepoint2 = prep.record();
-            //        Token token = prep.getToken();
-            //        result = (token.type == TokenType.DOUBLEBAR);
-            //        if (result)
-            //        {
-            //            ExprNode rhs = parseLogicalANDExpression();
-            //            result = (rhs != null);
-            //            if (result)
-            //            {
-            //                lhs = arbor.makeLogicalORExprNode(lhs, rhs);
-            //                result = (lhs != null);
-            //            }
-            //        }
-            //        if (!result)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //        }
-            //    }
-            //    return lhs;
-            return null;
+            ExprNode lhs = parseLogicalANDExpression();
+            if (lhs != null)
+            {
+                while (true)
+                {
+                    Token token = prep.getToken();
+                    if (token.type == TokenType.BARBAR)
+                    {
+                        ExprNode rhs = parseLogicalANDExpression();
+                        lhs = arbor.makeLogicalORExprNode(lhs, rhs);
+                        continue;
+                    }
+                    prep.putTokenBack(token);
+                    break;
+                }
+            }
+            return lhs;
         }
 
         /*(6.5.15) 
          conditional-expression:
-            logical-OR-expression
-            logical-OR-expression ? expression : conditional-expression
+           logical-OR-expression ('?' expression ':' conditional-expression)?
          */
         public ExprNode parseConditionalExpression()
         {
-            //    ExprNode lhs = parseLogicalORExpression();
-            //    bool result = (lhs != null);
-            //    if (result)
-            //    {
-            //        int cuepoint2 = prep.record();
-            //        Token token = prep.getToken();
-            //        bool result2 = (token.type == TokenType.QUESTION);
-            //        if (result2)
-            //        {
-            //            ExpressionNode expr = parseExpression();
-            //            result = (expr != null);
-            //            if (result2)
-            //            {
-            //                token = prep.getToken();
-            //                result2 = (token.type == TokenType.COLON);
-            //                if (result2)
-            //                {
-            //                    ExprNode condit = parseConditionalExpression();
-            //                    result = (condit != null);
-            //                    if (result)
-            //                    {
-            //                        lhs = arbor.makeConditionalExprNode(lhs, expr, condit);
-            //                        result = (lhs != null);
-            //                    }
-            //                }
-            //            }
-            //        }
-            //        if (!result2)
-            //        {
-            //            prep.rewind(cuepoint2);
-            //        }
-            //    }
-            //    return lhs;
-            return null;
+            ExprNode lhs = parseLogicalORExpression();
+            if (lhs != null)
+            {
+                Token token = prep.getToken();
+                if (nextTokenIs(TokenType.QUESTION))
+                {
+                    consumeToken();                                             //skip '?'
+                    ExpressionNode expr = parseExpression();
+                    consumeToken();                                             //skip ':'
+                    ExprNode condit = parseConditionalExpression();
+                    lhs = arbor.makeConditionalExprNode(lhs, expr, condit);
+                }
+            }
+            return lhs;
         }
 
         //the last three productions in this section are referenced by productions in other sections
@@ -2626,103 +2358,92 @@ namespace BlackC
 
         /*(6.5.16) 
          assignment-expression:
-            conditional-expression
-            unary-expression assignment-operator assignment-expression
+          (unary-expression ('='|'*='|'/='|'%='|'+='|'-='|'<<='|'>>='|'&='|'^='|'|='))* conditional-expression
          */
-        //for parsing purposes, we change the second rule to:
-        //conditional-expression assignment-operator assignment-expression
-        public ExprNode parseAssignExpression()
+        public AssignExpressionNode parseAssignExpression()
         {
-            //    ExprNode lhs = parseConditionalExpression();
-            //    AssignOperatorNode oper = null;
-            //    ExprNode rhs = null;
-            //    bool result = (lhs != null);
-            //    if (result)
-            //    {
-            //        int cuepoint = prep.record();
-            //        oper = parseAssignOperator();
-            //        bool result2 = (oper != null);
-            //        if (result2)
-            //        {
-            //            rhs = parseAssignExpression();
-            //            result = (rhs != null);
-            //        }
-            //        if (!result2)
-            //        {
-            //            prep.rewind(cuepoint);
-            //        }
-            //    }
-            //    return arbor.makeAssignExpressionNode(lhs, oper, rhs);
-            return null;
-        }
-
-        /* (6.5.16) 
-         assignment-operator: one of
-            = *= /= %= += -= <<= >>= &= ^= |=
-         */
-        public ExprNode parseAssignOperator()
-        {
-            //    AssignOperatorNode node = null;
-            //    int cuepoint = prep.record();
-            //    Token token = prep.getToken();
-            //    switch (token.ToString())
-            //    {
-            //        case "EQUAL":
-            //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.EQUAL);
-            //            break;
-
-            //        case "MULTEQUAL":
-            //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.MULTEQUAL);
-            //            break;
-
-            //        case "SLASHEQUAL":
-            //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.SLASHEQUAL);
-            //            break;
-
-            //        case "PERCENTEQUAL":
-            //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.PERCENTEQUAL);
-            //            break;
-
-            //        case "PLUSEQUAL":
-            //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.PLUSEQUAL);
-            //            break;
-
-            //        case "MINUSEQUAL":
-            //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.MINUSEQUAL);
-            //            break;
-
-            //        case "LSHIFTEQUAL":
-            //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.LSHIFTEQUAL);
-            //            break;
-
-            //        case "RSHIFTEQUAL":
-            //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.RSHIFTEQUAL);
-            //            break;
-
-            //        case "AMPEQUAL":
-            //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.AMPEQUAL);
-            //            break;
-
-            //        case "CARETEQUAL":
-            //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.CARETEQUAL);
-            //            break;
-
-            //        case "BAREQUAL":
-            //            node = new AssignOperatorNode(AssignOperatorNode.OPERATOR.BAREQUAL);
-            //            break;
-            //    }
-            //    if (node == null)
-            //    {
-            //        prep.rewind(cuepoint);
-            //    }
-            //    return node;
-            return null;
+            ExprNode lhs = parseConditionalExpression();
+            AssignExpressionNode expr = new AssignExpressionNode(lhs);
+            if (lhs != null)
+            {
+                while (true)
+                {
+                    Token token = prep.getToken();
+                    if (token.type == TokenType.EQUAL)
+                    {
+                        ExprNode rhs = parseConditionalExpression();
+                        expr = arbor.makeAssignExpressionNode(expr, ASSIGNOP.EQUAL, rhs);
+                        continue;
+                    }
+                    else if (token.type == TokenType.MULTEQUAL)
+                    {
+                        ExprNode rhs = parseConditionalExpression();
+                        expr = arbor.makeAssignExpressionNode(expr, ASSIGNOP.MULTEQUAL, rhs);
+                        continue;
+                    }
+                    else if (token.type == TokenType.SLASHEQUAL)
+                    {
+                        ExprNode rhs = parseConditionalExpression();
+                        expr = arbor.makeAssignExpressionNode(expr, ASSIGNOP.SLASHEQUAL, rhs);
+                        continue;
+                    }
+                    else if (token.type == TokenType.PERCENTEQUAL)
+                    {
+                        ExprNode rhs = parseConditionalExpression();
+                        expr = arbor.makeAssignExpressionNode(expr, ASSIGNOP.PERCENTEQUAL, rhs);
+                        continue;
+                    }
+                    else if (token.type == TokenType.PLUSEQUAL)
+                    {
+                        ExprNode rhs = parseConditionalExpression();
+                        expr = arbor.makeAssignExpressionNode(expr, ASSIGNOP.PLUSEQUAL, rhs);
+                        continue;
+                    }
+                    else if (token.type == TokenType.MINUSEQUAL)
+                    {
+                        ExprNode rhs = parseConditionalExpression();
+                        expr = arbor.makeAssignExpressionNode(expr, ASSIGNOP.MINUSEQUAL, rhs);
+                        continue;
+                    }
+                    else if (token.type == TokenType.LESSLESSEQUAL)
+                    {
+                        ExprNode rhs = parseConditionalExpression();
+                        expr = arbor.makeAssignExpressionNode(expr, ASSIGNOP.LESSLESSEQUAL, rhs);
+                        continue;
+                    }
+                    else if (token.type == TokenType.GTRGTREQUAL)
+                    {
+                        ExprNode rhs = parseConditionalExpression();
+                        expr = arbor.makeAssignExpressionNode(expr, ASSIGNOP.GTRGTREQUAL, rhs);
+                        continue;
+                    }
+                    else if (token.type == TokenType.AMPEQUAL)
+                    {
+                        ExprNode rhs = parseConditionalExpression();
+                        expr = arbor.makeAssignExpressionNode(expr, ASSIGNOP.AMPEQUAL, rhs);
+                        continue;
+                    }
+                    else if (token.type == TokenType.CARETEQUAL)
+                    {
+                        ExprNode rhs = parseConditionalExpression();
+                        expr = arbor.makeAssignExpressionNode(expr, ASSIGNOP.CARETEQUAL, rhs);
+                        continue;
+                    }
+                    else if (token.type == TokenType.BAREQUAL)
+                    {
+                        ExprNode rhs = parseConditionalExpression();
+                        expr = arbor.makeAssignExpressionNode(expr, ASSIGNOP.BAREQUAL, rhs);
+                        continue;
+                    }
+                    prep.putTokenBack(token);
+                    break;
+                }
+            }
+            return expr;
         }
 
         /*(6.5.17) 
-         expression:
-            assignment-expression
-            expression , assignment-expression
+          assignment-expression (',' assignment-expression)*
          */
         public ExpressionNode parseExpression()
         {
@@ -2749,7 +2470,7 @@ namespace BlackC
         public ConstExpressionNode parseConstantExpression()
         {
             ExprNode condit = parseConditionalExpression();
-                return arbor.makeConstantExprNode(condit);
+            return arbor.makeConstantExprNode(condit);
         }
     }
 

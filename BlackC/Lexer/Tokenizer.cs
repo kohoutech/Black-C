@@ -32,7 +32,6 @@ namespace BlackC.Lexer
         Queue<Fragment> frags;
         Queue<Token> tokens;
         Dictionary<String, TokenType> keywords;
-        List<String> typedefs;
 
         public Tokenizer(Parser _parser, String filename)
         {
@@ -71,9 +70,7 @@ namespace BlackC.Lexer
             keywords.Add("union", TokenType.UNION);
             keywords.Add("unsigned", TokenType.UNSIGNED);
             keywords.Add("void", TokenType.VOID);
-            keywords.Add("while", TokenType.WHILE);
-
-            typedefs = new List<string>();
+            keywords.Add("while", TokenType.WHILE);            
         }
 
         //skip tokenizing and just write preprocessor output to file
@@ -183,11 +180,6 @@ namespace BlackC.Lexer
                     if (keywords.ContainsKey(frag.str))
                     {
                         tok = new Token(keywords[frag.str]);
-                    }
-                    else if (typedefs.Contains(frag.str))
-                    {
-                        tok = new Token(TokenType.TYPENAME);
-                        tok.strval = frag.str;
                     }
                     else
                     {

@@ -48,28 +48,12 @@ namespace Origami.OIL
 
     //- declarations ----------------------------------------------------------
 
-    //base decl class
-    public class Declaration : OILNode
-    {
-    }
-
-    public class DeclSpecNode : Declaration
+    public class DeclSpecNode : OILNode
     {
         public Declaration baseType;
     }
 
-    public class TypeDeclNode : Declaration
-    {
-        public string name;
-
-        public TypeDeclNode(string _name)
-        {
-            type = OILType.TypeDecl;
-            name = _name;
-        }
-    }
-
-    public class VarDeclNode : Declaration
+    public class VarDeclNode : OILNode
     {
         public VarDeclNode()
         {
@@ -77,7 +61,7 @@ namespace Origami.OIL
         }
     }
 
-    public class ParamDeclNode : Declaration
+    public class ParamDeclNode : OILNode
     {
         private string p;
 
@@ -98,7 +82,7 @@ namespace Origami.OIL
         //     }
     }
 
-    public class FuncDeclNode : Declaration
+    public class FuncDeclNode : OILNode
     {
         public String name;
         public Declaration returnType;
@@ -451,7 +435,7 @@ namespace Origami.OIL
     //     }
     // }
 
-    public class DeclaratorNode : Declaration
+     public class DeclaratorNode : OILNode
     {
         public String ident;
         //     public PointerNode ptr;
@@ -652,86 +636,82 @@ namespace Origami.OIL
     {
         public IntConstant retval;
     }
+    
+     public class IdentExprNode : ExprNode
+     {
+     }
 
-    // public class ExprNode : ParseNode
-    // {
-    // }
+     public class IntegerExprNode : ExprNode
+     {
+     }
 
-    // public class IdentExprNode : ExprNode
-    // {
-    // }
+     public class FloatExprNode : ExprNode
+     {
+     }
 
-    // public class IntegerExprNode : ExprNode
-    // {
-    // }
+     public class CharExprNode : ExprNode
+     {
+     }
 
-    // public class FloatExprNode : ExprNode
-    // {
-    // }
+     public class StringExprNode : ExprNode
+     {
+     }
 
-    // public class CharExprNode : ExprNode
-    // {
-    // }
+     public class EnumExprNode : ExprNode
+     {
+     }
 
-    // public class StringExprNode : ExprNode
-    // {
-    // }
+     public class SubExpressionNode : ExprNode
+     {
+     }
 
-    // public class EnumExprNode : ExprNode
-    // {
-    // }
+     public class TypeInitExprNode : ExprNode
+     {
+     }
 
-    // public class SubExpressionNode : ExprNode
-    // {
-    // }
+     public class IndexExprNode : ExprNode
+     {
+     }
 
-    // public class TypeInitExprNode : ExprNode
-    // {
-    // }
+     public class FuncCallExprNode : ExprNode
+     {
+     }
 
-    // public class IndexExprNode : ExprNode
-    // {
-    // }
+     public class FieldExprNode : ExprNode
+     {
+     }
 
-    // public class FuncCallExprNode : ExprNode
-    // {
-    // }
+     public class RefFieldExprNode : ExprNode
+     {
+     }
 
-    // public class FieldExprNode : ExprNode
-    // {
-    // }
+     public class PostPlusPlusExprNode : ExprNode
+     {
+     }
 
-    // public class RefFieldExprNode : ExprNode
-    // {
-    // }
+     public class PostMinusMinusExprNode : ExprNode
+     {
+     }
 
-    // public class PostPlusPlusExprNode : ExprNode
-    // {
-    // }
+     public class PlusPlusExprNode : ExprNode
+     {
+     }
 
-    // public class PostMinusMinusExprNode : ExprNode
-    // {
-    // }
+     public class MinusMinusExprNode : ExprNode
+     {
+     }
 
-    // public class PlusPlusExprNode : ExprNode
-    // {
-    // }
+     public class UnaryCastExprNode : ExprNode
+     {
+     }
 
-    // public class MinusMinusExprNode : ExprNode
-    // {
-    // }
+     public class SizeofUnaryExprNode : ExprNode
+     {
+     }
 
-    // public class UnaryCastExprNode : ExprNode
-    // {
-    // }
-
-    // public class SizeofUnaryExprNode : ExprNode
-    // {
-    // }
-
-    // public class SizeofTypeExprNode : ExprNode
-    // {
-    // }
+     public class SizeofTypeExprNode : ExprNode
+     {
+     }
 
     // public class UnaryOperatorNode : ParseNode
     // {
@@ -744,12 +724,12 @@ namespace Origami.OIL
     //     }
     // }
 
-    // public class CastExprNode : ExprNode
-    // {
-    // }
+     public class CastExprNode : ExprNode
+     {
+     }
 
-    // public class MultiplyExprNode : ExprNode
-    // {
+     public class MultiplyExprNode : ExprNode
+     {
     //     ExprNode lhs, rhs;
 
     //     public MultiplyExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -757,10 +737,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    // }
+     }
 
-    // public class DivideExprNode : ExprNode
-    // {
+     public class DivideExprNode : ExprNode
+     {
     //      ExprNode lhs, rhs;
 
     //     public DivideExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -768,10 +748,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    //}
+    }
 
-    // public class ModuloExprNode : ExprNode
-    // {
+     public class ModuloExprNode : ExprNode
+     {
     //     ExprNode lhs, rhs;
 
     //     public ModuloExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -779,10 +759,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    // }
+     }
 
-    // public class AddExprNode : ExprNode
-    // {   
+     public class AddExprNode : ExprNode
+     {   
     //     ExprNode lhs, rhs;
 
     //     public AddExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -790,10 +770,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    // }
+     }
 
-    // public class SubtractExprNode : ExprNode
-    // {
+     public class SubtractExprNode : ExprNode
+     {
     //     ExprNode lhs, rhs;
 
     //     public SubtractExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -801,10 +781,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    // }
+     }
 
-    // public class ShiftLeftExprNode : ExprNode
-    // {     
+     public class ShiftLeftExprNode : ExprNode
+     {     
     //     ExprNode lhs, rhs;
 
     //     public ShiftLeftExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -812,10 +792,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    // }
+     }
 
-    // public class ShiftRightExprNode : ExprNode
-    // {
+     public class ShiftRightExprNode : ExprNode
+     {
     //     ExprNode lhs, rhs;
 
     //     public ShiftRightExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -823,10 +803,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    // }
+     }
 
-    // public class LessThanExprNode : ExprNode
-    // {     
+     public class LessThanExprNode : ExprNode
+     {     
     //     ExprNode lhs, rhs;
 
     //     public LessThanExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -834,10 +814,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    // }
+     }
 
-    // public class GreaterThanExprNode : ExprNode
-    // {
+     public class GreaterThanExprNode : ExprNode
+     {
     //     ExprNode lhs, rhs;
 
     //     public GreaterThanExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -845,10 +825,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    // }
+     }
 
-    // public class LessEqualExprNode : ExprNode
-    // {
+     public class LessEqualExprNode : ExprNode
+     {
     //     ExprNode lhs, rhs;
 
     //     public LessEqualExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -856,10 +836,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    // }
+     }
 
-    // public class GreaterEqualExprNode : ExprNode
-    // {
+     public class GreaterEqualExprNode : ExprNode
+     {
     //     ExprNode lhs, rhs;
 
     //     public GreaterEqualExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -867,10 +847,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    // }
+     }
 
-    // public class EqualsExprNode : ExprNode
-    // {     
+     public class EqualsExprNode : ExprNode
+     {     
     //     ExprNode lhs, rhs;
 
     //     public EqualsExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -878,10 +858,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    // }
+     }
 
-    // public class NotEqualsExprNode : ExprNode
-    // {
+     public class NotEqualsExprNode : ExprNode
+     {
     //     ExprNode lhs, rhs;
 
     //     public NotEqualsExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -889,10 +869,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    // }
+     }
 
-    // public class ANDExprNode : ExprNode
-    // {     
+     public class ANDExprNode : ExprNode
+     {     
     //     ExprNode lhs, rhs;
 
     //     public ANDExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -900,10 +880,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    // }
+     }
 
-    // public class XORExprNode : ExprNode
-    // {     
+     public class XORExprNode : ExprNode
+     {     
     //     ExprNode lhs, rhs;
 
     //     public XORExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -911,10 +891,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    // }
+     }
 
-    // public class ORExprNode : ExprNode
-    // {        
+     public class ORExprNode : ExprNode
+     {        
     //     ExprNode lhs, rhs;
 
     //     public ORExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -922,10 +902,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    // }
+     }
 
-    // public class LogicalANDExprNode : ExprNode
-    // {     
+     public class LogicalANDExprNode : ExprNode
+     {     
     //     ExprNode lhs, rhs;
 
     //     public LogicalANDExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -933,10 +913,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    // }
+     }
 
-    // public class LogicalORExprNode : ExprNode
-    // {     
+     public class LogicalORExprNode : ExprNode
+     {     
     //     ExprNode lhs, rhs;
 
     //     public LogicalORExprNode(ExprNode _lhs, ExprNode _rhs)
@@ -944,10 +924,10 @@ namespace Origami.OIL
     //         lhs = _lhs;
     //         rhs = _rhs;
     //     }
-    // }
+     }
 
-    // public class ConditionalExprNode : ExprNode
-    // {     
+     public class ConditionalExprNode : ExprNode
+     {     
     //     ExprNode lhs;
     //     ExpressionNode trueexpr;
     //     ExprNode falseexpr;
@@ -958,16 +938,27 @@ namespace Origami.OIL
     //         trueexpr = _trueexpr;
     //         falseexpr = _falseexpr;
     //     }
-    // }
+     }
 
-    // public class AssignExpressionNode : ExprNode
-    // {     
-    // }
+     public class AssignExpressionNode : ExprNode
+     {
+         private ExprNode lhs;
+
+         public AssignExpressionNode(ExprNode lhs)
+         {
+             // TODO: Complete member initialization
+             this.lhs = lhs;
+         }
+     }
+
+     public enum ASSIGNOP
+     {
+         EQUAL, MULTEQUAL, SLASHEQUAL, PERCENTEQUAL, PLUSEQUAL, MINUSEQUAL,
+         LESSLESSEQUAL, GTRGTREQUAL, AMPEQUAL, CARETEQUAL, BAREQUAL
+     }
 
     // public class AssignOperatorNode : ParseNode
     // {     
-    //     public enum OPERATOR {EQUAL, MULTEQUAL, SLASHEQUAL, PERCENTEQUAL, PLUSEQUAL, MINUSEQUAL, 
-    //         LSHIFTEQUAL, RSHIFTEQUAL, AMPEQUAL, CARETEQUAL, BAREQUAL}
     //     OPERATOR op;
 
     //     public AssignOperatorNode(OPERATOR _op)
@@ -976,17 +967,45 @@ namespace Origami.OIL
     //     }
     // }
 
-    // public class ExpressionNode : ParseNode
-    // {
-    // }
+     public class ExpressionNode : ExprNode
+     {
+     }
 
-    // public class ConstExpressionNode : ParseNode
-    // {
-    // }
+     public class ConstExpressionNode : ExprNode
+     {
+     }
 
     public class IntConstant : OILNode
     {
         public int value;
+    }
+
+    //- intermediate nodes? ---------------------------------------------------
+
+    public class ExternalDecl : OILNode
+    {        
+    }
+
+    public class Declaration : ExternalDecl
+    {
+        public bool isFuncDef;
+        public DeclSpecNode declspecs;
+        public List<DeclaratorNode> declar;
+    }
+
+    public class FuncDefinition : ExternalDecl
+    {
+    }
+
+    public class TypeDeclNode : Declaration
+    {
+        public string name;
+
+        public TypeDeclNode(string _name)
+        {
+            type = OILType.TypeDecl;
+            name = _name;
+        }
     }
 
     //-------------------------------------------------------------------------

@@ -59,39 +59,35 @@ namespace BlackC
             return new TypeDeclNode("foo");
         }
 
-        public Declaration makeVarOrFuncNode(DeclSpecNode declarspecs, DeclaratorNode declarnode)
+        public Declaration makeVarDeclNode(Declaration decl, DeclSpecNode declarspecs, DeclaratorNode declarnode, InitializerNode initialnode)
         {
-            return new Declaration();
+            return null;
         }
 
-        public VarDeclNode makeVarDeclNode(DeclSpecNode declarspecs, DeclaratorNode declarnode, InitializerNode initialnode)
+        public Declaration makeFuncDeclNode(DeclSpecNode declarspecs, DeclaratorNode declarator)
         {
-            return new VarDeclNode();
+            //FuncDeclNode func = new FuncDeclNode();
+            //func.name = declarator.ident;
+            //func.returnType = declarspecs;
+            //func.paramList = declarator.paramList;
+            //return func;
+            return null;
         }
 
-        public FuncDeclNode makeFuncDeclNode(DeclSpecNode declarspecs, DeclaratorNode declarator)
+        public FuncDefinition completeFuncDef(DeclSpecNode declspecs, DeclaratorNode declar, List<Declaration> oldparamlist, StatementNode block)
         {
-            FuncDeclNode func = new FuncDeclNode();
-            func.name = declarator.ident;
-            func.returnType = declarspecs;
-            func.paramList = declarator.paramList;
-            return func;
-        }
-
-        public FuncDeclNode completeFuncDef(FuncDeclNode declar, List<Declaration> oldparamlist, StatementNode block)
-        {
-            return declar;
+            return null;
         }
 
         public DeclSpecNode makeDeclSpecs(List<Token> storageClassSpecs, List<Token> baseTypeModifiers, List<TypeDeclNode> typeDefs, 
             List<Token> typeQuals, List<Token> functionSpecs)
         {
             DeclSpecNode declspec = null;
-            if (typeDefs.Count > 0)
-            {
-                declspec = new DeclSpecNode();
-                declspec.baseType = typeDefs[0];
-            }
+            //if (typeDefs.Count > 0)
+            //{
+            //    declspec = new DeclSpecNode();
+            //    declspec.baseType = typeDefs[0];
+            //}
             return declspec;
         }
 
@@ -396,7 +392,12 @@ namespace BlackC
             return null;
         }
 
-        public CompoundStatementNode makeCompoundStatementNode(List<OILNode> list)
+        public CompoundStatementNode makeCompoundStatementNode(CompoundStatementNode comp, Declaration decl)
+        {
+            return null;
+        }
+
+        public CompoundStatementNode makeCompoundStatementNode(CompoundStatementNode comp, StatementNode stmt)
         {
             return null;
         }
@@ -441,7 +442,12 @@ namespace BlackC
             return null;
         }
 
-        public StatementNode makeForStatementNode(OILNode expr1, ExprNode expr2, ExprNode expr3, StatementNode stmt)
+        public StatementNode makeForStatementNode(ExprNode expr1, ExprNode expr2, ExprNode expr3, StatementNode stmt)
+        {
+            return null;
+        }
+
+        public StatementNode makeForStatementNode(Declaration decl, ExprNode expr2, ExprNode expr3, StatementNode stmt)
         {
             return null;
         }
@@ -538,7 +544,12 @@ namespace BlackC
             return null;
         }
 
-        public ExprNode makeCastExprNode(String name, ExprNode rhs)
+        public ExprNode makeCastExprNode(ExprNode namelist, Declaration name)
+        {
+            return null;
+        }
+
+        public ExprNode makeCastExprNode(ExprNode uexpr, ExprNode namelist)
         {
             return null;
         }
@@ -682,7 +693,7 @@ namespace BlackC
             return null;
         }
 
-        public ExprNode makeAssignExpressionNode(ExprNode lhs, String oper, ExprNode rhs)
+        public AssignExpressionNode makeAssignExpressionNode(AssignExpressionNode lhs, ASSIGNOP oper, ExprNode rhs)
         {
             return null;
         }
@@ -698,6 +709,36 @@ namespace BlackC
         }
 
         internal StatementNode makeEmptyStatementNode()
+        {
+            throw new NotImplementedException();
+        }
+
+        internal void addExtDeclToModule(Module module, ExternalDecl extdef)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal void addDeclToModule(Module module, Declaration decl)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal void addFuncDefToModule(Module module, FuncDefinition funcdef)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal bool isLVar(ExprNode lhs)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal ExprNode makeArgumentExprList(ExprNode list, ExprNode expr)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal InitializerNode makeInitializerNode(AssignExpressionNode expr)
         {
             throw new NotImplementedException();
         }

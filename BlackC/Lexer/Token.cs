@@ -69,7 +69,6 @@ namespace BlackC.Lexer
             switch (type) {
 
                 case TokenType.IDENT:
-                case TokenType.TYPENAME:
                 case TokenType.STRINGCONST:            
                 spell = spell + " (" + strval + ")";
                     break;
@@ -132,7 +131,6 @@ namespace BlackC.Lexer
     public enum TokenType
     {
         IDENT,
-        TYPENAME,
 
         //constants
         INTCONST,
