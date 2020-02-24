@@ -52,16 +52,28 @@ namespace BlackC
             symbolTable.addSymbol("double", new TypeDeclNode("double"));
         }
 
+        //- external definitions ----------------------------------------------
+
+        public FuncDefinition completeFuncDef(DeclSpecNode declspecs, DeclaratorNode declar, List<Declaration> oldparamlist, StatementNode block)
+        {
+            return null;
+        }
+
+        public void addFuncDefToModule(Module module, FuncDefinition funcdef)
+        {
+            
+        }
+
+        public void addDeclToModule(Module module, Declaration decl)
+        {
+            
+        }
+
         //- declarations --------------------------------------------------------
 
         public TypeDeclNode makeTypeDeclNode(DeclSpecNode declarspecs)
         {
             return new TypeDeclNode("foo");
-        }
-
-        public Declaration makeVarDeclNode(Declaration decl, DeclSpecNode declarspecs, DeclaratorNode declarnode, InitializerNode initialnode)
-        {
-            return null;
         }
 
         public Declaration makeFuncDeclNode(DeclSpecNode declarspecs, DeclaratorNode declarator)
@@ -74,7 +86,7 @@ namespace BlackC
             return null;
         }
 
-        public FuncDefinition completeFuncDef(DeclSpecNode declspecs, DeclaratorNode declar, List<Declaration> oldparamlist, StatementNode block)
+        public Declaration makeVarDeclNode(Declaration decl, DeclSpecNode declarspecs, DeclaratorNode declarnode, InitializerNode initialnode)
         {
             return null;
         }
@@ -128,85 +140,22 @@ namespace BlackC
             return typdef;
         }
 
-        //public InitDeclaratorNode makeInitDeclaratorNode(DeclaratorNode declar, InitializerNode initial)
-        //{
-        //    return new InitDeclaratorNode(declar, initial);
-        //}
-
-        public DeclaratorNode makeDirectIndexNode(DeclaratorNode head, int mode, DeclSpecNode qualList, AssignExpressionNode assign)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void addParameterList(DeclaratorNode head, ParamTypeListNode paramlist)
-        {
-            //head.paramList = paramlist;
-        }
-
-        //public bool handleTypeDef(DeclarationNode declar)
-        //{
-        //    DeclarSpecNode specs = declar.declarspecs;
-        //    bool isTypedef = false;
-        //    //foreach (DeclarSpecNode spec in specs)
-        //    //{
-        //    //    if (spec is StorageClassNode)
-        //    //    {
-        //    //        StorageClassNode storspec = (StorageClassNode)spec;
-        //    //        if (storspec.storage == StorageClassNode.STORAGE.TYPEDEF)
-        //    //        {
-        //    //            isTypedef = true;
-        //    //            break;
-        //    //        }
-        //    //    }
-        //    //}
-        //    //if (isTypedef)
-        //    //{
-        //    //    TypeSpecNode def = getTypeSpec(declar.declarspecs);
-        //    //    TypedefNode tdnode = new TypedefNode(def);
-        //    //    IdentNode idnode = declar.declarlist[0].declarnode.declar.ident;
-        //    //    if (idnode == null)
-        //    //    {
-        //    //        idnode = declar.declarlist[0].declarnode.declar.chain.declar.declar.ident;
-        //    //    }
-        //    //    idnode.symtype = SYMTYPE.TYPEDEF;
-        //    //    idnode.def = tdnode;                
-        //    //}
-        //    return isTypedef;
-        //}
-
-        //private TypeSpecNode getTypeSpec(List<DeclarSpecNode> list)
-        //{
-        //    List<TypeSpecNode> typespecs = new List<TypeSpecNode>();
-        //    foreach (DeclarSpecNode spec in list)
-        //    {
-        //        if (spec is TypeSpecNode)
-        //        {
-        //            typespecs.Add((TypeSpecNode)spec);
-        //        }
-        //    }
-        //    if (typespecs.Count == 1)
-        //    {
-        //        return typespecs[0];
-        //    }
-        //    else
-        //    {
-        //        BaseTypeSpecNode basespec = (BaseTypeSpecNode)typespecs[0];
-        //        for (int i = 1; i < typespecs.Count; i++)
-        //        {
-        //            //basespec.setModifer(((BaseTypeSpecNode)typespecs[1]).baseclass);
-        //        }
-        //        return basespec;
-        //    }
-        //}
-
         //- struct/unions -----------------------------------------------------
 
-        //public StructSpecNode makeStructSpec(StructUnionNode tag, IdentNode name, List<StructDeclarationNode> declarList)
-        //{
-        //    StructSpecNode node = new StructSpecNode(tag, name, declarList);
-        //    name.def = node;
-        //    return node;
-        //}
+        public StructDeclNode starttructSpec(StructDeclNode node, IdentNode idNode, StructDeclarationNode field, bool isUnion)
+        {
+            return null;
+        }
+
+        public StructDeclNode makeStructSpec(StructDeclNode node, StructDeclarationNode field)
+        {
+            return null;
+        }
+
+        public StructDeclNode getStructDecl(IdentNode idNode, bool isUnion)
+        {
+            return null;
+        }
 
         public StructDeclarationNode makeStructDeclarationNode(DeclSpecNode specqual, List<StructDeclaratorNode> fieldnames)
         {
@@ -220,39 +169,55 @@ namespace BlackC
 
         //- enums -------------------------------------------------------------
 
-        //public EnumSpecNode makeEnumSpec(IdentNode idNode, List<EnumeratorNode> enumList)
-        //{
-        //    String id = idNode.ident;
-        //    return new EnumSpecNode(id, enumList);
-        //}
-
-        //public EnumeratorNode makeEnumeratorNode(EnumConstantNode enumconst, ConstExpressionNode constexpr)
-        //{
-        //    return new EnumeratorNode(enumconst, constexpr);
-        //}
-
-        //public EnumConstantNode makeEnumConstNode(Token token)
-        //{
-        //    String id = token.chars;
-        //    return new EnumConstantNode(id);
-        //}
-        
-        //- declarators -------------------------------------------------------
-
-        public DeclaratorNode makePointerNode(DeclSpecNode qualList, DeclaratorNode declar)
+        public EnumDeclNode startEnumSpec(IdentNode idNode, EnumeratorNode enumer)
         {
-        //    //return new DeclaratorNode(qualList, declar);
             return null;
         }
 
-        //public ParamTypeListNode ParamTypeListNode(List<ParamDeclarNode> list, bool hasElipsis)
-        //{
-        //    return new ParamTypeListNode(list, hasElipsis);
-        //}
+        public EnumDeclNode makeEnumSpec(EnumDeclNode node, EnumeratorNode enumer)
+        {
+            return null;
+        }
+
+        public EnumDeclNode getEnumDecl(IdentNode idNode)
+        {
+            return null;
+        }
+
+        public EnumeratorNode makeEnumeratorNode(EnumConstantNode enumconst, ConstExpressionNode constexpr)
+        {
+            return null;
+        }
+
+        //- declarators -------------------------------------------------------
+
+        public DeclaratorNode makePointerNode(DeclSpecNode qualList, DeclaratorNode declar)
+        {        
+            return null;
+        }
+
+        public DeclaratorNode makeFuncDeclarNode(ParamTypeListNode paramList)
+        {
+            return null;
+        }
+
+        public DeclaratorNode makeDirectIndexNode(DeclaratorNode head, int mode, DeclSpecNode qualList, AssignExpressionNode assign)
+        {
+            return null;
+        }
+
+        public void addParameterList(DeclaratorNode head, ParamTypeListNode paramlist)
+        {
+            
+        }
+
+        public ParamTypeListNode makeParamList(ParamTypeListNode paramList, ParamDeclNode param)
+        {
+            return null;
+        }
 
         public ParamDeclNode makeParamDeclarNode(DeclSpecNode declarspecs, DeclaratorNode declar)
         {
-        //    return new ParamDeclarNode(declarspecs, declar, absdeclar);
             return null;
         }
 
@@ -263,38 +228,44 @@ namespace BlackC
 
         //- initializers ------------------------------------------------------
 
-        //public InitializerNode makeInitializerNode(AssignExpressionNode expr)
-        //{
-        //    return null;
-        //}
+        public InitializerNode makeInitializerNode(AssignExpressionNode expr)
+        {
+            return null;
+        }
 
-        //public InitializerNode makeInitializerNode(List<InitializerNode> list)
-        //{
-        //    return null;
-        //}
+        public InitializerNode makeInitializerNode(List<InitializerNode> list)
+        {
+            return null;
+        }
 
-        //public DesignationNode makeDesignationNode(List<DesignatorNode> list)
-        //{
-        //    return null; 
-        //}
+        public List<InitializerNode> makeInitializerList(List<InitializerNode> list, DesignationNode desinode, InitializerNode initnode)
+        {
+            return null;
+        }
 
-        //public DesignatorNode makeDesignatorNode(ConstExpressionNode expr)
-        //{
-        //    return null;
-        //}
+        public DesignationNode makeDesignationNode(DesignationNode node, ConstExpressionNode expr)
+        {
+            return null;
+        }
 
-        //public DesignatorNode makeDesignatorNode(IdentNode ident)
-        //{
-        //    return null;
-        //}
+        public DesignationNode makeDesignationNode(DesignationNode node, IdentNode ident)
+        {
+            return null;
+        }
 
         //- identifiers -------------------------------------------------------------
 
+        //vars
         public DeclaratorNode makeIdentDeclaratorNode(string ident)
         {
             DeclaratorNode node = new DeclaratorNode();
             node.ident = ident;
             return node;
+        }
+
+        public IdentNode getArgIdentNode(Token token)
+        {
+            return null;
         }
 
         ////these only return new ident nodes
@@ -310,13 +281,18 @@ namespace BlackC
         //    return node;
         //}
 
-        //public IdentNode makeLabelIdentNode(Token token)
+        ////these return declared ident nodes 
+        //public IdentNode getDeclarIdentNode(String id)
         //{
-        //    String id = token.chars;
-        //    IdentNode node = SymbolTable.addSymbol(curSymbolTable, id);
-        //    node.symtype = SYMTYPE.LABEL;
+        //    IdentNode node = SymbolTable.findSymbol(curSymbolTable, id, SYMTYPE.DECLAR);
         //    return node;
         //}
+
+        //structs
+        public IdentNode getStructIdentNode(Token token)
+        {
+            return null;
+        }
 
         ////these return either declared or new ident nodes 
         //public IdentNode getStructIdentNode(Token token)
@@ -331,25 +307,11 @@ namespace BlackC
         //    return node;
         //}
 
-        public IdentNode getEnumIdentNode(Token token)
+        //fields
+        public IdentNode getFieldIdentNode(Token token)
         {
-        //    String id = token.chars;
-        //    IdentNode node = SymbolTable.findSymbol(curSymbolTable, id, SYMTYPE.ENUM);
-        //    if (node == null)
-        //    {
-        //        node = SymbolTable.addSymbol(curSymbolTable, id);
-        //        node.symtype = SYMTYPE.ENUM;
-        //    }
-        //    return node;
             return null;
         }
-
-        ////these return declared ident nodes 
-        //public IdentNode getDeclarIdentNode(String id)
-        //{
-        //    IdentNode node = SymbolTable.findSymbol(curSymbolTable, id, SYMTYPE.DECLAR);
-        //    return node;
-        //}
 
         ////called before <makeFieldExprNode> and <makeRefFieldExprNode>
         //public IdentNode getFieldIdentNode(Token token)
@@ -357,21 +319,37 @@ namespace BlackC
         //    return null;
         //}
 
-        public IdentNode getArgIdentNode(Token token)
-        {
-            return null;
-        }
-
         //public IdentNode getFieldInitializerNode(Token token)
         //{
         //    return null;
         //}
 
-        //public IdentNode getLabelIdentNode(Token token)
-        //{
-        //    return null;
-        //}
+        //enums
+        public IdentNode getEnumIdentNode(Token token)
+        {
+            //    String id = token.chars;
+            //    IdentNode node = SymbolTable.findSymbol(curSymbolTable, id, SYMTYPE.ENUM);
+            //    if (node == null)
+            //    {
+            //        node = SymbolTable.addSymbol(curSymbolTable, id);
+            //        node.symtype = SYMTYPE.ENUM;
+            //    }
+            //    return node;
+            return null;
+        }
 
+        public EnumConstantNode getEnumerationConstant(Token token)
+        {
+            return null;
+        }
+
+        //public EnumConstantNode makeEnumConstNode(Token token)
+        //{
+        //    String id = token.chars;
+        //    return new EnumConstantNode(id);
+        //}        
+
+        //typedefs
         //public TypedefNode getTypedefNode(Token token)
         //{
         //    TypedefNode node = null;
@@ -387,9 +365,33 @@ namespace BlackC
         //    return node;
         //}
 
+        //labels
+        //public IdentNode makeLabelIdentNode(Token token)
+        //{
+        //    String id = token.chars;
+        //    IdentNode node = SymbolTable.addSymbol(curSymbolTable, id);
+        //    node.symtype = SYMTYPE.LABEL;
+        //    return node;
+        //}
+
+        //public IdentNode getLabelIdentNode(Token token)
+        //{
+        //    return null;
+        //}
+
         //- statements --------------------------------------------------------
 
-        public StatementNode makeBlockItemListNode(StatementNode list, OILNode item)
+        public LabelStatementNode makeLabelStatementNode(Token labelId, StatementNode stmt)
+        {
+            return null;
+        }
+
+        public CaseStatementNode makeCaseStatementNode(ExprNode expr, StatementNode stmt)
+        {
+            return null;
+        }
+
+        public DefaultStatementNode makeDefaultStatementNode(StatementNode stmt)
         {
             return null;
         }
@@ -404,72 +406,62 @@ namespace BlackC
             return null;
         }
 
-        public StatementNode makeLabelStatementNode(Token labelId, StatementNode stmt)
+        public ExpressionStatementNode makeExpressionStatementNode(ExprNode expr)
         {
             return null;
         }
 
-        public StatementNode makeExpressionStatementNode(ExprNode expr)
+        public EmptyStatementNode makeEmptyStatementNode()
         {
             return null;
         }
 
-        public StatementNode makeIfStatementNode(ExprNode expr, StatementNode thenstmt, StatementNode elsestmt)
+        public IfStatementNode makeIfStatementNode(ExprNode expr, StatementNode thenstmt, StatementNode elsestmt)
         {
             return null;
         }
 
-        public StatementNode makeSwitchStatementNode(ExprNode expr, StatementNode stmt)
+        public SwitchStatementNode makeSwitchStatementNode(ExprNode expr, StatementNode stmt)
         {
             return null;
         }
 
-        public StatementNode makeCaseStatementNode(ExprNode expr, StatementNode stmt)
+        public WhileStatementNode makeWhileStatementNode(ExprNode expr, StatementNode stmt)
         {
             return null;
         }
 
-        public StatementNode makeDefaultStatementNode(StatementNode stmt)
+        public DoStatementNode makeDoStatementNode(StatementNode stmt, ExprNode expr)
         {
             return null;
         }
 
-        public StatementNode makeWhileStatementNode(ExprNode expr, StatementNode stmt)
+        public ForStatementNode makeForStatementNode(ExprNode expr1, ExprNode expr2, ExprNode expr3, StatementNode stmt)
         {
             return null;
         }
 
-        public StatementNode makeDoStatementNode(StatementNode stmt, ExprNode expr)
+        public ForStatementNode makeForStatementNode(Declaration decl, ExprNode expr2, ExprNode expr3, StatementNode stmt)
         {
             return null;
         }
 
-        public StatementNode makeForStatementNode(ExprNode expr1, ExprNode expr2, ExprNode expr3, StatementNode stmt)
+        public GotoStatementNode makeGotoStatementNode(Token ident)
         {
             return null;
         }
 
-        public StatementNode makeForStatementNode(Declaration decl, ExprNode expr2, ExprNode expr3, StatementNode stmt)
+        public ContinueStatementNode makeContinueStatementNode()
         {
             return null;
         }
 
-        public StatementNode makeGotoStatementNode(Token ident)
+        public BreakStatementNode makeBreakStatementNode()
         {
             return null;
         }
 
-        public StatementNode makeContinueStatementNode()
-        {
-            return null;
-        }
-
-        public StatementNode makeBreakStatementNode()
-        {
-            return null;
-        }
-
-        public StatementNode makeReturnStatementNode(ExprNode expr)
+        public ReturnStatementNode makeReturnStatementNode(ExprNode expr)
         {
             return null;
         }
@@ -481,12 +473,12 @@ namespace BlackC
             return null;
         }
 
-        public ExprNode makeIntegerConstantNode(Token token)
+        public IntConstant makeIntegerConstantNode(Token token)
         {
             return null;
         }
 
-        public ExprNode makeFloatConstantNode(Token token)
+        public FloatConstant makeFloatConstantNode(Token token)
         {
             return null;
         }
@@ -501,197 +493,178 @@ namespace BlackC
             return null;
         }
 
-        public ExprNode getExprEnumNode(Token token)
+        public SubExpressionNode makeSubexpressionNode(ExprNode expr)
         {
             return null;
         }
 
-        public ExprNode makeSubexpressionNode(ExprNode expr)
+        public TypeInitExprNode makeTypeInitExprNode(ExprNode node)
         {
             return null;
         }
 
-        public ExprNode makeTypeInitExprNode(ExprNode node)
+        public IndexExprNode makeIndexExprNode(ExprNode node, ExprNode expr)
         {
             return null;
         }
 
-        public ExprNode makeIndexExprNode(ExprNode node, ExprNode expr)
+        public FuncCallExprNode makeFuncCallExprNode(ExprNode node, ExprNode argList)
         {
             return null;
         }
 
-        public ExprNode makeFuncCallExprNode(ExprNode node, ExprNode argList)
+        public FieldExprNode makeFieldExprNode(ExprNode node, OILNode idNode)
         {
             return null;
         }
 
-        public ExprNode makeFieldExprNode(ExprNode node, OILNode idNode)
+        public RefFieldExprNode makeRefFieldExprNode(ExprNode node, OILNode idNode)
         {
             return null;
         }
 
-        public ExprNode makeRefFieldExprNode(ExprNode node, OILNode idNode)
+        public PostPlusPlusExprNode makePostPlusPlusExprNode(ExprNode node)
         {
             return null;
         }
 
-        public ExprNode makePostPlusPlusExprNode(ExprNode node)
+        public PostMinusMinusExprNode makePostMinusMinusExprNode(ExprNode node)
         {
             return null;
         }
 
-        public ExprNode makePostMinusMinusExprNode(ExprNode node)
+        public ArgumentExprNode makeArgumentExprList(ExprNode list, ExprNode expr)
         {
             return null;
         }
 
-        public ExprNode makeCastExprNode(ExprNode namelist, TypeNameNode name)
+        public PlusPlusExprNode makePlusPlusExprNode(ExprNode node)
         {
             return null;
         }
 
-        public ExprNode makeCastExprNode(ExprNode uexpr, ExprNode namelist)
+        public MinusMinusExprNode makeMinusMinusExprNode(ExprNode node)
         {
             return null;
         }
 
-        public ExprNode makePlusPlusExprNode(ExprNode node)
+        public UnaryOperatorNode makeUnaryOperatorNode(ExprNode expr, UnaryOperatorNode.OPERATOR op)
         {
             return null;
         }
 
-        public ExprNode makeMinusMinusExprNode(ExprNode node)
+        public SizeofTypeExprNode makeSizeofTypeExprNode(TypeNameNode name)
         {
             return null;
         }
 
-        public ExprNode makeUnaryCastExprNode(String uniOp, ExprNode castExpr)
+        public SizeofUnaryExprNode makeSizeofUnaryExprNode(ExprNode node)
         {
             return null;
         }
 
-        public ExprNode makeSizeofUnaryExprNode(ExprNode node)
+        public UnaryCastExprNode makeCastExprNode(ExprNode namelist, TypeNameNode name)
         {
             return null;
         }
 
-        public ExprNode makeSizeofTypeExprNode(TypeNameNode name)
+        public UnaryCastExprNode makeCastExprNode(ExprNode uexpr, ExprNode namelist)
         {
             return null;
         }
 
-        public ExprNode makeMultiplyExprNode(ExprNode lhs, ExprNode rhs)
+        public MultiplyExprNode makeMultiplyExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //return new MultiplyExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeDivideExprNode(ExprNode lhs, ExprNode rhs)
+        public DivideExprNode makeDivideExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //return new DivideExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeModuloExprNode(ExprNode lhs, ExprNode rhs)
+        public ModuloExprNode makeModuloExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //return new ModuloExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeAddExprNode(ExprNode lhs, ExprNode rhs)
+        public AddExprNode makeAddExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //return new AddExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeSubtractExprNode(ExprNode lhs, ExprNode rhs)
+        public SubtractExprNode makeSubtractExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //return new SubtractExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeShiftLeftExprNode(ExprNode lhs, ExprNode rhs)
+        public ShiftLeftExprNode makeShiftLeftExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //    return new ShiftLeftExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeShiftRightExprNode(ExprNode lhs, ExprNode rhs)
+        public ShiftRightExprNode makeShiftRightExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //    return new ShiftRightExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeLessThanExprNode(ExprNode lhs, ExprNode rhs)
+        public LessThanExprNode makeLessThanExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //return new LessThanExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeGreaterThanExprNode(ExprNode lhs, ExprNode rhs)
+        public GreaterThanExprNode makeGreaterThanExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //return new GreaterThanExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeLessEqualExprNode(ExprNode lhs, ExprNode rhs)
+        public LessEqualExprNode makeLessEqualExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //return new LessEqualExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeGreaterEqualExprNode(ExprNode lhs, ExprNode rhs)
+        public GreaterEqualExprNode makeGreaterEqualExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //return new GreaterEqualExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeEqualsExprNode(ExprNode lhs, ExprNode rhs)
+        public EqualsExprNode makeEqualsExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //    return new EqualsExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeNotEqualsExprNode(ExprNode lhs, ExprNode rhs)
+        public NotEqualsExprNode makeNotEqualsExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //    return new NotEqualsExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeANDExprNode(ExprNode lhs, ExprNode rhs)
+        public ANDExprNode makeANDExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //return new ANDExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeXORExprNode(ExprNode lhs, ExprNode rhs)
+        public XORExprNode makeXORExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //return new XORExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeORExprNode(ExprNode lhs, ExprNode rhs)
+        public ORExprNode makeORExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //return new ORExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeLogicalANDExprNode(ExprNode lhs, ExprNode rhs)
+        public LogicalANDExprNode makeLogicalANDExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //return new LogicalANDExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeLogicalORExprNode(ExprNode lhs, ExprNode rhs)
+        public LogicalORExprNode makeLogicalORExprNode(ExprNode lhs, ExprNode rhs)
         {
-            //return new LogicalORExprNode(lhs, rhs);
             return null;
         }
 
-        public ExprNode makeConditionalExprNode(ExprNode lhs, ExprNode trueexpr, ExprNode falseexpr)
+        public ConditionalExprNode makeConditionalExprNode(ExprNode lhs, ExprNode trueexpr, ExprNode falseexpr)
         {
-            //return new ConditionalExprNode(lhs, trueexpr, falseexpr);
             return null;
         }
 
@@ -710,125 +683,9 @@ namespace BlackC
             return null;
         }
 
-        internal StatementNode makeEmptyStatementNode()
+        public bool isLVar(ExprNode lhs)
         {
-            throw new NotImplementedException();
-        }
-
-        internal void addExtDeclToModule(Module module, ExternalDecl extdef)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal void addDeclToModule(Module module, Declaration decl)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal void addFuncDefToModule(Module module, FuncDefinition funcdef)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal bool isLVar(ExprNode lhs)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal ExprNode makeArgumentExprList(ExprNode list, ExprNode expr)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal InitializerNode makeInitializerNode(AssignExpressionNode expr)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal InitializerNode makeInitializerNode(List<InitializerNode> list)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal List<InitializerNode> makeInitializerList(List<InitializerNode> list, DesignationNode desinode, InitializerNode initnode)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal DesignationNode makeDesignatorNode(DesignationNode node, ConstExpressionNode expr)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal DesignationNode makeDesignatorNode(DesignationNode node, IdentNode ident)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal IdentNode getFieldIdentNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal EnumConstantNode getEnumerationConstant(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal EnumeratorNode makeEnumeratorNode(EnumConstantNode enumconst, ConstExpressionNode constexpr)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal EnumDeclNode getEnumDecl(IdentNode idNode)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal EnumDeclNode makeEnumSpec(EnumDeclNode node, IdentNode idNode, EnumeratorNode enumer)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal EnumDeclNode makeEnumSpec(EnumDeclNode node, EnumeratorNode enumer)
-        {
-            throw new NotImplementedException();
-        }
-
-
-        internal StructDeclNode getStructDecl(IdentNode idNode, bool isUnion)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal StructDeclNode makeStructSpec(StructDeclNode node, IdentNode idNode, StructDeclarationNode field, bool isUnion)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal StructDeclNode makeStructSpec(StructDeclNode node, StructDeclarationNode field)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal IdentNode getStructIdentNode(Token token)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal ParamTypeListNode makeParamList(ParamTypeListNode paramList, ParamDeclNode param)
-        {
-            throw new NotImplementedException();
-        }
-
-        public DeclaratorNode makeFuncDeclarNode(ParamTypeListNode paramList)
-        {
-            return null;
-        }
-
-        internal ExprNode makeUnaryOperatorNode(ExprNode expr, UnaryOperatorNode.OPERATOR oPERATOR)
-        {
-            throw new NotImplementedException();
+            return false;
         }
     }
 }

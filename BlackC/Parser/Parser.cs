@@ -190,7 +190,6 @@ namespace BlackC
                     consumeToken();                                             //skip '='
                     InitializerNode initialnode = parseInitializer();
                     decl = arbor.makeVarDeclNode(decl, declSpecs, declarnode, initialnode);       //declarator = initializer
-
                 }
                 else
                 {
@@ -355,7 +354,7 @@ namespace BlackC
                 if (token.type == TokenType.LBRACE)
                 {
                     StructDeclarationNode field = parseStructDeclaration();
-                    node = arbor.makeStructSpec(node, idNode, field, isUnion);
+                    node = arbor.starttructSpec(node, idNode, field, isUnion);
                     field = parseStructDeclaration();
                     while (field != null)
                     {
@@ -482,7 +481,7 @@ namespace BlackC
                 if (token.type == TokenType.LBRACE)
                 {
                     EnumeratorNode enumer = parseEnumerator();
-                    node = arbor.makeEnumSpec(node, idNode, enumer);
+                    node = arbor.startEnumSpec(idNode, enumer);
                     while (true)
                     {
                         token = prep.getToken();
@@ -910,13 +909,13 @@ namespace BlackC
                 {
                     ConstExpressionNode expr = parseConstantExpression();
                     consumeToken();
-                    node = arbor.makeDesignatorNode(node, expr);              //[ constant-expression ]
+                    node = arbor.makeDesignationNode(node, expr);              //[ constant-expression ]
                 }
                 if (token.type == TokenType.PERIOD)
                 {
                     Token idtoken = prep.getToken();
                     IdentNode ident = arbor.getFieldIdentNode(idtoken);
-                    node = arbor.makeDesignatorNode(node, ident);             //. identifier
+                    node = arbor.makeDesignationNode(node, ident);             //. identifier
                 }
                 prep.putTokenBack(token);
                 break;
