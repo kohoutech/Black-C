@@ -46,7 +46,7 @@ namespace Origami.OIL
         }
     }
 
-    //- declarations ----------------------------------------------------------
+    //- external defs ---------------------------------------------------------
 
     public class ExternalDecl : OILNode
     {
@@ -87,8 +87,37 @@ namespace Origami.OIL
 
     public class DeclSpecNode : OILNode
     {
-        public Declaration baseType;
-        public bool hasQualfiers;
+        public TypeDeclNode baseType;
+
+        //storage class
+        public bool isTypedef;
+        public bool isExtern;
+        public bool isStatic;
+        public bool isAuto;
+        public bool isRegister;
+
+        //type qualifiers
+        public bool isConst;
+        public bool isRestrict;
+        public bool isVolatile;
+
+        //function specs
+        public bool isInline;
+
+        public DeclSpecNode(TypeDeclNode _baseType)
+        {
+            baseType = _baseType;
+
+            isTypedef = false;
+            isExtern = false;
+            isStatic = false;
+            isAuto = false;
+            isRegister = false;
+            isConst = false;
+            isRestrict = false;
+            isVolatile = false;
+            isInline = false;
+        }
     }
 
     public class ParamDeclNode : OILNode
@@ -445,53 +474,57 @@ namespace Origami.OIL
         //     }
     }
 
-    // public class TypeQualNode : ParseNode
-    // {
-    //     public bool isConst;
-    //     public bool isRestrict;
-    //     public bool isVolatile;
-    //     public bool isEmpty;
+    public class TypeQualNode : OILNode
+    {
+        //     public bool isConst;
+        //     public bool isRestrict;
+        //     public bool isVolatile;
+        public bool isEmpty;
 
-    //     public TypeQualNode()
-    //     {
-    //         isConst = false;
-    //         isRestrict = false;
-    //         isVolatile = false;
-    //         isEmpty = true;
-    //     }
+        //     public TypeQualNode()
+        //     {
+        //         isConst = false;
+        //         isRestrict = false;
+        //         isVolatile = false;
+        //         isEmpty = true;
+        //     }
 
-    //     public void setQualifer(Token token)
-    //     {
-    //         switch (token.type)
-    //         {
-    //             case TokenType.tCONST:
-    //                 isConst = true;
-    //                 break;
+        //     public void setQualifer(Token token)
+        //     {
+        //         switch (token.type)
+        //         {
+        //             case TokenType.tCONST:
+        //                 isConst = true;
+        //                 break;
 
-    //             case TokenType.tRESTRICT:
-    //                 isRestrict = true;
-    //                 break;
+        //             case TokenType.tRESTRICT:
+        //                 isRestrict = true;
+        //                 break;
 
-    //             case TokenType.tVOLATILE:
-    //                 isVolatile = true;
-    //                 break;
-    //         }
-    //         isEmpty = false;
-    //     }
-    // }
+        //             case TokenType.tVOLATILE:
+        //                 isVolatile = true;
+        //                 break;
+        //         }
+        //         isEmpty = false;
+        //     }
+    }
+
+    //- declarators -------------------------------------------------------
 
     public class DeclaratorNode : OILNode
     {
-        public String ident;
+        //public String ident;
         //     public PointerNode ptr;
         //     public DirectDeclaratorNode declar;
-        public List<ParamDeclNode> paramList;
+        //public List<ParamDeclNode> paramList;
+        public DeclaratorNode next;
 
         public DeclaratorNode()
         {
             //         ptr = null;
             //         declar = null;
-            paramList = null;
+            //paramList = null;
+            next = null;
         }
 
         //     public DeclaratorNode(PointerNode _ptr, DirectDeclaratorNode _declar)
@@ -501,15 +534,28 @@ namespace Origami.OIL
         //     }
     }
 
-    // public class IdentDeclaratorNode : DeclaratorNode
-    // {
-    //     public String ident;
+    public class IdentDeclaratorNode : DeclaratorNode
+    {
+        public String ident;
 
-    //     public IdentDeclaratorNode(Token token) : base()
-    //     {
-    //         ident = token.chars;
-    //     }
-    // }
+        public IdentDeclaratorNode(string id)
+            : base()
+        {
+            ident = id;
+        }
+    }
+
+    public class ParamListNode : DeclaratorNode
+    {
+        List<ParamDeclNode> list;
+        bool hasElipsis;
+
+        public ParamListNode(List<ParamDeclNode> _list, bool _hasElipsis) : base()
+        {
+            list = _list;
+            hasElipsis = _hasElipsis;
+        }
+    }
 
     // public class DirectDeclaratorNode : ParseNode
     // {
@@ -549,18 +595,6 @@ namespace Origami.OIL
     //         chain = declar;
     //     }
     // }
-
-    public class ParamTypeListNode : OILNode
-    {
-        //     List<ParamDeclarNode> list;
-        //     bool hasElipsis;
-
-        //     public ParamTypeListNode(List<ParamDeclarNode> _list, bool _hasElipsis)
-        //     {
-        //         list = _list;
-        //         hasElipsis = _hasElipsis;
-        //     }
-    }
 
     public class TypeNameNode : OILNode
     {

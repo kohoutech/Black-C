@@ -57,7 +57,6 @@
     <Compile Include="Parser\ParseStmt.cs" />
     <Compile Include="Lexer\Macro.cs" />
     <Compile Include="Options.cs" />
-    <Compile Include="Parser\ParseNode.cs" />
     <Compile Include="Parser\Parser.cs" />
     <Compile Include="Lexer\Preprocessor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -33,12 +33,12 @@ namespace BlackC
             Options options = new Options(args);            //parse the cmd line args
 
             String filename = args[0];
-            Parser parser = new Parser(options);        //create a parser
+            Parser parser = new Parser(options);            //create a parser
 
             try
             {
-                Module module = parser.parseFile(filename);         //and parse the source file
-                OILCan.saveOILCan(module, "module.oil.txt");
+                Module module = parser.parseFile(filename);         //parse the source file
+                OILCan.saveOILCan(module, "module.oil.txt");        //and write it out to OIL file
             }
             catch (ParserException e)
             {

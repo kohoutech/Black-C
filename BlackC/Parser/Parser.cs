@@ -233,6 +233,7 @@ namespace BlackC
             DeclSpecNode specs = null;
             List<Token> storageClassSpecs = new List<Token>();
             List<TypeDeclNode> typeDefs = new List<TypeDeclNode>();
+            List<Token> typeMods = new List<Token>();
             List<Token> typeQuals = new List<Token>();
             List<Token> functionSpecs = new List<Token>();
 
@@ -259,15 +260,18 @@ namespace BlackC
                             break;
                         }
 
+                    case TokenType.SHORT:
+                    case TokenType.LONG:
+                    case TokenType.SIGNED:
+                    case TokenType.UNSIGNED:
+                        typeMods.Add(token);
+                        continue;
+
                     case TokenType.VOID:
                     case TokenType.CHAR:
                     case TokenType.INT:
                     case TokenType.FLOAT:
                     case TokenType.DOUBLE:
-                    case TokenType.SHORT:
-                    case TokenType.LONG:
-                    case TokenType.SIGNED:
-                    case TokenType.UNSIGNED:
                         TypeDeclNode toktype = arbor.GetTypeDef(token);
                         typeDefs.Add(toktype);
                         continue;
@@ -324,7 +328,7 @@ namespace BlackC
             }
             if (storageClassSpecs.Count > 0 || typeDefs.Count > 0 || typeQuals.Count > 0 || functionSpecs.Count > 0)
             {
-                specs = arbor.makeDeclSpecs(storageClassSpecs, typeDefs, typeQuals, functionSpecs);
+                specs = arbor.makeDeclSpecs(storageClassSpecs, typeDefs, typeMods, typeQuals, functionSpecs);
             }
             return specs;
         }
@@ -557,7 +561,7 @@ namespace BlackC
             if (nextTokenIs(TokenType.STAR))
             {
                 consumeToken();
-                DeclSpecNode qualList = parseTypeQualList();
+                TypeQualNode qualList = parseTypeQualList();
                 DeclaratorNode declar = parseDeclarator(isAbstract);
                 DeclaratorNode node = arbor.makePointerNode(qualList, declar);
                 return node;
@@ -596,16 +600,16 @@ namespace BlackC
             if (!isAbstract && (token.type == TokenType.IDENT))
             {
                 DeclaratorNode idnode = arbor.makeIdentDeclaratorNode(token.strval);
-                node = parseDirectDeclaratorTail(idnode, isAbstract);
-                return node;
+                parseDirectDeclaratorTail(idnode, isAbstract);
+                return idnode;
             }
 
             //in direct-abstract-declarator[opt] [...] if the direct-abstract-declarator is omitted, the first token
             //we see is the '[' of the declarator tail, so call parseDirectDeclaratorTail() with no base declarator
             if (isAbstract && (token.type == TokenType.LBRACKET))
             {
-                node = parseDirectDeclaratorTail(null, isAbstract);
-                return node;
+                //node = parseDirectDeclaratorTail(null, isAbstract);
+                //return node;
             }
 
             //similarly, in direct-abstract-declarator[opt] ( parameter-type-list[opt] ), we see the '(' if the 
@@ -616,17 +620,17 @@ namespace BlackC
                 consumeToken();             //skip '('
                 if (isAbstract)
                 {
-                    ParamTypeListNode paramlist = parseParameterList(true);
-                    DeclaratorNode funcDeclar = arbor.makeFuncDeclarNode(paramlist);
-                    node = parseDirectDeclaratorTail(funcDeclar, isAbstract);
-                    return node;
+                    //ParamListNode paramlist = parseParameterList(true);
+                    //DeclaratorNode funcDeclar = arbor.makeFuncDeclarNode(paramlist);
+                    //node = parseDirectDeclaratorTail(funcDeclar, isAbstract);
+                    //return node;
                 }
 
                 //( declarator ) or ( abstract-declarator )
                 DeclaratorNode declar = parseDeclarator(isAbstract);
                 consumeToken();                                         //skip closing ')'
-                node = parseDirectDeclaratorTail(declar, isAbstract);
-                return node;
+                parseDirectDeclaratorTail(declar, isAbstract);
+                return declar;
             }
 
             prep.putTokenBack(token);
@@ -634,7 +638,7 @@ namespace BlackC
         }
 
         //parse one or more declarator clauses recursively - either array indexes or parameter lists 
-        public DeclaratorNode parseDirectDeclaratorTail(DeclaratorNode head, bool isAbstract)
+        public void parseDirectDeclaratorTail(DeclaratorNode head, bool isAbstract)
         {
             //array index declarator clause
             //mode 1: [ type-qualifier-list[opt] assignment-expression[opt] ]
@@ -644,13 +648,13 @@ namespace BlackC
             if (nextTokenIs(TokenType.LBRACKET))
             {
                 int mode = 1;
-                DeclSpecNode qualList = parseTypeQualList();
+                TypeQualNode qualList = parseTypeQualList();
                 AssignExpressionNode assign = null;
                 if (nextTokenIs(TokenType.STATIC))
                 {
                     consumeToken();
                     mode = 3;
-                    if (!qualList.hasQualfiers)
+                    if (!qualList.isEmpty)
                     {
                         qualList = parseTypeQualList();
                         mode = 2;
@@ -669,9 +673,9 @@ namespace BlackC
                 {
                     consumeToken();
                 }
-                DeclaratorNode index = arbor.makeDirectIndexNode(head, mode, qualList, assign);
-                DeclaratorNode node = parseDirectDeclaratorTail(index, isAbstract);
-                return node;
+                DeclaratorNode arrayidx = arbor.makeDirectIndexNode(head, mode, qualList, assign);
+                head.next = arrayidx;
+                parseDirectDeclaratorTail(arrayidx, isAbstract);                
             }
 
             //parameter list declarator clause
@@ -681,46 +685,37 @@ namespace BlackC
             else if (nextTokenIs(TokenType.LPAREN))
             {
                 consumeToken();                                                     //skip opening '('
-                ParamTypeListNode paramlist = parseParameterList(isAbstract);
-                arbor.addParameterList(head, paramlist);
-                DeclaratorNode node = parseDirectDeclaratorTail(head, isAbstract);
-                return node;
-            }
-            return head;
+                ParamListNode paramlist = parseParameterList(isAbstract);
+                head.next = paramlist;
+                parseDirectDeclaratorTail(head.next, isAbstract);                
+            }            
         }
 
         /*(6.7.5) 
          type-qualifier-list:
             (type-qualifier)+
          */
-        public DeclSpecNode parseTypeQualList()
+        public TypeQualNode parseTypeQualList()
         {
-            DeclSpecNode specs = null;
+            TypeQualNode quals = null;
             List<Token> typeQuals = new List<Token>();
 
-            bool done = false;
-            while (!done)
+            while (true)
             {
                 Token token = prep.getToken();
-                switch (token.type)
+                if ((token.type == TokenType.CONST) || (token.type == TokenType.RESTRICT) || (token.type == TokenType.VOLATILE))
                 {
-                    case TokenType.CONST:
-                    case TokenType.RESTRICT:
-                    case TokenType.VOLATILE:
-                        typeQuals.Add(token);
-                        continue;
-
-                    default:
-                        prep.putTokenBack(token);
-                        done = true;
-                        break;
+                    typeQuals.Add(token);
+                    continue;
                 }
+                prep.putTokenBack(token);
+                break;
             }
             if (typeQuals.Count > 0)
             {
-                specs = arbor.makeDeclSpecs(null, null, typeQuals, null);
+                quals = arbor.makeTypeQualNode(typeQuals);
             }
-            return specs;
+            return quals;
         }
 
         /*(6.7.5) 
@@ -728,9 +723,9 @@ namespace BlackC
             parameter-declaration (',' parameter-declaration)* (, ...)?
          */
         //parse (possibly empty) list of parameters, we've already seen the opening paren
-        public ParamTypeListNode parseParameterList(bool isAbstract)
+        public ParamListNode parseParameterList(bool isAbstract)
         {
-            ParamTypeListNode paramList = null;
+            ParamListNode paramList = null;
             if (nextTokenIs(TokenType.RPAREN))
             {
                 consumeToken();                                                     //skip ending ')'

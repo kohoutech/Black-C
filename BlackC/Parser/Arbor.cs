@@ -47,9 +47,19 @@ namespace BlackC
         {
             symbolTable.addSymbol("void", new TypeDeclNode("void"));
             symbolTable.addSymbol("char", new TypeDeclNode("char"));
+            symbolTable.addSymbol("signed-char", new TypeDeclNode("signed-char"));
+            symbolTable.addSymbol("unsigned-char", new TypeDeclNode("unsigned-char"));
+            symbolTable.addSymbol("short-int", new TypeDeclNode("short-int"));
+            symbolTable.addSymbol("unsigned-short-int", new TypeDeclNode("unsigned-short-int"));
             symbolTable.addSymbol("int", new TypeDeclNode("int"));
+            symbolTable.addSymbol("unsigned-int", new TypeDeclNode("unsigned-int"));
+            symbolTable.addSymbol("long-int", new TypeDeclNode("long-int"));
+            symbolTable.addSymbol("unsigned-long-int", new TypeDeclNode("unsigned-long-int"));
+            symbolTable.addSymbol("long-long-int", new TypeDeclNode("long-long-int"));
+            symbolTable.addSymbol("unsigned-long-long-int", new TypeDeclNode("unsigned-long-long-int"));
             symbolTable.addSymbol("float", new TypeDeclNode("float"));
             symbolTable.addSymbol("double", new TypeDeclNode("double"));
+            symbolTable.addSymbol("long-double", new TypeDeclNode("long-double"));
         }
 
         //- external definitions ----------------------------------------------
@@ -61,12 +71,12 @@ namespace BlackC
 
         public void addFuncDefToModule(Module module, FuncDefinition funcdef)
         {
-            
+
         }
 
         public void addDeclToModule(Module module, Declaration decl)
         {
-            
+
         }
 
         //- declarations --------------------------------------------------------
@@ -91,15 +101,89 @@ namespace BlackC
             return null;
         }
 
-        public DeclSpecNode makeDeclSpecs(List<Token> storageClassSpecs, List<TypeDeclNode> typeDefs, 
+        public DeclSpecNode makeDeclSpecs(List<Token> storageClassSpecs, List<TypeDeclNode> typeDefs, List<Token> typeModifers,
             List<Token> typeQuals, List<Token> functionSpecs)
         {
             DeclSpecNode declspec = null;
-            //if (typeDefs.Count > 0)
-            //{
-            //    declspec = new DeclSpecNode();
-            //    declspec.baseType = typeDefs[0];
-            //}
+
+            //first, check the type modifiers
+            bool isSigned = false;
+            bool isUnsigned = false;
+            bool isShort = false;
+            bool isLong = false;
+            bool isLongLong = false;
+            foreach (Token tok in typeModifers)
+            {
+                isSigned = (tok.type == TokenType.SIGNED);
+                isUnsigned = (tok.type == TokenType.UNSIGNED);
+                isShort = (tok.type == TokenType.SHORT);
+                if (isLong)
+                {
+                    isLongLong = (tok.type == TokenType.LONG);      //if we've already seen long
+                }
+                else
+                {
+                    isLong = (tok.type == TokenType.LONG);
+                }
+            }
+
+            //then get the base type
+            TypeDeclNode typdef = null;
+            if (typeDefs.Count > 0)
+            {
+                typdef = typeDefs[0];
+            }
+            else if (isShort | isLong | isLongLong | isSigned | isUnsigned)
+            {
+                typdef = GetTypeDef("int");
+            }
+            
+            //and modifiy base type & create declspec
+            if (typdef != null)
+            {
+                if (typdef.name.Equals("int") && (isShort | isLong | isLongLong | isUnsigned)) 
+                {
+                    string typname = ((isUnsigned) ? "unsigned-" : "") + ((isShort) ? "short-" : "") + 
+                        ((isLong) ? "long-" : "") + ((isLongLong) ? "long-long-" : "") + "int";
+                    typdef = GetTypeDef(typname);
+                }
+                if (typdef.name.Equals("char") && (isSigned | isUnsigned))
+                {
+                    string typname = ((isUnsigned) ? "unsigned-" : "") + ((isSigned) ? "signed-" : "") + "char";                        
+                    typdef = GetTypeDef(typname);
+                }
+                if (typdef.name.Equals("double") && isLong)
+                {                    
+                    typdef = GetTypeDef("long-double");
+                }
+
+                declspec = new DeclSpecNode(typdef);            
+
+                //set storage class
+                foreach (Token tok in storageClassSpecs)
+                {
+                    declspec.isTypedef = (tok.type == TokenType.TYPEDEF);
+                    declspec.isExtern = (tok.type == TokenType.EXTERN);
+                    declspec.isStatic = (tok.type == TokenType.STATIC);
+                    declspec.isAuto = (tok.type == TokenType.AUTO);
+                    declspec.isRegister = (tok.type == TokenType.REGISTER);
+                }
+
+                //type qualfiers
+                foreach (Token tok in typeQuals)
+                {
+                    declspec.isConst = (tok.type == TokenType.CONST);
+                    declspec.isRestrict = (tok.type == TokenType.RESTRICT);
+                    declspec.isVolatile = (tok.type == TokenType.VOLATILE);
+                }
+
+                //and function specs
+                foreach (Token tok in functionSpecs)
+                {
+                    declspec.isInline = (tok.type == TokenType.INLINE);
+                }
+            }
+
             return declspec;
         }
 
@@ -191,28 +275,24 @@ namespace BlackC
 
         //- declarators -------------------------------------------------------
 
-        public DeclaratorNode makePointerNode(DeclSpecNode qualList, DeclaratorNode declar)
-        {        
-            return null;
-        }
-
-        public DeclaratorNode makeFuncDeclarNode(ParamTypeListNode paramList)
+        public DeclaratorNode makePointerNode(TypeQualNode qualList, DeclaratorNode declar)
         {
             return null;
         }
 
-        public DeclaratorNode makeDirectIndexNode(DeclaratorNode head, int mode, DeclSpecNode qualList, AssignExpressionNode assign)
+        public DeclaratorNode makeFuncDeclarNode(ParamListNode paramList)
         {
             return null;
         }
 
-        public void addParameterList(DeclaratorNode head, ParamTypeListNode paramlist)
+        public DeclaratorNode makeDirectIndexNode(DeclaratorNode head, int mode, TypeQualNode qualList, AssignExpressionNode assign)
         {
-            
+            return null;
         }
 
-        public ParamTypeListNode makeParamList(ParamTypeListNode paramList, ParamDeclNode param)
+        public ParamListNode makeParamList(ParamListNode paramList, ParamDeclNode param)
         {
+            //return new ParamListNode(paramList, false);
             return null;
         }
 
@@ -256,10 +336,9 @@ namespace BlackC
         //- identifiers -------------------------------------------------------------
 
         //vars
-        public DeclaratorNode makeIdentDeclaratorNode(string ident)
+        public IdentDeclaratorNode makeIdentDeclaratorNode(string ident)
         {
-            DeclaratorNode node = new DeclaratorNode();
-            node.ident = ident;
+            IdentDeclaratorNode node = new IdentDeclaratorNode(ident);
             return node;
         }
 
@@ -686,6 +765,11 @@ namespace BlackC
         public bool isLVar(ExprNode lhs)
         {
             return false;
+        }
+
+        internal TypeQualNode makeTypeQualNode(List<Token> typeQuals)
+        {
+            throw new NotImplementedException();
         }
     }
 }
