@@ -64,12 +64,12 @@ namespace BlackC
 
         //- external definitions ----------------------------------------------
 
-        public FuncDefinition completeFuncDef(DeclSpecNode declspecs, DeclaratorNode declar, List<Declaration> oldparamlist, StatementNode block)
+        public void completeFuncDef(FuncDeclNode funcdef, List<Declaration> oldparamlist, StatementNode block)
         {
-            return null;
+            funcdef.body = block;
         }
 
-        public void addFuncDefToModule(Module module, FuncDefinition funcdef)
+        public void addFuncDefToModule(Module module, FuncDeclNode funcdef)
         {
 
         }
@@ -86,14 +86,24 @@ namespace BlackC
             return new TypeDeclNode("foo");
         }
 
-        public Declaration makeFuncDeclNode(DeclSpecNode declarspecs, DeclaratorNode declarator)
+        public FuncDeclNode makeFuncDeclNode(DeclSpecNode declarspecs, DeclaratorNode declarator)
         {
-            //FuncDeclNode func = new FuncDeclNode();
-            //func.name = declarator.ident;
-            //func.returnType = declarspecs;
-            //func.paramList = declarator.paramList;
-            //return func;
-            return null;
+            FuncDeclNode func = new FuncDeclNode();
+            func.returnType = declarspecs.baseType;
+            DeclaratorNode dnode = declarator;
+            while (dnode != null)
+            {
+                if (dnode is IdentDeclaratorNode)
+                {
+                    func.name = ((IdentDeclaratorNode)dnode).ident;
+                }
+                if (dnode is ParamListNode)
+                {
+                    func.paramList = ((ParamListNode)dnode).paramList;
+                }
+                dnode = dnode.next;
+            }
+            return func;            
         }
 
         public Declaration makeVarDeclNode(Declaration decl, DeclSpecNode declarspecs, DeclaratorNode declarnode, InitializerNode initialnode)
@@ -285,15 +295,14 @@ namespace BlackC
             return null;
         }
 
-        public DeclaratorNode makeDirectIndexNode(DeclaratorNode head, int mode, TypeQualNode qualList, AssignExpressionNode assign)
+        public DeclaratorNode makeDirectIndexNode(int mode, TypeQualNode qualList, ExprNode assign)
         {
             return null;
         }
 
-        public ParamListNode makeParamList(ParamListNode paramList, ParamDeclNode param)
+        public ParamListNode makeParamList(List<ParamDeclNode> paramList)
         {
-            //return new ParamListNode(paramList, false);
-            return null;
+            return new ParamListNode(paramList, false);        
         }
 
         public ParamDeclNode makeParamDeclarNode(DeclSpecNode declarspecs, DeclaratorNode declar)
@@ -552,9 +561,10 @@ namespace BlackC
             return null;
         }
 
-        public IntConstant makeIntegerConstantNode(Token token)
+        public IntConstant makeIntegerConstantNode(int value)
         {
-            return null;
+            IntConstant node = new IntConstant(value);
+            return node;            
         }
 
         public FloatConstant makeFloatConstantNode(Token token)
@@ -747,7 +757,7 @@ namespace BlackC
             return null;
         }
 
-        public AssignExpressionNode makeAssignExpressionNode(AssignExpressionNode lhs, ASSIGNOP oper, ExprNode rhs)
+        public AssignExpressionNode makeAssignExpressionNode(ExprNode lhs, ASSIGNOP oper, ExprNode rhs)
         {
             return null;
         }

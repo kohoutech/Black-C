@@ -46,10 +46,19 @@ namespace Origami.OIL
         }
     }
 
-    //- external defs ---------------------------------------------------------
+    //- declarations ----------------------------------------------------------
 
-    public class ExternalDecl : OILNode
+    public class Declaration : OILNode
     {
+        public DeclSpecNode declspecs;
+        public List<DeclaratorNode> declarList;
+
+             //public Declaration(DeclSpecNode specs, List<DeclaratorNode> list)
+             //{
+             //    declspecs = specs;
+             //    declarList = list;
+             //    isFuncDef = false;
+             //}
     }
 
     public class TypeDeclNode : Declaration
@@ -63,7 +72,10 @@ namespace Origami.OIL
         }
     }
 
-    //?
+    // public class TypeSpecNode : DeclarSpecNode
+    // {
+    // }
+
     public class VarDeclNode : OILNode
     {
         public VarDeclNode()
@@ -72,17 +84,23 @@ namespace Origami.OIL
         }
     }
 
-    public class FuncDefinition : ExternalDecl
+    public class FuncDeclNode : Declaration
     {
-    }
-
-    //- declarations ----------------------------------------------------------
-
-    public class Declaration : ExternalDecl
-    {
+        public String name;
+        public TypeDeclNode returnType;
+        public List<ParamDeclNode> paramList;
+        public StatementNode body;
         public bool isFuncDef;
-        public DeclSpecNode declspecs;
-        public List<DeclaratorNode> declar;
+
+        public FuncDeclNode()
+        {
+            type = OILType.FuncDecl;
+            name = "";
+            returnType = null;
+            paramList = null;
+            body = null;
+            isFuncDef = false;
+        }
     }
 
     public class DeclSpecNode : OILNode
@@ -113,6 +131,7 @@ namespace Origami.OIL
             isStatic = false;
             isAuto = false;
             isRegister = false;
+
             isConst = false;
             isRestrict = false;
             isVolatile = false;
@@ -120,269 +139,7 @@ namespace Origami.OIL
         }
     }
 
-    public class ParamDeclNode : OILNode
-    {
-        private string p;
-
-        public ParamDeclNode(string p)
-        {
-            // TODO: Complete member initialization
-            this.p = p;
-        }
-        //     DeclarSpecNode specs;
-        //     DeclaratorNode declar;
-        //     AbstractDeclaratorNode absdeclar;
-
-        //     public ParamDeclarNode(DeclarSpecNode _specs, DeclaratorNode _declar, AbstractDeclaratorNode _absdeclar)
-        //     {
-        //         specs = _specs;
-        //         declar = _declar;
-        //         absdeclar = _absdeclar;
-        //     }
-    }
-
-    //?
-    public class FuncDeclNode : OILNode
-    {
-        public String name;
-        public Declaration returnType;
-        public List<ParamDeclNode> paramList;
-        public StatementNode stmt;
-
-        public FuncDeclNode()
-        {
-            type = OILType.FuncDecl;
-        }
-    }
-
-    public class InitializerNode : OILNode
-    {
-    }
-
-    //public class IdentDeclaratorNode : OILNode
-    //{
-    //    private string p;
-
-    //    public IdentDeclaratorNode(string p)
-    //    {
-    //        // TODO: Complete member initialization
-    //        this.p = p;
-    //    }
-    //}
-
-    // public class DeclarationNode : BlockItemNode
-    // {
-    //     public DeclarSpecNode declarspecs;
-    //     public List<InitDeclaratorNode> declarlist;
-    //     public bool isFuncDef;
-
-    //     public DeclarationNode(DeclarSpecNode specs, List<InitDeclaratorNode> list)
-    //     {
-    //         declarspecs = specs;
-    //         declarlist = list;
-    //         isFuncDef = false;
-    //     }
-    // }
-
-    // public class InitDeclaratorNode : ParseNode
-    // {
-    //     public DeclaratorNode declarnode;
-    //     public InitializerNode initialnode;
-
-    //     public InitDeclaratorNode(DeclaratorNode declar, InitializerNode initial)
-    //     {
-    //         declarnode = declar;
-    //         initialnode = initial;
-    //     }
-    // }
-
-    // public class DeclarSpecNode : ParseNode
-    // {
-    //     public enum STORAGE { TYPEDEF, EXTERN, STATIC, AUTO, REGISTER, NONE };
-    //     public STORAGE storage;
-
-    //     //type modifiers
-    //     public bool isShort;
-    //     public bool isLong;
-    //     public bool isLongLong;
-    //     public bool isSigned;
-    //     public bool isUnsigned;
-
-    //     //type qualifiers
-    //     public bool isConst;
-    //     public bool isRestrict;
-    //     public bool isVolatile;
-
-    //     //function specifier
-    //     public bool isInline;
-
-    //     //type specifier
-    //     public TypeSpecNode typeSpec;
-
-    //     public DeclarSpecNode()
-    //     {
-    //         storage = STORAGE.NONE;
-
-    //         isShort = false;
-    //         isLong = false;
-    //         isLongLong = false;
-    //         isSigned = false;
-    //         isUnsigned = false;
-
-    //         isConst = false;
-    //         isRestrict = false;
-    //         isVolatile = false;
-
-    //         isInline = false;
-
-    //         typeSpec = null;
-    //     }
-
-    //     public void setStorageClassSpec(Token token)
-    //     {
-    //         switch (token.type)
-    //         {
-    //             case TokenType.tTYPEDEF:
-    //                 storage = DeclarSpecNode.STORAGE.TYPEDEF;
-    //                 break;
-
-    //             case TokenType.tEXTERN:
-    //                 storage = DeclarSpecNode.STORAGE.EXTERN;
-    //                 break;
-
-    //             case TokenType.tSTATIC:
-    //                 storage = DeclarSpecNode.STORAGE.STATIC;
-    //                 break;
-
-    //             case TokenType.tAUTO:
-    //                 storage = DeclarSpecNode.STORAGE.AUTO;
-    //                 break;
-
-    //             case TokenType.tREGISTER:
-    //                 storage = DeclarSpecNode.STORAGE.REGISTER;
-    //                 break;
-    //         }        
-    //     }
-
-    //     public void setBaseClassSpec(Token token)
-    //     {
-    //         BaseTypeSpecNode basespec = new BaseTypeSpecNode();
-    //         switch (token.type)
-    //         {
-    //             case TokenType.tVOID:
-    //                 basespec.baseclass = BaseTypeSpecNode.BASE.VOID;
-    //                 break;
-
-    //             case TokenType.tCHAR:
-    //                 basespec.baseclass = BaseTypeSpecNode.BASE.CHAR;
-    //                 break;
-
-    //             case TokenType.tINT:
-    //                 basespec.baseclass = BaseTypeSpecNode.BASE.INT;
-    //                 break;
-
-    //             case TokenType.tFLOAT:
-    //                 basespec.baseclass = BaseTypeSpecNode.BASE.FLOAT;
-    //                 break;
-
-    //             case TokenType.tDOUBLE:
-    //                 basespec.baseclass = BaseTypeSpecNode.BASE.DOUBLE;
-    //                 break;                    
-    //         }
-    //         typeSpec = basespec;
-    //     }
-
-    //     public void setBaseClassModifier(Token token)
-    //     {
-    //         switch (token.type)
-    //         {
-    //             case TokenType.tSHORT:
-    //                 isShort = true;
-    //                 break;
-
-    //             case TokenType.tLONG:
-    //                 if (isLong)
-    //                 {
-    //                     isLongLong = true;
-    //                 }
-    //                 else
-    //                 {
-    //                     isLong = true;
-    //                 }
-    //                 break;
-
-    //             case TokenType.tSIGNED:
-    //                 isSigned = true;
-    //                 break;
-
-    //             case TokenType.tUNSIGNED:
-    //                 isUnsigned = true;
-    //                 break;
-    //         }
-    //     }
-
-    //     public void setTypeQual(Token token)
-    //     {
-    //         switch (token.type)
-    //         {
-    //             case TokenType.tCONST:
-    //                 isConst = true;
-    //                 break;
-
-    //             case TokenType.tRESTRICT:
-    //                 isRestrict = true;
-    //                 break;
-
-    //             case TokenType.tVOLATILE:
-    //                 isVolatile = true;
-    //                 break;
-    //         }
-    //     }
-
-    //     public void setFunctionSpec(Token token)
-    //     {
-    //         isInline = true;
-    //     }
-
-    //     public void complete()
-    //     {
-    //         if ((typeSpec != null) && (typeSpec is BaseTypeSpecNode))
-    //         {
-    //             BaseTypeSpecNode spec = (BaseTypeSpecNode)typeSpec;
-    //             spec.isShort = isShort;
-    //             spec.isLong = isLong;
-    //             spec.isLongLong = isLongLong;
-    //             spec.isSigned = isSigned;
-    //             spec.isUnsigned = isUnsigned;
-    //         }
-    //     }
-    // }
-
-    // public class TypeSpecNode : DeclarSpecNode
-    // {
-    // }
-
-    // public class BaseTypeSpecNode : TypeSpecNode
-    // {
-    //     public enum BASE { VOID, CHAR, INT, FLOAT, DOUBLE, NONE }
-    //     public BASE baseclass;
-
-    //     public bool isShort;
-    //     public bool isLong;
-    //     public bool isLongLong;
-    //     public bool isSigned;
-    //     public bool isUnsigned;
-
-    //     public BaseTypeSpecNode()
-    //     {
-    //         isShort = false;
-    //         isLong = false;
-    //         isLongLong = false;
-    //         isSigned = false;
-    //         isUnsigned = false;
-    //         baseclass = BASE.NONE;
-    //     }
-    // }
+    //- struct/unions/enums -----------------------------------------------
 
     //public class StructSpecNode : TypeDeclNode
     // {
@@ -513,24 +270,23 @@ namespace Origami.OIL
 
     public class DeclaratorNode : OILNode
     {
-        //public String ident;
-        //     public PointerNode ptr;
-        //     public DirectDeclaratorNode declar;
-        //public List<ParamDeclNode> paramList;
         public DeclaratorNode next;
 
         public DeclaratorNode()
         {
-            //         ptr = null;
-            //         declar = null;
-            //paramList = null;
             next = null;
         }
+    }
 
-        //     public DeclaratorNode(PointerNode _ptr, DirectDeclaratorNode _declar)
+    public class PtrDeclaratorNode : DeclaratorNode
+    {
+        //     public DeclarSpecNode qualList;
+        //     public DeclaratorNode chain;
+
+        //     public PointerNode(DeclarSpecNode list, DeclaratorNode declar)
         //     {
-        //         ptr = _ptr;
-        //         declar = _declar;
+        //         qualList = list;
+        //         chain = declar;
         //     }
     }
 
@@ -545,16 +301,40 @@ namespace Origami.OIL
         }
     }
 
+    public class ArrayDeclaratorNode : DeclaratorNode
+    {
+    }
+
     public class ParamListNode : DeclaratorNode
     {
-        List<ParamDeclNode> list;
-        bool hasElipsis;
+        public List<ParamDeclNode> paramList;
+        public bool hasElipsis;
 
         public ParamListNode(List<ParamDeclNode> _list, bool _hasElipsis) : base()
         {
-            list = _list;
+            paramList = _list;
             hasElipsis = _hasElipsis;
         }
+    }
+
+    public class ParamDeclNode : OILNode
+    {
+        private string p;
+
+        public ParamDeclNode(string _p)
+        {
+            p = _p;
+        }
+        //     DeclarSpecNode specs;
+        //     DeclaratorNode declar;
+        //     AbstractDeclaratorNode absdeclar;
+
+        //     public ParamDeclarNode(DeclarSpecNode _specs, DeclaratorNode _declar, AbstractDeclaratorNode _absdeclar)
+        //     {
+        //         specs = _specs;
+        //         declar = _declar;
+        //         absdeclar = _absdeclar;
+        //     }
     }
 
     // public class DirectDeclaratorNode : ParseNode
@@ -582,18 +362,6 @@ namespace Origami.OIL
     //         chain = null;
     //     }
 
-    // }
-
-    // public class PointerNode : ParseNode
-    // {
-    //     public DeclarSpecNode qualList;
-    //     public DeclaratorNode chain;
-
-    //     public PointerNode(DeclarSpecNode list, DeclaratorNode declar)
-    //     {
-    //         qualList = list;
-    //         chain = declar;
-    //     }
     // }
 
     public class TypeNameNode : OILNode
@@ -626,6 +394,12 @@ namespace Origami.OIL
     //     }
     // }
 
+    //- initializers ------------------------------------------------------
+
+    public class InitializerNode : OILNode
+    {
+    }
+
     // public class InitializerNode : ParseNode
     // {
     //     public void addDesignation(DesignationNode desinode)
@@ -633,6 +407,29 @@ namespace Origami.OIL
     //         throw new NotImplementedException();
     //     }
     // }    
+
+    //public class IdentDeclaratorNode : OILNode
+    //{
+    //    private string p;
+
+    //    public IdentDeclaratorNode(string p)
+    //    {
+    //        // TODO: Complete member initialization
+    //        this.p = p;
+    //    }
+    //}
+
+    // public class InitDeclaratorNode : ParseNode
+    // {
+    //     public DeclaratorNode declarnode;
+    //     public InitializerNode initialnode;
+
+    //     public InitDeclaratorNode(DeclaratorNode declar, InitializerNode initial)
+    //     {
+    //         declarnode = declar;
+    //         initialnode = initial;
+    //     }
+    // }
 
     public class DesignationNode : OILNode
     {
@@ -723,12 +520,17 @@ namespace Origami.OIL
 
     public class ExprNode : OILNode
     {
-        public IntConstant retval;
+        
     }
 
     public class IntConstant : ExprNode
     {
         public int value;
+
+        public IntConstant(int _value)
+        {
+            value = _value;
+        }
     }
 
     public class FloatConstant : ExprNode
@@ -1055,12 +857,11 @@ namespace Origami.OIL
 
     public class AssignExpressionNode : ExprNode
     {
-        private ExprNode lhs;
+        public ExprNode lhs;
 
-        public AssignExpressionNode(ExprNode lhs)
+        public AssignExpressionNode(ExprNode _lhs)
         {
-            // TODO: Complete member initialization
-            this.lhs = lhs;
+            lhs = _lhs;
         }
     }
 

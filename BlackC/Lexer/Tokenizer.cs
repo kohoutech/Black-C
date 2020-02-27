@@ -126,7 +126,7 @@ namespace BlackC.Lexer
             }
             catch (Exception e)
             {
-                Console.WriteLine("error parsing number str " + numstr + " : " + e.Message);
+                parser.error("error parsing number str " + numstr + " : " + e.Message);
             }
             return tok;
         }

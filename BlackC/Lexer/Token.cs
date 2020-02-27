@@ -29,21 +29,10 @@ namespace BlackC.Lexer
         public TokenType type;
         public String chars;
         public SourceLocation loc;
-        public bool startsLine;             //if this is the first non-whitespace token on a line
-        public bool leadingSpace;           //if this has whitespace before it
 
         public string strval;
         public int intval;
         public double floatval;
-
-        //public Token(TokenType _type, String _chars, SourceLocation _loc)
-        //{
-        //    type = _type;
-        //    chars = _chars;
-        //    loc = _loc;
-        //    startsLine = false;
-        //    leadingSpace = false;
-        //}
 
         public Token(TokenType _type)
         {
@@ -54,7 +43,7 @@ namespace BlackC.Lexer
         }
 
         //these must be int he same order as the TokenType enum
-        String[] spelling = new String[] { "ident", "typename", "int const", "float const", "char const", "string const",
+        String[] spelling = new String[] { "ident", "int const", "float const", "char const", "string const",
                     "auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum", "extern",
                     "float", "for", "goto", "if", "inline", "int", "long", "register", "restrict", "return", "short",
                     "signed", "sizeof", "static", "struct", "switch", "typedef", "union", "unsigned", "void", "volatile", "while",
