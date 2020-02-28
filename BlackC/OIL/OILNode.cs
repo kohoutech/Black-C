@@ -34,12 +34,14 @@ namespace Origami.OIL
 
     public class Module
     {
+        public String name;
         public List<TypeDeclNode> typedefs;
         public List<VarDeclNode> globals;
         public List<FuncDeclNode> funcs;
 
-        public Module()
+        public Module(String _name)
         {
+            name = _name;
             typedefs = new List<TypeDeclNode>();
             globals = new List<VarDeclNode>();
             funcs = new List<FuncDeclNode>();
@@ -89,7 +91,8 @@ namespace Origami.OIL
         public String name;
         public TypeDeclNode returnType;
         public List<ParamDeclNode> paramList;
-        public StatementNode body;
+        public List<VarDeclNode> locals;
+        public List<StatementNode> body;
         public bool isFuncDef;
 
         public FuncDeclNode()
@@ -470,6 +473,14 @@ namespace Origami.OIL
 
     public class CompoundStatementNode : StatementNode
     {
+        public List<Declaration> decls;
+        public List<StatementNode> stmts;
+
+        public CompoundStatementNode()
+        {
+            decls = new List<Declaration>();
+            stmts = new List<StatementNode>();
+        }
     }
 
     public class ExpressionStatementNode : StatementNode
@@ -514,6 +525,13 @@ namespace Origami.OIL
 
     public class ReturnStatementNode : StatementNode
     {
+        public ExprNode retval;
+
+        public ReturnStatementNode(ExprNode _val)
+        {
+            type = OILType.ReturnStmt;
+            retval = _val;
+        }
     }
 
     //- expressions -----------------------------------------------------------
@@ -529,6 +547,7 @@ namespace Origami.OIL
 
         public IntConstant(int _value)
         {
+            type = OILType.IntConst;
             value = _value;
         }
     }
@@ -896,5 +915,9 @@ namespace Origami.OIL
         TypeDecl,
         VarDecl,
         FuncDecl,
+
+        ReturnStmt,
+
+        IntConst
     }
 }

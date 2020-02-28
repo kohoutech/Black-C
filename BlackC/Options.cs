@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Black C - a frontend C parser
-Copyright (C) 1997-2018  George E Greaney
+Copyright (C) 1997-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -29,32 +29,32 @@ namespace BlackC
     {
         public List<String> filenames;
         public bool preProcessOnly;
+        public string preProcessFilename;
 
         public List<String> includePaths;
+        public bool saveSpaces;
 
         public Options(string[] cmdArgs)
         {
-
             setDefaultValues();
 
-            //first merge any response file contents into arg list
-            List<String> args = new List<string>();
-            foreach (String arg in cmdArgs)
-            {
-                if (arg[0] == '@')
-                {
-                    List<String> responseArgs = parseResponseFile(arg.Substring(1));
-                    args.AddRange(responseArgs);
-                }
-                else
-                {
-                    args.Add(arg);
-                }
-            }
+            ////first merge any response file contents into arg list
+            //List<String> args = new List<string>();
+            //foreach (String arg in cmdArgs)
+            //{
+            //    if (arg[0] == '@')
+            //    {
+            //        List<String> responseArgs = parseResponseFile(arg.Substring(1));
+            //        args.AddRange(responseArgs);
+            //    }
+            //    else
+            //    {
+            //        args.Add(arg);
+            //    }
+            //}
 
-            //now parse all options & filenames
-            parseOptions(args);
-
+            ////now parse all options & filenames
+            //parseOptions(args);
         }
 
         public void setDefaultValues()
@@ -63,6 +63,9 @@ namespace BlackC
             includePaths = new List<string>();
 
             preProcessOnly = false;
+            //preProcessOnly = true;
+            preProcessFilename = "test.i.txt";
+            saveSpaces = false;
         }
 
         public List<String> parseResponseFile(String filename)
@@ -73,6 +76,8 @@ namespace BlackC
             String[] lines = File.ReadAllLines(filename);
             foreach (String line in lines)
             {
+                if (line.Length == 0)
+                    continue;
                 String[] lineargs = line.Split(sep);
                 args.AddRange(lineargs);
             }
@@ -104,6 +109,12 @@ namespace BlackC
                                     includePaths.Add(path);
                                     break;
                                 }
+                            case 'P':
+                                {
+                                    preProcessOnly = true;
+                                    break;
+                                }
+
                         }
                     }
                 }

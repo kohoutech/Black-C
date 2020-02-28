@@ -30,20 +30,21 @@ namespace BlackC
     {
         static void Main(string[] args)
         {
-            Options options = new Options(args);            //parse the cmd line args
+            Options options = new Options(args);                    //parse the cmd line args
 
             String filename = args[0];
-            Parser parser = new Parser(options);            //create a parser
+            Parser parser = new Parser(filename);                    //create a parser
+            OILCan oilCan = new OILCan("module.oil.txt");
 
             try
             {
-                Module module = parser.parseFile(filename);         //parse the source file
-                OILCan.saveOILCan(module, "module.oil.txt");        //and write it out to OIL file
+                Module module = parser.parseFile();                 //parse the source file                
+                oilCan.save(module);                                //and write it out to OIL file
             }
             catch (ParserException e)
             {
                 Console.WriteLine("had fatal exception: " + e.Message);
-            }            
+            }
         }
     }
 }

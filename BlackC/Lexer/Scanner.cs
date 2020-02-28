@@ -57,7 +57,7 @@ namespace BlackC.Lexer
 
             srcpos = 0;
             sourceMapPos = 0;
-            saveSpaces = parser.options.saveSpaces;
+            saveSpaces = parser.saveSpaces;
             spstr = new StringBuilder();
         }
 

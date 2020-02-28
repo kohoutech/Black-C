@@ -76,7 +76,7 @@ namespace BlackC.Lexer
             }
 
             //if not saving spaces in output, compress multiple blank lines into one blank line
-            if (!parser.options.saveSpaces)
+            if (!parser.saveSpaces)
             {
                 lines = removeBlankLines(lines);
             }

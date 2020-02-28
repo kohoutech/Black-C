@@ -64,14 +64,19 @@ namespace BlackC
 
         //- external definitions ----------------------------------------------
 
-        public void completeFuncDef(FuncDeclNode funcdef, List<Declaration> oldparamlist, StatementNode block)
+        //not handling oldparamlist now -- if ever?
+        public void completeFuncDef(FuncDeclNode funcdef, List<Declaration> oldparamlist, CompoundStatementNode block)
         {
-            funcdef.body = block;
+            funcdef.body = new List<StatementNode>();
+            foreach (StatementNode stmt in block.stmts)
+            {
+                funcdef.body.Add(stmt);
+            }
         }
 
         public void addFuncDefToModule(Module module, FuncDeclNode funcdef)
         {
-
+            module.funcs.Add(funcdef);
         }
 
         public void addDeclToModule(Module module, Declaration decl)
@@ -317,7 +322,7 @@ namespace BlackC
 
         //- initializers ------------------------------------------------------
 
-        public InitializerNode makeInitializerNode(AssignExpressionNode expr)
+        public InitializerNode makeInitializerNode(ExprNode expr)
         {
             return null;
         }
@@ -486,12 +491,14 @@ namespace BlackC
 
         public CompoundStatementNode makeCompoundStatementNode(CompoundStatementNode comp, Declaration decl)
         {
-            return null;
+            comp.decls.Add(decl);
+            return comp;
         }
 
         public CompoundStatementNode makeCompoundStatementNode(CompoundStatementNode comp, StatementNode stmt)
         {
-            return null;
+            comp.stmts.Add(stmt);
+            return comp;
         }
 
         public ExpressionStatementNode makeExpressionStatementNode(ExprNode expr)
@@ -551,7 +558,8 @@ namespace BlackC
 
         public ReturnStatementNode makeReturnStatementNode(ExprNode expr)
         {
-            return null;
+            ReturnStatementNode node = new ReturnStatementNode(expr);
+            return node;
         }
 
         //- expressions -------------------------------------------------------------
@@ -762,7 +770,7 @@ namespace BlackC
             return null;
         }
 
-        public ExpressionNode makeExpressionNode(ExpressionNode node, ExprNode expr)
+        public ExpressionNode makeExpressionNode(ExprNode node, ExprNode expr)
         {
             return null;
         }

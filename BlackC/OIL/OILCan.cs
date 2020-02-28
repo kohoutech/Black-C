@@ -29,10 +29,19 @@ namespace Origami.OIL
     class OILCan
     {
         public string filename;
+        EnamlData enaml;
 
-        public static Module loadOILCan(String filename)
+        public OILCan(String _filename)
         {
-            Module module = new Module();
+            filename = _filename;
+            enaml = null;
+        }
+
+        //- reading in --------------------------------------------------------
+
+        public Module load(String filename, String modname)
+        {
+            Module module = new Module(modname);
             EnamlData can = EnamlData.loadFromFile(filename);
 
             //root.decls.Add(new VarDeclar("i", "int"));
@@ -47,8 +56,74 @@ namespace Origami.OIL
             return module;
         }
 
-        public static void saveOILCan(Module module, String filename)
+        //- writing out -------------------------------------------------------
+
+        public void save(Module module)
         {
+            enaml = new EnamlData();
+            enaml.setStringValue("OILCan.version", "0.10");
+            enaml.setStringValue("module.name", module.name);
+
+            int fnum = 0;
+            foreach (FuncDeclNode func in module.funcs)
+            {
+                saveFuncDef(fnum++, func);
+            }
+
+            enaml.saveToFile(filename);
+        }
+
+        public void saveFuncDef(int fnum, FuncDeclNode func)
+        {
+            string fname = "module.func" + fnum.ToString();
+            enaml.setStringValue(fname + ".name", func.name);
+            saveTypeDef(fname + ".return-type", func.returnType);
+
+            string bname = fname + ".body";
+            foreach (StatementNode stmt in func.body)
+            {
+                switch (stmt.type)
+                {
+                    case OILType.ReturnStmt:
+                        saveReturnStmt(bname, stmt);
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+        }
+
+        public void saveTypeDef(string path, TypeDeclNode typdef)
+        {
+            enaml.setStringValue(path, typdef.name);
+        }
+
+        public void saveReturnStmt(string path, StatementNode stmt)
+        {
+            ReturnStatementNode rstmt = (ReturnStatementNode)stmt;
+            if (rstmt.retval != null)
+            {
+                saveExpression(path + ".return-stmt.value", rstmt.retval);
+            }
+            else
+            {
+                enaml.setStringValue(path + ".return-stmt.value", "none");
+            }
+        }
+
+        public void saveExpression(string path, ExprNode expr)
+        {
+            switch (expr.type)
+            {
+                case OILType.IntConst:
+                    IntConstant iconst = (IntConstant)expr;
+                    enaml.setIntValue(path + ".int-const", iconst.value);
+                    break;
+
+                default:
+                    break;
+            }
         }
     }
 }

@@ -33,18 +33,29 @@ namespace BlackC
 {
     public class Parser
     {
-        public Options options;
+        //public Options options;
         public Tokenizer prep;
         public Arbor arbor;
 
-        public List<String> includePaths;
+        public String filename;
 
-        public Parser(Options _options)
+        public bool preProcessOnly;
+        public String preProcessFilename;
+
+        public List<String> includePaths;
+        public bool saveSpaces;
+
+        public Parser(String _filename)
         {
-            options = _options;
+            //options = _options;
+            filename = _filename;
 
             prep = null;
             arbor = new Arbor(this);
+
+            preProcessOnly = false;
+            preProcessFilename = "";
+            saveSpaces = false;
 
             //    includePaths = new List<string>() { "." };          //start with current dir
             //    includePaths.AddRange(options.includePaths);        //add search paths from command line         
@@ -54,14 +65,14 @@ namespace BlackC
         {
         }
 
-        public Module parseFile(String filename)
+        public Module parseFile()
         {
             Module module = null;
             prep = new Tokenizer(this, filename);
 
-            if (options.preProcessOnly)
+            if (preProcessOnly)
             {
-                prep.preprocessFile(options.preProcessFilename);
+                prep.preprocessFile(preProcessFilename);
             }
             else
             {
@@ -115,7 +126,7 @@ namespace BlackC
         */
         public Module parseTranslationUnit()
         {
-            Module module = new Module();
+            Module module = new Module(filename);
             do
             {
                 Declaration decl = parseDeclaration();
@@ -131,7 +142,7 @@ namespace BlackC
                         pdecl = parseDeclaration();
                     }
 
-                    StatementNode block = parseCompoundStatement();
+                    CompoundStatementNode block = parseCompoundStatement();
 
                     arbor.completeFuncDef(funcdef, oldparamlist, block);
                     arbor.addFuncDefToModule(module, funcdef);
@@ -943,28 +954,28 @@ namespace BlackC
         */
         public StatementNode parseStatement()
         {
-            StatementNode node = parseLabeledStatement();
-            if (node == null)
+            StatementNode stmt = parseLabeledStatement();
+            if (stmt == null)
             {
-                node = parseCompoundStatement();
+                stmt = parseCompoundStatement();
             }
             //if (node == null)
             //{
             //    node = parseExpressionStatement();
             //}
-            if (node == null)
+            if (stmt == null)
             {
-                node = parseSelectionStatement();
+                stmt = parseSelectionStatement();
             }
-            if (node == null)
+            if (stmt == null)
             {
-                node = parseIterationStatement();
+                stmt = parseIterationStatement();
             }
-            if (node == null)
+            if (stmt == null)
             {
-                node = parseJumpStatement();
+                stmt = parseJumpStatement();
             }
-            return node;
+            return stmt;
         }
 
         /*(6.8.1) 
@@ -1176,7 +1187,10 @@ namespace BlackC
                 ExprNode expr = parseExpression();
                 stmt = arbor.makeReturnStatementNode(expr);
             }
-            consumeToken();                                 //skip ending ';'
+            if (stmt != null)
+            {
+                consumeToken();                                 //skip ending ';'
+            }
             return stmt;
         }
 
@@ -1212,7 +1226,7 @@ namespace BlackC
             }
             else if (token.type == TokenType.LPAREN)            //( expression )
             {
-                ExpressionNode expr = parseExpression();
+                ExprNode expr = parseExpression();
                 consumeToken();                                 //skip ')'
                 node = arbor.makeSubexpressionNode(expr);
             }
@@ -1267,7 +1281,7 @@ namespace BlackC
             {
                 if (nextTokenIs(TokenType.LBRACKET))            //postfix-expression [ expression ]
                 {
-                    ExpressionNode expr = parseExpression();
+                    ExprNode expr = parseExpression();
                     consumeToken();
                     head = arbor.makeIndexExprNode(head, expr);
                     continue;
@@ -1763,11 +1777,10 @@ namespace BlackC
             ExprNode lhs = parseLogicalORExpression();
             if (lhs != null)
             {
-                Token token = prep.getToken();
                 if (nextTokenIs(TokenType.QUESTION))
                 {
                     consumeToken();                                             //skip '?'
-                    ExpressionNode expr = parseExpression();
+                    ExprNode expr = parseExpression();
                     consumeToken();                                             //skip ':'
                     ExprNode condit = parseConditionalExpression();
                     lhs = arbor.makeConditionalExprNode(lhs, expr, condit);
@@ -1867,22 +1880,20 @@ namespace BlackC
         /*(6.5.17) 
           assignment-expression (',' assignment-expression)*
          */
-        public ExpressionNode parseExpression()
+        public ExprNode parseExpression()
         {
-            ExpressionNode node = null;
             ExprNode expr = parseAssignExpression();
             if (expr != null)
             {
-                node = arbor.makeExpressionNode(null, expr);
                 while (nextTokenIs(TokenType.COMMA))
                 {
                     {
-                        expr = parseAssignExpression();
-                        node = arbor.makeExpressionNode(node, expr);
+                        ExprNode rhs = parseAssignExpression();
+                        expr = arbor.makeExpressionNode(expr, rhs);
                     }
                 }
             }
-            return node;
+            return expr;
         }
 
         /*(6.6) 
