@@ -111,9 +111,27 @@ namespace BlackC
             return func;            
         }
 
-        public Declaration makeVarDeclNode(Declaration decl, DeclSpecNode declarspecs, DeclaratorNode declarnode, InitializerNode initialnode)
+        public Declaration makeVarDeclNode(Declaration decl, DeclSpecNode declarspecs, DeclaratorNode declarator, InitializerNode initializer)
         {
-            return null;
+            VarDeclNode vardecl = new VarDeclNode();
+            vardecl.varType = declarspecs.baseType;
+            DeclaratorNode dnode = declarator;
+            while (dnode != null)
+            {
+                if (dnode is IdentDeclaratorNode)
+                {
+                    vardecl.name = ((IdentDeclaratorNode)dnode).ident;
+                }
+                dnode = dnode.next;
+            }
+            vardecl.initializer = initializer;
+
+            if (decl == null)
+            {
+                decl = new Declaration();
+            }
+            decl.decls.Add(vardecl);
+            return decl;
         }
 
         public DeclSpecNode makeDeclSpecs(List<Token> storageClassSpecs, List<TypeDeclNode> typeDefs, List<Token> typeModifers,
@@ -307,12 +325,37 @@ namespace BlackC
 
         public ParamListNode makeParamList(List<ParamDeclNode> paramList)
         {
-            return new ParamListNode(paramList, false);        
+            bool hasElipsis = false;
+            List<ParamDeclNode> paramList2 = new List<ParamDeclNode>();
+            foreach (ParamDeclNode p in paramList)
+            {
+                if (p.name.Equals("..."))
+                {
+                    hasElipsis = true;
+                }
+                else
+                {
+                    paramList2.Add(p);
+                }
+            }
+            return new ParamListNode(paramList2, hasElipsis);
         }
 
         public ParamDeclNode makeParamDeclarNode(DeclSpecNode declarspecs, DeclaratorNode declar)
         {
-            return null;
+            String pname = "";
+            TypeDeclNode ptype = declarspecs.baseType;
+            DeclaratorNode dnode = declar;
+            while (dnode != null)
+            {
+                if (dnode is IdentDeclaratorNode)
+                {
+                    pname = ((IdentDeclaratorNode)dnode).ident;
+                }
+                dnode = dnode.next;
+            }
+            ParamDeclNode p = new ParamDeclNode(pname, ptype);
+            return p;
         }
 
         public TypeNameNode makeTypeNameNode(DeclSpecNode list, DeclaratorNode declar)
@@ -324,7 +367,8 @@ namespace BlackC
 
         public InitializerNode makeInitializerNode(ExprNode expr)
         {
-            return null;
+            InitializerNode node = new InitializerNode(expr);
+            return node;
         }
 
         public InitializerNode makeInitializerNode(List<InitializerNode> list)
@@ -575,9 +619,10 @@ namespace BlackC
             return node;            
         }
 
-        public FloatConstant makeFloatConstantNode(Token token)
+        public FloatConstant makeFloatConstantNode(double value)
         {
-            return null;
+            FloatConstant node = new FloatConstant(value);
+            return node;
         }
 
         public ExprNode makeCharConstantNode(Token token)

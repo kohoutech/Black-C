@@ -52,15 +52,16 @@ namespace Origami.OIL
 
     public class Declaration : OILNode
     {
-        public DeclSpecNode declspecs;
-        public List<DeclaratorNode> declarList;
+        //public DeclSpecNode declspecs;
+        //public List<DeclaratorNode> declarList;
+        public List<OILNode> decls;
 
-             //public Declaration(DeclSpecNode specs, List<DeclaratorNode> list)
-             //{
-             //    declspecs = specs;
-             //    declarList = list;
-             //    isFuncDef = false;
-             //}
+        public Declaration()
+        {
+            //    declspecs = specs;
+            //    declarList = list;
+            decls = new List<OILNode>();
+        }
     }
 
     public class TypeDeclNode : Declaration
@@ -80,9 +81,16 @@ namespace Origami.OIL
 
     public class VarDeclNode : OILNode
     {
+        public string name;
+        public TypeDeclNode varType;
+        public InitializerNode initializer;
+        
         public VarDeclNode()
         {
             type = OILType.VarDecl;
+            name = "";
+            varType = null;
+            initializer = null;
         }
     }
 
@@ -281,16 +289,19 @@ namespace Origami.OIL
         }
     }
 
-    public class PtrDeclaratorNode : DeclaratorNode
+    public class PointerDeclNode : DeclaratorNode
     {
-        //     public DeclarSpecNode qualList;
-        //     public DeclaratorNode chain;
+        public bool isConst;
+        public bool isRestrict;
+        public bool isVolatile;
 
-        //     public PointerNode(DeclarSpecNode list, DeclaratorNode declar)
-        //     {
-        //         qualList = list;
-        //         chain = declar;
-        //     }
+        public PointerDeclNode()
+            : base()
+        {
+            isConst = false;
+            isRestrict = false;
+            isVolatile = false;
+        }
     }
 
     public class IdentDeclaratorNode : DeclaratorNode
@@ -313,7 +324,8 @@ namespace Origami.OIL
         public List<ParamDeclNode> paramList;
         public bool hasElipsis;
 
-        public ParamListNode(List<ParamDeclNode> _list, bool _hasElipsis) : base()
+        public ParamListNode(List<ParamDeclNode> _list, bool _hasElipsis)
+            : base()
         {
             paramList = _list;
             hasElipsis = _hasElipsis;
@@ -322,70 +334,19 @@ namespace Origami.OIL
 
     public class ParamDeclNode : OILNode
     {
-        private string p;
+        public string name;
+        public TypeDeclNode type;
 
-        public ParamDeclNode(string _p)
+        public ParamDeclNode(string _name, TypeDeclNode _type)
         {
-            p = _p;
+            name = _name;
+            type = _type;
         }
-        //     DeclarSpecNode specs;
-        //     DeclaratorNode declar;
-        //     AbstractDeclaratorNode absdeclar;
-
-        //     public ParamDeclarNode(DeclarSpecNode _specs, DeclaratorNode _declar, AbstractDeclaratorNode _absdeclar)
-        //     {
-        //         specs = _specs;
-        //         declar = _declar;
-        //         absdeclar = _absdeclar;
-        //     }
     }
-
-    // public class DirectDeclaratorNode : ParseNode
-    // {
-    //     public IdentNode ident;
-    //     public DeclaratorNode declar;
-    //     public bool staticQualList;
-    //     public List<TypeQualNode> indexQualList;
-    //     public bool staticAssign;
-    //     public AssignExpressionNode indexAssign;
-    //     public ParamTypeListNode paramList;
-    //     public List<IdentNode> identList;
-    //     public DirectDeclaratorNode chain;
-
-    //     public DirectDeclaratorNode()
-    //     {
-    //         ident = null;
-    //         declar = null;
-    //         staticQualList = false;
-    //         indexQualList = null;
-    //         staticAssign = false;
-    //         indexAssign = null;
-    //         paramList = null;
-    //         identList = null;
-    //         chain = null;
-    //     }
-
-    // }
 
     public class TypeNameNode : OILNode
     {
     }
-
-    //public class AbstractDeclaratorNode : OILNode
-    //{
-    //    //     public PointerNode ptr;
-    //    //     public DirectAbstractNode direct;
-
-    //    //     public AbstractDeclaratorNode(PointerNode _ptr, DirectAbstractNode _direct)
-    //    //     {
-    //    //         ptr = _ptr;
-    //    //         direct = _direct;
-    //    //     }
-    //}
-
-    // public class DirectAbstractNode : ParseNode
-    // {
-    // }
 
     // public class TypedefNode : ParseNode
     // {
@@ -401,6 +362,12 @@ namespace Origami.OIL
 
     public class InitializerNode : OILNode
     {
+        public ExprNode initExpr;
+
+        public InitializerNode(ExprNode _initExpr)
+        {
+            initExpr = _initExpr;
+        }
     }
 
     // public class InitializerNode : ParseNode
@@ -554,7 +521,13 @@ namespace Origami.OIL
 
     public class FloatConstant : ExprNode
     {
-        public int value;
+        public double value;
+
+        public FloatConstant(double _value)
+        {
+            type = OILType.FloatConst;
+            value = _value;
+        }
     }
 
     public class CharConstant : ExprNode
@@ -918,6 +891,7 @@ namespace Origami.OIL
 
         ReturnStmt,
 
-        IntConst
+        IntConst,
+        FloatConst
     }
 }

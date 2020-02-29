@@ -609,9 +609,10 @@ namespace BlackC
             DeclaratorNode tail = null;
             Token token = prep.getToken();
 
-            //identifier
-            if (!isAbstract && (token.type == TokenType.IDENT))
+            //identifier - if we see this, the declatator is no longer abstract
+            if (token.type == TokenType.IDENT)
             {
+                isAbstract = false;
                 IdentDeclaratorNode idnode = arbor.makeIdentDeclaratorNode(token.strval);
                 tail = parseDirectDeclaratorTail(isAbstract);
                 idnode.next = tail;
@@ -739,25 +740,23 @@ namespace BlackC
         }
 
         /*(6.7.5) 
-          parameter-type-list:
-            parameter-declaration (',' parameter-declaration)* (, ...)?
+          parameter-type-list:            parameter-declaration (',' parameter-declaration)* (, ...)?
          */
         //parse (possibly empty) list of parameters, we've already seen the opening paren
         public ParamListNode parseParameterList(bool isAbstract)
         {
             ParamListNode paramList = null;
             List<ParamDeclNode> parameters = new List<ParamDeclNode>();
-            if (nextTokenIs(TokenType.RPAREN))
-            {
-                consumeToken();                                                     //skip ending ')'
-                paramList = arbor.makeParamList(parameters);
-                return paramList;                                                   //return empty param list
-            }
-
             while (true)
             {
+                if (nextTokenIs(TokenType.RPAREN))                      //at end of param list
+                {
+                    consumeToken();                                     //skip ending ')'
+                    paramList = arbor.makeParamList(parameters);
+                    break;
+                }
+
                 ParamDeclNode param = parseParameterDeclar(isAbstract);
-                //paramList = arbor.makeParamList(paramList, param);
                 parameters.Add(param);
 
                 if (nextTokenIs(TokenType.COMMA))
@@ -766,20 +765,10 @@ namespace BlackC
                     if (nextTokenIs(TokenType.ELLIPSIS))                        //param, ...
                     {
                         consumeToken();                                         //skip '...'
-                        ParamDeclNode ellipsis = new ParamDeclNode("...");
+                        ParamDeclNode ellipsis = new ParamDeclNode("...", null);
                         //paramList = arbor.makeParamList(paramList, param);
                         parameters.Add(ellipsis);
                     }
-                    else
-                    {
-                        continue;           //no ellipsis, get the next param
-                    }
-                }
-                else if (nextTokenIs(TokenType.RPAREN))                     //at end of param list
-                {
-                    consumeToken();                                         //skip ending ')'
-                    paramList = arbor.makeParamList(parameters);
-                    break;
                 }
             }
             return paramList;
@@ -1146,7 +1135,10 @@ namespace BlackC
                 {
                     decl = parseDeclaration();
                 }
-                consumeToken();                                 //skip ';'
+                else
+                {
+                    consumeToken();                                 //skip ';'
+                }
                 ExprNode expr2 = parseExpression();
                 consumeToken();                                 //skip ';'
                 ExprNode expr3 = parseExpression();
@@ -1214,7 +1206,7 @@ namespace BlackC
             }
             else if (token.type == TokenType.FLOATCONST)
             {
-                node = arbor.makeFloatConstantNode(token);
+                node = arbor.makeFloatConstantNode(token.floatval);
             }
             else if (token.type == TokenType.CHARCONST)
             {
