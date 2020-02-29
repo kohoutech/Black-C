@@ -30,7 +30,7 @@ namespace BlackC.Lexer
         Preprocessor prep;
 
         Queue<Fragment> frags;
-        Queue<Token> tokens;
+        List<Token> tokens;
         Dictionary<String, TokenType> keywords;
 
         public Tokenizer(Parser _parser, String filename)
@@ -39,7 +39,7 @@ namespace BlackC.Lexer
 
             prep = new Preprocessor(parser, filename);
             frags = new Queue<Fragment>();
-            tokens = new Queue<Token>();
+            tokens = new List<Token>();
 
             //build keyword list
             keywords = new Dictionary<string, TokenType>();
@@ -147,7 +147,9 @@ namespace BlackC.Lexer
         {
             if (tokens.Count > 0)
             {
-                return tokens.Dequeue();
+                Token t = tokens[tokens.Count - 1];
+                tokens.RemoveAt(tokens.Count - 1);
+                return t;
             }
             Token token = tokenizer();
             return token;
@@ -155,7 +157,7 @@ namespace BlackC.Lexer
 
         public void putTokenBack(Token tok)
         {
-            tokens.Enqueue(tok);
+            tokens.Add(tok);
         }
 
         public Token tokenizer()

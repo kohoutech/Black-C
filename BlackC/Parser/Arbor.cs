@@ -86,12 +86,16 @@ namespace BlackC
 
         //- declarations --------------------------------------------------------
 
-        public TypeDeclNode makeTypeDeclNode(DeclSpecNode declarspecs)
+        public Declaration makeTypeDeclNode(DeclSpecNode declspecs)
         {
-            return new TypeDeclNode("foo");
+            TypeDeclNode typdef = declspecs.baseType;
+
+            Declaration decl = new Declaration();
+            decl.decls.Add(typdef);
+            return decl;
         }
 
-        public FuncDeclNode makeFuncDeclNode(DeclSpecNode declarspecs, DeclaratorNode declarator)
+        public Declaration makeFuncDeclNode(DeclSpecNode declarspecs, DeclaratorNode declarator)
         {
             FuncDeclNode func = new FuncDeclNode();
             func.returnType = declarspecs.baseType;
@@ -108,7 +112,9 @@ namespace BlackC
                 }
                 dnode = dnode.next;
             }
-            return func;            
+            Declaration decl = new Declaration();
+            decl.funcdef = func;
+            return decl;
         }
 
         public Declaration makeVarDeclNode(Declaration decl, DeclSpecNode declarspecs, DeclaratorNode declarator, InitializerNode initializer)
@@ -125,6 +131,7 @@ namespace BlackC
                 dnode = dnode.next;
             }
             vardecl.initializer = initializer;
+            symbolTable.addSymbol(vardecl.name, vardecl);
 
             if (decl == null)
             {
@@ -253,8 +260,12 @@ namespace BlackC
 
         public TypeDeclNode GetTypeDef(string typename)
         {
-            TypeDeclNode typdef = (TypeDeclNode)symbolTable.findSymbol(typename);
-            return typdef;
+            OILNode obj = symbolTable.findSymbol(typename);
+            if (obj is TypeDeclNode)
+            {
+                return (TypeDeclNode)obj;
+            }
+            return null;
         }
 
         //- struct/unions -----------------------------------------------------
@@ -392,6 +403,24 @@ namespace BlackC
         }
 
         //- identifiers -------------------------------------------------------------
+
+        public void enterBlock()
+        {
+            symbolTable.enterScope();
+        }
+
+        public void exitBlock()
+        {
+            symbolTable.exitscope();
+        }
+
+        public void addParamsToBlock(List<ParamDeclNode> list)
+        {
+            foreach (ParamDeclNode p in list)
+            {
+                symbolTable.addSymbol(p.name, p);
+            }
+        }
 
         //vars
         public IdentDeclaratorNode makeIdentDeclaratorNode(string ident)
@@ -533,21 +562,28 @@ namespace BlackC
             return null;
         }
 
-        public CompoundStatementNode makeCompoundStatementNode(CompoundStatementNode comp, Declaration decl)
+        public void addDeclToCompoundStatement(CompoundStatementNode comp, Declaration decl)
         {
-            comp.decls.Add(decl);
-            return comp;
+            if (decl.funcdef != null)
+            {
+                comp.funcs.Add(decl.funcdef);
+            }
+            foreach (OILNode d in decl.decls)            
+            {
+                DeclarationStatementNode dstmt = new DeclarationStatementNode(d);
+                comp.stmts.Add(dstmt);
+            }            
         }
 
-        public CompoundStatementNode makeCompoundStatementNode(CompoundStatementNode comp, StatementNode stmt)
+        public void addStmtToCompoundStatement(CompoundStatementNode comp, StatementNode stmt)
         {
-            comp.stmts.Add(stmt);
-            return comp;
+            comp.stmts.Add(stmt);            
         }
 
         public ExpressionStatementNode makeExpressionStatementNode(ExprNode expr)
         {
-            return null;
+            ExpressionStatementNode node = new ExpressionStatementNode(expr);
+            return node;
         }
 
         public EmptyStatementNode makeEmptyStatementNode()
@@ -575,14 +611,10 @@ namespace BlackC
             return null;
         }
 
-        public ForStatementNode makeForStatementNode(ExprNode expr1, ExprNode expr2, ExprNode expr3, StatementNode stmt)
-        {
-            return null;
-        }
-
-        public ForStatementNode makeForStatementNode(Declaration decl, ExprNode expr2, ExprNode expr3, StatementNode stmt)
-        {
-            return null;
+        public ForStatementNode makeForStatementNode(Declaration decl, ExprNode expr1, ExprNode expr2, ExprNode expr3, StatementNode body)
+        {           
+            ForStatementNode node = new ForStatementNode(decl.decls, expr1, expr2, expr3, body);
+            return node;
         }
 
         public GotoStatementNode makeGotoStatementNode(Token ident)
@@ -608,9 +640,11 @@ namespace BlackC
 
         //- expressions -------------------------------------------------------------
 
-        public ExprNode getExprIdentNode(Token token)
+        public IdentExprNode getExprIdentNode(String id)
         {
-            return null;
+            OILNode idsym = symbolTable.findSymbol(id);
+            IdentExprNode node = new IdentExprNode(idsym);
+            return node;
         }
 
         public IntConstant makeIntegerConstantNode(int value)
@@ -665,27 +699,7 @@ namespace BlackC
             return null;
         }
 
-        public PostPlusPlusExprNode makePostPlusPlusExprNode(ExprNode node)
-        {
-            return null;
-        }
-
-        public PostMinusMinusExprNode makePostMinusMinusExprNode(ExprNode node)
-        {
-            return null;
-        }
-
         public ArgumentExprNode makeArgumentExprList(ExprNode list, ExprNode expr)
-        {
-            return null;
-        }
-
-        public PlusPlusExprNode makePlusPlusExprNode(ExprNode node)
-        {
-            return null;
-        }
-
-        public MinusMinusExprNode makeMinusMinusExprNode(ExprNode node)
         {
             return null;
         }
@@ -715,30 +729,113 @@ namespace BlackC
             return null;
         }
 
-        public MultiplyExprNode makeMultiplyExprNode(ExprNode lhs, ExprNode rhs)
+        //- arithmetic expressions ------------------------
+
+        public ArithmeticExprNode makeUnaryPlusExprNode(ExprNode term)
         {
-            return null;
+            ArithmeticExprNode node = new ArithmeticExprNode(ArithmeticExprNode.OPERATOR.PLUS, term, null);
+            return node;
         }
 
-        public DivideExprNode makeDivideExprNode(ExprNode lhs, ExprNode rhs)
+        public ArithmeticExprNode makeUnaryMinusExprNode(ExprNode term)
         {
-            return null;
+            ArithmeticExprNode node = new ArithmeticExprNode(ArithmeticExprNode.OPERATOR.MINUS, term, null);
+            return node;
         }
 
-        public ModuloExprNode makeModuloExprNode(ExprNode lhs, ExprNode rhs)
+        public ArithmeticExprNode makePrePlusPlusExprNode(ExprNode term)
         {
-            return null;
+            ArithmeticExprNode node = new ArithmeticExprNode(ArithmeticExprNode.OPERATOR.INC, null, term);
+            return node;
         }
 
-        public AddExprNode makeAddExprNode(ExprNode lhs, ExprNode rhs)
+        public ArithmeticExprNode makePreMinusMinusExprNode(ExprNode term)
         {
-            return null;
+            ArithmeticExprNode node = new ArithmeticExprNode(ArithmeticExprNode.OPERATOR.DEC, null, term);
+            return node;
         }
 
-        public SubtractExprNode makeSubtractExprNode(ExprNode lhs, ExprNode rhs)
+        public ArithmeticExprNode makePostPlusPlusExprNode(ExprNode term)
         {
-            return null;
+            ArithmeticExprNode node = new ArithmeticExprNode(ArithmeticExprNode.OPERATOR.INC, term, null);
+            return node;
         }
+
+        public ArithmeticExprNode makePostMinusMinusExprNode(ExprNode term)
+        {
+            ArithmeticExprNode node = new ArithmeticExprNode(ArithmeticExprNode.OPERATOR.DEC, term, null);
+            return node;
+        }
+
+        public ArithmeticExprNode makeAdditionExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            ArithmeticExprNode node = new ArithmeticExprNode(ArithmeticExprNode.OPERATOR.ADD, lhs, rhs);
+            return node;
+        }
+
+        public ArithmeticExprNode makeSubtractExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            ArithmeticExprNode node = new ArithmeticExprNode(ArithmeticExprNode.OPERATOR.SUB, lhs, rhs);
+            return node;
+        }
+
+        public ArithmeticExprNode makeMultiplyExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            ArithmeticExprNode node = new ArithmeticExprNode(ArithmeticExprNode.OPERATOR.MULT, lhs, rhs);
+            return node;
+        }
+
+        public ArithmeticExprNode makeDivideExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            ArithmeticExprNode node = new ArithmeticExprNode(ArithmeticExprNode.OPERATOR.DIV, lhs, rhs);
+            return node;
+        }
+
+        public ArithmeticExprNode makeModuloExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            ArithmeticExprNode node = new ArithmeticExprNode(ArithmeticExprNode.OPERATOR.MOD, lhs, rhs);
+            return node;
+        }
+
+        //- comparision expressions -----------------------
+
+        public ComparisonExprNode makeEqualsExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            ComparisonExprNode node = new ComparisonExprNode(ComparisonExprNode.OPERATOR.EQUAL, lhs, rhs);
+            return node;
+        }
+
+        public ComparisonExprNode makeNotEqualsExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            ComparisonExprNode node = new ComparisonExprNode(ComparisonExprNode.OPERATOR.NOTEQUAL, lhs, rhs);
+            return node;
+        }
+
+        public ComparisonExprNode makeLessThanExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            ComparisonExprNode node = new ComparisonExprNode(ComparisonExprNode.OPERATOR.LESSTHAN, lhs, rhs);
+            return node;
+        }
+
+        public ComparisonExprNode makeGreaterThanExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            ComparisonExprNode node = new ComparisonExprNode(ComparisonExprNode.OPERATOR.GTRTHAN, lhs, rhs);
+            return node;
+        }
+
+        public ComparisonExprNode makeLessEqualExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            ComparisonExprNode node = new ComparisonExprNode(ComparisonExprNode.OPERATOR.LESSEQUAL, lhs, rhs);
+            return node;
+        }
+
+        public ComparisonExprNode makeGreaterEqualExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            ComparisonExprNode node = new ComparisonExprNode(ComparisonExprNode.OPERATOR.GTREQUAL, lhs, rhs);
+            return node;
+        }
+
+        //-------------------------------------------------
 
         public ShiftLeftExprNode makeShiftLeftExprNode(ExprNode lhs, ExprNode rhs)
         {
@@ -746,36 +843,6 @@ namespace BlackC
         }
 
         public ShiftRightExprNode makeShiftRightExprNode(ExprNode lhs, ExprNode rhs)
-        {
-            return null;
-        }
-
-        public LessThanExprNode makeLessThanExprNode(ExprNode lhs, ExprNode rhs)
-        {
-            return null;
-        }
-
-        public GreaterThanExprNode makeGreaterThanExprNode(ExprNode lhs, ExprNode rhs)
-        {
-            return null;
-        }
-
-        public LessEqualExprNode makeLessEqualExprNode(ExprNode lhs, ExprNode rhs)
-        {
-            return null;
-        }
-
-        public GreaterEqualExprNode makeGreaterEqualExprNode(ExprNode lhs, ExprNode rhs)
-        {
-            return null;
-        }
-
-        public EqualsExprNode makeEqualsExprNode(ExprNode lhs, ExprNode rhs)
-        {
-            return null;
-        }
-
-        public NotEqualsExprNode makeNotEqualsExprNode(ExprNode lhs, ExprNode rhs)
         {
             return null;
         }
@@ -810,9 +877,12 @@ namespace BlackC
             return null;
         }
 
-        public AssignExpressionNode makeAssignExpressionNode(ExprNode lhs, ASSIGNOP oper, ExprNode rhs)
+        //-------------------------------------------------
+
+        public AssignExpressionNode makeAssignExpressionNode(AssignExpressionNode.OPERATOR oper, ExprNode lhs, ExprNode rhs)
         {
-            return null;
+            AssignExpressionNode node = new AssignExpressionNode(oper, lhs, rhs);
+            return node;
         }
 
         public ExpressionNode makeExpressionNode(ExprNode node, ExprNode expr)
@@ -833,6 +903,68 @@ namespace BlackC
         internal TypeQualNode makeTypeQualNode(List<Token> typeQuals)
         {
             throw new NotImplementedException();
+        }
+    }
+
+    //-------------------------------------------------------------------------
+
+    public class Declaration
+    {
+        public FuncDeclNode funcdef;
+        public List<OILNode> decls;
+
+        public Declaration()
+        {
+            decls = new List<OILNode>();
+            funcdef = null;
+        }
+    }
+
+    public class DeclSpecNode
+    {
+        public TypeDeclNode baseType;
+
+        //storage class
+        public bool isTypedef;
+        public bool isExtern;
+        public bool isStatic;
+        public bool isAuto;
+        public bool isRegister;
+
+        //type qualifiers
+        public bool isConst;
+        public bool isRestrict;
+        public bool isVolatile;
+
+        //function specs
+        public bool isInline;
+
+        public DeclSpecNode(TypeDeclNode _baseType)
+        {
+            baseType = _baseType;
+
+            isTypedef = false;
+            isExtern = false;
+            isStatic = false;
+            isAuto = false;
+            isRegister = false;
+
+            isConst = false;
+            isRestrict = false;
+            isVolatile = false;
+            isInline = false;
+        }
+    }
+
+    public class CompoundStatementNode : StatementNode
+    {
+        public List<FuncDeclNode> funcs;
+        public List<StatementNode> stmts;
+
+        public CompoundStatementNode()
+        {
+            funcs = new List<FuncDeclNode>();
+            stmts = new List<StatementNode>();
         }
     }
 }
