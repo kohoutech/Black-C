@@ -37,14 +37,37 @@ namespace Origami.OIL
         public String name;
         public List<TypeDeclNode> typedefs;
         public List<VarDeclNode> globals;
-        public List<FuncDeclNode> funcs;
+        public List<FuncDefNode> funcs;
 
         public Module(String _name)
         {
             name = _name;
             typedefs = new List<TypeDeclNode>();
             globals = new List<VarDeclNode>();
-            funcs = new List<FuncDeclNode>();
+            funcs = new List<FuncDefNode>();
+        }
+    }
+
+    public class FuncDefNode : OILNode
+    {
+        public String name;
+        public TypeDeclNode returnType;
+        public List<ParamDeclNode> paramList;
+        public bool isVaradic;
+        public List<VarDeclNode> locals;
+        public List<StatementNode> body;
+        public bool isInline;
+
+        public FuncDefNode()
+        {
+            type = OILType.FuncDecl;
+            name = "";
+            returnType = null;
+            paramList = null;
+            isVaradic = false;
+            locals = new List<VarDeclNode>();
+            body = null;
+            isInline = false;
         }
     }
 
@@ -76,23 +99,31 @@ namespace Origami.OIL
         }
     }
 
+    public class ParamDeclNode : OILNode
+    {
+        public string name;
+        public TypeDeclNode pType;
+
+        public ParamDeclNode()
+        {
+            type = OILType.ParamDecl;
+            name = "";
+            pType = null;
+        }
+    }
+
     public class FuncDeclNode : OILNode
     {
-        public String name;
-        public TypeDeclNode returnType;
-        public List<ParamDeclNode> paramList;
-        public List<VarDeclNode> locals;
-        public List<StatementNode> body;
-        public bool isFuncDef;
+        public string name;
+        public TypeDeclNode varType;
+        public ParamListNode paramList;
 
         public FuncDeclNode()
         {
-            type = OILType.FuncDecl;
+            type = OILType.VarDecl;
             name = "";
-            returnType = null;
+            varType = null;
             paramList = null;
-            body = null;
-            isFuncDef = false;
         }
     }
 
@@ -270,23 +301,11 @@ namespace Origami.OIL
         public List<ParamDeclNode> paramList;
         public bool hasElipsis;
 
-        public ParamListNode(List<ParamDeclNode> _list, bool _hasElipsis)
+        public ParamListNode()
             : base()
         {
-            paramList = _list;
-            hasElipsis = _hasElipsis;
-        }
-    }
-
-    public class ParamDeclNode : OILNode
-    {
-        public string name;
-        public TypeDeclNode type;
-
-        public ParamDeclNode(string _name, TypeDeclNode _type)
-        {
-            name = _name;
-            type = _type;
+            paramList = new List<ParamDeclNode>();
+            hasElipsis = false;
         }
     }
 
@@ -372,6 +391,16 @@ namespace Origami.OIL
     {        
     }
 
+    public class Block : StatementNode
+    {
+        public List<StatementNode> stmts;
+
+        public Block()
+        {
+            stmts = new List<StatementNode>();
+        }
+    }
+
     public class LabelStatementNode : StatementNode
     {
     }
@@ -384,14 +413,16 @@ namespace Origami.OIL
     {
     }
 
-    public class DeclarationStatementNode : StatementNode
+    public class DeclarInitStatementNode : StatementNode
     {
-        public OILNode decl;
+        public VarDeclNode decl;
+        public ExprNode initexpr;
 
-        public DeclarationStatementNode(OILNode _decl)
+        public DeclarInitStatementNode(VarDeclNode _decl, ExprNode _initexpr)
         {
             type = OILType.DeclarationStmt;
             decl = _decl;
+            initexpr = _initexpr;
         }
     }
 
@@ -428,13 +459,13 @@ namespace Origami.OIL
 
     public class ForStatementNode : StatementNode
     {
-        public List<OILNode> decl1;
+        public Block decl1;
         public ExprNode expr1;
         public ExprNode expr2;
         public ExprNode expr3;
         public StatementNode body;
 
-        public ForStatementNode(List<OILNode> _decl1, ExprNode _expr1, ExprNode _expr2, ExprNode _expr3, StatementNode _body)
+        public ForStatementNode(Block _decl1, ExprNode _expr1, ExprNode _expr2, ExprNode _expr3, StatementNode _body)
         {
             type = OILType.ForStmt;
             decl1 = _decl1;
@@ -549,9 +580,9 @@ namespace Origami.OIL
     {
     }
 
-    public class UnaryOperatorNode : ExprNode
+    public class UnaryOpExprNode : ExprNode
     {
-        public enum OPERATOR { AMPERSAND, STAR, TILDE, EXCLAIM };
+        public enum OPERATOR { AMPERSAND, STAR };
         //     OPERATOR op;
 
         //     public UnaryOperatorNode(OPERATOR _op)
@@ -614,98 +645,60 @@ namespace Origami.OIL
         }
     }
 
-    public class ShiftLeftExprNode : ExprNode
+    public class BitwiseExprNode : ExprNode
     {
-        //     ExprNode lhs, rhs;
+        public enum OPERATOR
+        {
+            AND, OR, XOR, NOT, LSHIFT, RSHIFT
+        }
 
-        //     public ShiftLeftExprNode(ExprNode _lhs, ExprNode _rhs)
-        //     {
-        //         lhs = _lhs;
-        //         rhs = _rhs;
-        //     }
+        OPERATOR op;
+        ExprNode lhs, rhs;
+
+        public BitwiseExprNode(OPERATOR _op, ExprNode _lhs, ExprNode _rhs)
+        {
+            type = OILType.BitwiseExpr;
+            op = _op;
+            lhs = _lhs;
+            rhs = _rhs;
+        }
     }
 
-    public class ShiftRightExprNode : ExprNode
+    public class LogicalExprNode : ExprNode
     {
-        //     ExprNode lhs, rhs;
+        public enum OPERATOR
+        {
+            AND, OR, NOT
+        }
 
-        //     public ShiftRightExprNode(ExprNode _lhs, ExprNode _rhs)
-        //     {
-        //         lhs = _lhs;
-        //         rhs = _rhs;
-        //     }
-    }
+        OPERATOR op;
+        ExprNode lhs, rhs;
 
-    public class ANDExprNode : ExprNode
-    {
-        //     ExprNode lhs, rhs;
-
-        //     public ANDExprNode(ExprNode _lhs, ExprNode _rhs)
-        //     {
-        //         lhs = _lhs;
-        //         rhs = _rhs;
-        //     }
-    }
-
-    public class XORExprNode : ExprNode
-    {
-        //     ExprNode lhs, rhs;
-
-        //     public XORExprNode(ExprNode _lhs, ExprNode _rhs)
-        //     {
-        //         lhs = _lhs;
-        //         rhs = _rhs;
-        //     }
-    }
-
-    public class ORExprNode : ExprNode
-    {
-        //     ExprNode lhs, rhs;
-
-        //     public ORExprNode(ExprNode _lhs, ExprNode _rhs)
-        //     {
-        //         lhs = _lhs;
-        //         rhs = _rhs;
-        //     }
-    }
-
-    public class LogicalANDExprNode : ExprNode
-    {
-        //     ExprNode lhs, rhs;
-
-        //     public LogicalANDExprNode(ExprNode _lhs, ExprNode _rhs)
-        //     {
-        //         lhs = _lhs;
-        //         rhs = _rhs;
-        //     }
-    }
-
-    public class LogicalORExprNode : ExprNode
-    {
-        //     ExprNode lhs, rhs;
-
-        //     public LogicalORExprNode(ExprNode _lhs, ExprNode _rhs)
-        //     {
-        //         lhs = _lhs;
-        //         rhs = _rhs;
-        //     }
+        public LogicalExprNode(OPERATOR _op, ExprNode _lhs, ExprNode _rhs)
+        {
+            type = OILType.LogicalExpr;
+            op = _op;
+            lhs = _lhs;
+            rhs = _rhs;
+        }
     }
 
     public class ConditionalExprNode : ExprNode
     {
-        //     ExprNode lhs;
-        //     ExpressionNode trueexpr;
-        //     ExprNode falseexpr;
+        ExprNode testexpr;
+        ExprNode trueexpr;
+        ExprNode falseexpr;
 
-        //     public ConditionalExprNode(ExprNode _lhs, ExpressionNode _trueexpr, ExprNode _falseexpr)
-        //     {
-        //         lhs = _lhs;
-        //         trueexpr = _trueexpr;
-        //         falseexpr = _falseexpr;
-        //     }
+        public ConditionalExprNode(ExprNode _testexpr, ExpressionNode _trueexpr, ExprNode _falseexpr)
+        {
+            type = OILType.ConditionalExpr;
+            testexpr = _testexpr;
+            trueexpr = _trueexpr;
+            falseexpr = _falseexpr;
+        }
     }
 
-    public class AssignExpressionNode : ExprNode
+    public class AssignExprNode : ExprNode
     {
         public enum OPERATOR
         {
@@ -716,7 +709,7 @@ namespace Origami.OIL
         OPERATOR op;
         ExprNode lhs, rhs;
 
-        public AssignExpressionNode(OPERATOR _op, ExprNode _lhs, ExprNode _rhs)
+        public AssignExprNode(OPERATOR _op, ExprNode _lhs, ExprNode _rhs)
         {
             type = OILType.AssignExpr;
             op = _op;
@@ -726,11 +719,11 @@ namespace Origami.OIL
     }
 
 
-    public class ExpressionNode : ExprNode
+    public class ConstExprNode : ExprNode
     {
     }
 
-    public class ConstExpressionNode : ExprNode
+    public class ExpressionNode : ExprNode
     {
     }
 
@@ -742,6 +735,7 @@ namespace Origami.OIL
         VarDecl,
         FuncDecl,
 
+        DeclarationStmt,
         ExpressionStmt,
         ForStmt,
         ReturnStmt,
@@ -750,7 +744,10 @@ namespace Origami.OIL
         FloatConst,
         ArithmeticExpr,
         CompareExpr,
+        BitwiseExpr,
+        LogicalExpr,
+        ConditionalExpr,
         AssignExpr,
-        DeclarationStmt,
+        ParamDecl,
     }
 }

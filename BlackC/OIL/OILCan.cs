@@ -65,7 +65,7 @@ namespace Origami.OIL
             enaml.setStringValue("module.name", module.name);
 
             int fnum = 0;
-            foreach (FuncDeclNode func in module.funcs)
+            foreach (FuncDefNode func in module.funcs)
             {
                 saveFuncDef(fnum++, func);
             }
@@ -73,7 +73,7 @@ namespace Origami.OIL
             enaml.saveToFile(filename);
         }
 
-        public void saveFuncDef(int fnum, FuncDeclNode func)
+        public void saveFuncDef(int fnum, FuncDefNode func)
         {
             string fname = "module.func" + fnum.ToString();
             enaml.setStringValue(fname + ".name", func.name);

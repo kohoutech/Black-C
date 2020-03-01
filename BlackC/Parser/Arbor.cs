@@ -36,10 +36,23 @@ namespace BlackC
 
         public SymbolTable symbolTable;
 
+        public Module curModule;
+        public FuncDefNode curFunc;
+        public List<Block> blockStack;
+        public Block curBlock;
+        public ParamListNode curParamList;
+
         public Arbor(Parser _parser)
         {
             parser = _parser;
+
             symbolTable = new SymbolTable();
+            curModule = null;
+            curFunc = null;
+            blockStack = new List<Block>();
+            curBlock = null;
+            curParamList = null;
+
             defineBaseTypes();
         }
 
@@ -64,40 +77,24 @@ namespace BlackC
 
         //- external definitions ----------------------------------------------
 
-        //not handling oldparamlist now -- if ever?
-        public void completeFuncDef(FuncDeclNode funcdef, List<Declaration> oldparamlist, CompoundStatementNode block)
+        public void startModule(string filename)
         {
-            funcdef.body = new List<StatementNode>();
-            foreach (StatementNode stmt in block.stmts)
-            {
-                funcdef.body.Add(stmt);
-            }
+            curModule = new Module(filename);            
         }
 
-        public void addFuncDefToModule(Module module, FuncDeclNode funcdef)
+        public Module finishModule()
         {
-            module.funcs.Add(funcdef);
+            return curModule;
         }
 
-        public void addDeclToModule(Module module, Declaration decl)
+        public bool hasFuncDef()
         {
-
+            return (curFunc != null);
         }
 
-        //- declarations --------------------------------------------------------
-
-        public Declaration makeTypeDeclNode(DeclSpecNode declspecs)
+        public void startFuncDef(DeclSpecNode declarspecs, DeclaratorNode declarator)
         {
-            TypeDeclNode typdef = declspecs.baseType;
-
-            Declaration decl = new Declaration();
-            decl.decls.Add(typdef);
-            return decl;
-        }
-
-        public Declaration makeFuncDeclNode(DeclSpecNode declarspecs, DeclaratorNode declarator)
-        {
-            FuncDeclNode func = new FuncDeclNode();
+            FuncDefNode func = new FuncDefNode();
             func.returnType = declarspecs.baseType;
             DeclaratorNode dnode = declarator;
             while (dnode != null)
@@ -112,12 +109,42 @@ namespace BlackC
                 }
                 dnode = dnode.next;
             }
-            Declaration decl = new Declaration();
-            decl.funcdef = func;
-            return decl;
+            symbolTable.addSymbol(func.name, func);     //add func def to global symbol tbl
+            curModule.funcs.Add(func);                  //add func to module's func list
+            curFunc = func;
+            enterBlock();                               //enter function "super" block
         }
 
-        public Declaration makeVarDeclNode(Declaration decl, DeclSpecNode declarspecs, DeclaratorNode declarator, InitializerNode initializer)
+        public void startoldparamlist()
+        {            
+        }
+
+        public void finisholdparamlist()
+        {         
+        }
+
+        public void addFuncParamsToBlock()
+        {
+            foreach (ParamDeclNode p in curFunc.paramList)
+            {
+                symbolTable.addSymbol(p.name, p);
+            }
+        }
+
+        public void finishFuncDef(Block block)
+        {
+            exitBlock();                    //exit function "super" block
+
+            curFunc.body = new List<StatementNode>();
+            foreach (StatementNode stmt in block.stmts)
+            {
+                curFunc.body.Add(stmt);
+            }
+        }
+
+        //- declarations --------------------------------------------------------
+
+        public void makeDeclarationNode(DeclSpecNode declarspecs, DeclaratorNode declarator, InitializerNode initializer)
         {
             VarDeclNode vardecl = new VarDeclNode();
             vardecl.varType = declarspecs.baseType;
@@ -133,12 +160,22 @@ namespace BlackC
             vardecl.initializer = initializer;
             symbolTable.addSymbol(vardecl.name, vardecl);
 
-            if (decl == null)
+            //add decl to either global or local decl list
+            if (curFunc != null)
             {
-                decl = new Declaration();
+                curFunc.locals.Add(vardecl);
             }
-            decl.decls.Add(vardecl);
-            return decl;
+            else
+            {
+                curModule.globals.Add(vardecl);
+            }
+
+            if (initializer != null && curBlock != null)
+            {
+                DeclarInitStatementNode dstmt = new DeclarInitStatementNode(vardecl, initializer.initExpr);
+                addStmtToBlock(dstmt);
+                vardecl.initializer = null;
+            }
         }
 
         public DeclSpecNode makeDeclSpecs(List<Token> storageClassSpecs, List<TypeDeclNode> typeDefs, List<Token> typeModifers,
@@ -270,6 +307,15 @@ namespace BlackC
 
         //- struct/unions -----------------------------------------------------
 
+        //public Declaration makeTypeDeclNode(DeclSpecNode declspecs)
+        //{
+        //    TypeDeclNode typdef = declspecs.baseType;
+
+        //    Declaration decl = new Declaration();
+        //    decl.decls.Add(typdef);
+        //    return decl;
+        //}
+
         public StructDeclNode starttructSpec(StructDeclNode node, IdentNode idNode, StructDeclarationNode field, bool isUnion)
         {
             return null;
@@ -290,7 +336,7 @@ namespace BlackC
             return null;
         }
 
-        public StructDeclaratorNode makeStructDeclaractorNode(DeclaratorNode declarnode, ConstExpressionNode constexpr)
+        public StructDeclaratorNode makeStructDeclaractorNode(DeclaratorNode declarnode, ConstExprNode constexpr)
         {
             return null;
         }
@@ -312,7 +358,7 @@ namespace BlackC
             return null;
         }
 
-        public EnumeratorNode makeEnumeratorNode(EnumConstantNode enumconst, ConstExpressionNode constexpr)
+        public EnumeratorNode makeEnumeratorNode(EnumConstantNode enumconst, ConstExprNode constexpr)
         {
             return null;
         }
@@ -334,39 +380,40 @@ namespace BlackC
             return null;
         }
 
-        public ParamListNode makeParamList(List<ParamDeclNode> paramList)
+        public void startParamList()
         {
-            bool hasElipsis = false;
-            List<ParamDeclNode> paramList2 = new List<ParamDeclNode>();
-            foreach (ParamDeclNode p in paramList)
-            {
-                if (p.name.Equals("..."))
-                {
-                    hasElipsis = true;
-                }
-                else
-                {
-                    paramList2.Add(p);
-                }
-            }
-            return new ParamListNode(paramList2, hasElipsis);
+            curParamList = new ParamListNode();
+            symbolTable.enterScope();
         }
 
-        public ParamDeclNode makeParamDeclarNode(DeclSpecNode declarspecs, DeclaratorNode declar)
+        public void makeParamDeclarNode(DeclSpecNode declarspecs, DeclaratorNode declar)
         {
-            String pname = "";
-            TypeDeclNode ptype = declarspecs.baseType;
+            ParamDeclNode pdecl = new ParamDeclNode();
+            pdecl.pType = declarspecs.baseType;
             DeclaratorNode dnode = declar;
             while (dnode != null)
             {
                 if (dnode is IdentDeclaratorNode)
                 {
-                    pname = ((IdentDeclaratorNode)dnode).ident;
+                    pdecl.name = ((IdentDeclaratorNode)dnode).ident;
                 }
                 dnode = dnode.next;
             }
-            ParamDeclNode p = new ParamDeclNode(pname, ptype);
-            return p;
+            symbolTable.addSymbol(pdecl.name, pdecl);
+            curParamList.paramList.Add(pdecl);
+        }
+
+        public void addElipsisParam()
+        {
+            curParamList.hasElipsis = true;
+        }
+
+        public ParamListNode finishParamList()
+        {
+            ParamListNode paramList = curParamList;
+            curParamList = null;
+            symbolTable.exitscope();
+            return paramList;
         }
 
         public TypeNameNode makeTypeNameNode(DeclSpecNode list, DeclaratorNode declar)
@@ -392,7 +439,7 @@ namespace BlackC
             return null;
         }
 
-        public DesignationNode makeDesignationNode(DesignationNode node, ConstExpressionNode expr)
+        public DesignationNode makeDesignationNode(DesignationNode node, ConstExprNode expr)
         {
             return null;
         }
@@ -403,25 +450,7 @@ namespace BlackC
         }
 
         //- identifiers -------------------------------------------------------------
-
-        public void enterBlock()
-        {
-            symbolTable.enterScope();
-        }
-
-        public void exitBlock()
-        {
-            symbolTable.exitscope();
-        }
-
-        public void addParamsToBlock(List<ParamDeclNode> list)
-        {
-            foreach (ParamDeclNode p in list)
-            {
-                symbolTable.addSymbol(p.name, p);
-            }
-        }
-
+        
         //vars
         public IdentDeclaratorNode makeIdentDeclaratorNode(string ident)
         {
@@ -547,6 +576,27 @@ namespace BlackC
 
         //- statements --------------------------------------------------------
 
+        public void enterBlock()
+        {
+            curBlock = new Block();
+            blockStack.Add(curBlock);
+            symbolTable.enterScope();
+        }
+
+        public void addStmtToBlock(StatementNode stmt)
+        {
+            curBlock.stmts.Add(stmt);
+        }
+
+        public Block exitBlock()
+        {
+            Block thisBlock = blockStack[blockStack.Count - 1];
+            blockStack.RemoveAt(blockStack.Count - 1);
+            curBlock = (blockStack.Count > 0) ? blockStack[blockStack.Count - 1] : null;
+            symbolTable.exitscope();
+            return thisBlock;
+        }
+
         public LabelStatementNode makeLabelStatementNode(Token labelId, StatementNode stmt)
         {
             return null;
@@ -560,24 +610,6 @@ namespace BlackC
         public DefaultStatementNode makeDefaultStatementNode(StatementNode stmt)
         {
             return null;
-        }
-
-        public void addDeclToCompoundStatement(CompoundStatementNode comp, Declaration decl)
-        {
-            if (decl.funcdef != null)
-            {
-                comp.funcs.Add(decl.funcdef);
-            }
-            foreach (OILNode d in decl.decls)            
-            {
-                DeclarationStatementNode dstmt = new DeclarationStatementNode(d);
-                comp.stmts.Add(dstmt);
-            }            
-        }
-
-        public void addStmtToCompoundStatement(CompoundStatementNode comp, StatementNode stmt)
-        {
-            comp.stmts.Add(stmt);            
         }
 
         public ExpressionStatementNode makeExpressionStatementNode(ExprNode expr)
@@ -611,10 +643,10 @@ namespace BlackC
             return null;
         }
 
-        public ForStatementNode makeForStatementNode(Declaration decl, ExprNode expr1, ExprNode expr2, ExprNode expr3, StatementNode body)
+        public ForStatementNode makeForStatementNode(Block forBlock, ExprNode expr1, ExprNode expr2, ExprNode expr3, StatementNode body)
         {           
-            ForStatementNode node = new ForStatementNode(decl.decls, expr1, expr2, expr3, body);
-            return node;
+            ForStatementNode node = new ForStatementNode(forBlock, expr1, expr2, expr3, body);
+            return node;            
         }
 
         public GotoStatementNode makeGotoStatementNode(Token ident)
@@ -704,7 +736,7 @@ namespace BlackC
             return null;
         }
 
-        public UnaryOperatorNode makeUnaryOperatorNode(ExprNode expr, UnaryOperatorNode.OPERATOR op)
+        public UnaryOpExprNode makeUnaryOperatorNode(ExprNode expr, UnaryOpExprNode.OPERATOR op)
         {
             return null;
         }
@@ -835,39 +867,49 @@ namespace BlackC
             return node;
         }
 
-        //-------------------------------------------------
+        //- bitwise/logical expressions -------------------
 
-        public ShiftLeftExprNode makeShiftLeftExprNode(ExprNode lhs, ExprNode rhs)
+        public BitwiseExprNode makeANDExprNode(ExprNode lhs, ExprNode rhs)
         {
             return null;
         }
 
-        public ShiftRightExprNode makeShiftRightExprNode(ExprNode lhs, ExprNode rhs)
+        public BitwiseExprNode makeXORExprNode(ExprNode lhs, ExprNode rhs)
         {
             return null;
         }
 
-        public ANDExprNode makeANDExprNode(ExprNode lhs, ExprNode rhs)
+        public BitwiseExprNode makeORExprNode(ExprNode lhs, ExprNode rhs)
         {
             return null;
         }
 
-        public XORExprNode makeXORExprNode(ExprNode lhs, ExprNode rhs)
+        public BitwiseExprNode makeNOTExprNode(ExprNode term)
         {
             return null;
         }
 
-        public ORExprNode makeORExprNode(ExprNode lhs, ExprNode rhs)
+        public BitwiseExprNode makeShiftLeftExprNode(ExprNode lhs, ExprNode rhs)
         {
             return null;
         }
 
-        public LogicalANDExprNode makeLogicalANDExprNode(ExprNode lhs, ExprNode rhs)
+        public BitwiseExprNode makeShiftRightExprNode(ExprNode lhs, ExprNode rhs)
         {
             return null;
         }
 
-        public LogicalORExprNode makeLogicalORExprNode(ExprNode lhs, ExprNode rhs)
+        public LogicalExprNode makeLogicalANDExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            return null;
+        }
+
+        public LogicalExprNode makeLogicalORExprNode(ExprNode lhs, ExprNode rhs)
+        {
+            return null;
+        }
+
+        public LogicalExprNode makeLogicalNOTExprNode(ExprNode term)
         {
             return null;
         }
@@ -879,9 +921,9 @@ namespace BlackC
 
         //-------------------------------------------------
 
-        public AssignExpressionNode makeAssignExpressionNode(AssignExpressionNode.OPERATOR oper, ExprNode lhs, ExprNode rhs)
+        public AssignExprNode makeAssignExpressionNode(AssignExprNode.OPERATOR oper, ExprNode lhs, ExprNode rhs)
         {
-            AssignExpressionNode node = new AssignExpressionNode(oper, lhs, rhs);
+            AssignExprNode node = new AssignExprNode(oper, lhs, rhs);
             return node;
         }
 
@@ -890,7 +932,7 @@ namespace BlackC
             return null;
         }
 
-        public ConstExpressionNode makeConstantExprNode(ExprNode condit)
+        public ConstExprNode makeConstantExprNode(ExprNode condit)
         {
             return null;
         }
@@ -907,18 +949,6 @@ namespace BlackC
     }
 
     //-------------------------------------------------------------------------
-
-    public class Declaration
-    {
-        public FuncDeclNode funcdef;
-        public List<OILNode> decls;
-
-        public Declaration()
-        {
-            decls = new List<OILNode>();
-            funcdef = null;
-        }
-    }
 
     public class DeclSpecNode
     {
@@ -953,18 +983,6 @@ namespace BlackC
             isRestrict = false;
             isVolatile = false;
             isInline = false;
-        }
-    }
-
-    public class CompoundStatementNode : StatementNode
-    {
-        public List<FuncDeclNode> funcs;
-        public List<StatementNode> stmts;
-
-        public CompoundStatementNode()
-        {
-            funcs = new List<FuncDeclNode>();
-            stmts = new List<StatementNode>();
         }
     }
 }

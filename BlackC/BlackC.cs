@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using BlackC.Lexer;
 using Origami.OIL;
 
 namespace BlackC
@@ -33,13 +34,22 @@ namespace BlackC
             Options options = new Options(args);                    //parse the cmd line args
 
             String filename = args[0];
-            Parser parser = new Parser(filename);                    //create a parser
-            OILCan oilCan = new OILCan("module.oil.txt");
 
             try
             {
-                Module module = parser.parseFile();                 //parse the source file                
-                oilCan.save(module);                                //and write it out to OIL file
+                if (options.preProcessOnly)
+                {
+                    //Tokenizer prep = new Tokenizer(this, filename);
+                    //prep.preprocessFile(options.preProcessFilename);
+                }
+                else
+                {
+                    Parser parser = new Parser();                       //create a parser
+                    Module module = parser.parseFile(filename);         //parse the source file                
+
+                    OILCan oilCan = new OILCan("module.oil.txt");
+                    oilCan.save(module);                                //and write it out to OIL file
+                }
             }
             catch (ParserException e)
             {
