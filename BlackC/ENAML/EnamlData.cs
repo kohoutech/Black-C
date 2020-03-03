@@ -261,6 +261,16 @@ namespace Origami.ENAML
             setLeafValue(path, root, intstr);
         }
 
+        public void setFloatValue(String path, double val)
+        {
+            String floatstr = val.ToString("G17");
+            if (root == null)
+            {
+                root = new SettingsStem();
+            }
+            setLeafValue(path, root, floatstr);
+        }
+
         //- storing out ------------------------------------------------
 
         public bool saveToFile(String filename)

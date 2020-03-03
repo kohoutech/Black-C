@@ -25,6 +25,8 @@ using System.Text;
 using BlackC.Lexer;
 using Origami.OIL;
 
+//"programming a compiler is the Spastik Ink of programming projects" - Peter J Sims
+
 namespace BlackC
 {
     class BlackC
@@ -39,7 +41,7 @@ namespace BlackC
             {
                 if (options.preProcessOnly)
                 {
-                    //Tokenizer prep = new Tokenizer(this, filename);
+                    //Preprocessor prep = new Preprocessor(this, filename);
                     //prep.preprocessFile(options.preProcessFilename);
                 }
                 else

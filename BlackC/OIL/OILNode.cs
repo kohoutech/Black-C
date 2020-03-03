@@ -28,6 +28,7 @@ namespace Origami.OIL
     public class OILNode
     {
         public OILType type;
+        public String OILname;
     }
 
     //- external defs ---------------------------------------------------------
@@ -52,7 +53,7 @@ namespace Origami.OIL
     {
         public String name;
         public TypeDeclNode returnType;
-        public List<ParamDeclNode> paramList;
+        public List<ParamDeclNode> paramList;           //'params' is a reserved word in C#
         public bool isVaradic;
         public List<VarDeclNode> locals;
         public List<StatementNode> body;
@@ -73,7 +74,12 @@ namespace Origami.OIL
 
     //- declarations ----------------------------------------------------------
 
-    public class TypeDeclNode : OILNode
+    //base declaration class
+    public class Declaration : OILNode
+    {
+    }
+
+    public class TypeDeclNode : Declaration
     {
         public string name;
 
@@ -84,7 +90,7 @@ namespace Origami.OIL
         }
     }
 
-    public class VarDeclNode : OILNode
+    public class VarDeclNode : Declaration
     {
         public string name;
         public TypeDeclNode varType;
@@ -99,7 +105,7 @@ namespace Origami.OIL
         }
     }
 
-    public class ParamDeclNode : OILNode
+    public class ParamDeclNode : Declaration
     {
         public string name;
         public TypeDeclNode pType;
@@ -112,47 +118,21 @@ namespace Origami.OIL
         }
     }
 
-    public class FuncDeclNode : OILNode
-    {
-        public string name;
-        public TypeDeclNode varType;
-        public ParamListNode paramList;
-
-        public FuncDeclNode()
-        {
-            type = OILType.VarDecl;
-            name = "";
-            varType = null;
-            paramList = null;
-        }
-    }
-
     //- struct/unions/enums -----------------------------------------------
 
-    //public class StructSpecNode : TypeDeclNode
-    // {
-    //     StructUnionNode tag;
-    //     IdentNode name; 
-    //     List<StructDeclarationNode> declarList;
+    //public class StructDeclNode : TypeDeclNode
+    //{
+        //     StructUnionNode tag;
+        //     IdentNode name; 
+        //     List<StructDeclarationNode> declarList;
 
-    //     public StructSpecNode(StructUnionNode _tag, IdentNode _name, List<StructDeclarationNode> _declarList)
-    //     {
-    //         tag = _tag;
-    //         name = _name;
-    //         declarList = _declarList;
-    //     }        
-    // }
-
-    // public class StructUnionNode : ParseNode
-    // {
-    //     public enum LAYOUT { STRUCT, UNION }
-    //     LAYOUT layout;
-
-    //     public StructUnionNode(LAYOUT _layout) 
-    //     {
-    //         layout = _layout;
-    //     }
-    // }
+        //     public StructSpecNode(StructUnionNode _tag, IdentNode _name, List<StructDeclarationNode> _declarList)
+        //     {
+        //         tag = _tag;
+        //         name = _name;
+        //         declarList = _declarList;
+        //     }        
+    //}
 
     public class StructDeclNode : TypeDeclNode
     {
@@ -391,16 +371,6 @@ namespace Origami.OIL
     {        
     }
 
-    public class Block : StatementNode
-    {
-        public List<StatementNode> stmts;
-
-        public Block()
-        {
-            stmts = new List<StatementNode>();
-        }
-    }
-
     public class LabelStatementNode : StatementNode
     {
     }
@@ -459,13 +429,13 @@ namespace Origami.OIL
 
     public class ForStatementNode : StatementNode
     {
-        public Block decl1;
+        public List<StatementNode> decl1;
         public ExprNode expr1;
         public ExprNode expr2;
         public ExprNode expr3;
-        public StatementNode body;
+        public List<StatementNode> body;
 
-        public ForStatementNode(Block _decl1, ExprNode _expr1, ExprNode _expr2, ExprNode _expr3, StatementNode _body)
+        public ForStatementNode(List<StatementNode> _decl1, ExprNode _expr1, ExprNode _expr2, ExprNode _expr3, List<StatementNode> _body)
         {
             type = OILType.ForStmt;
             decl1 = _decl1;
@@ -501,9 +471,9 @@ namespace Origami.OIL
 
     //- expressions -----------------------------------------------------------
 
+    //base expression class
     public class ExprNode : OILNode
-    {
-        
+    {        
     }
 
     public class IdentExprNode : ExprNode
@@ -512,6 +482,7 @@ namespace Origami.OIL
 
         public IdentExprNode(OILNode _idsym)
         {
+            type = OILType.IdentExpr;
             idsym = _idsym;
         }
     }
@@ -614,8 +585,10 @@ namespace Origami.OIL
             PLUS, MINUS, INC, DEC, ADD, SUB, MULT, DIV, MOD
         }
 
-        OPERATOR op;
-        ExprNode lhs, rhs;
+        public static string[] opname = { "plus", "minus", "inc", "dec", "add", "sub", "mult", "div", "mod" };
+        
+        public OPERATOR op;
+        public ExprNode lhs, rhs;
 
         public ArithmeticExprNode(OPERATOR _op, ExprNode _lhs, ExprNode _rhs)
         {
@@ -633,8 +606,10 @@ namespace Origami.OIL
             EQUAL, NOTEQUAL, LESSTHAN, GTRTHAN, LESSEQUAL, GTREQUAL
         }
 
-        OPERATOR op;
-        ExprNode lhs, rhs;
+        public static string[] opname = {"equal", "notequal", "lessthan", "gtrthan", "lessequal", "gtrequal"};        
+
+        public OPERATOR op;
+        public ExprNode lhs, rhs;
 
         public ComparisonExprNode(OPERATOR _op, ExprNode _lhs, ExprNode _rhs)
         {
@@ -702,12 +677,14 @@ namespace Origami.OIL
     {
         public enum OPERATOR
         {
-            EQUAL, MULTEQUAL, DIVEQUAL, MODEQUAL, ADDEQUAL, SUBEQUAL,
-            LSHIFTEQUAL, RSHIFTEQUAL, ANDEQUAL, XOREQUAL, OREQUAL
+            EQUAL, MULTEQUAL, DIVEQUAL, MODEQUAL, ADDEQUAL, SUBEQUAL, LSHIFTEQUAL, RSHIFTEQUAL, ANDEQUAL, XOREQUAL, OREQUAL
         }
 
-        OPERATOR op;
-        ExprNode lhs, rhs;
+        public static string[] opname = { "equal", "multequal", "divequal", "modequal", "addequal", "subequal",
+                                          "lshiftequal", "rshiftequal", "andequal", "xorequal", "orequal" };        
+
+        public OPERATOR op;
+        public ExprNode lhs, rhs;
 
         public AssignExprNode(OPERATOR _op, ExprNode _lhs, ExprNode _rhs)
         {
@@ -717,7 +694,6 @@ namespace Origami.OIL
             rhs = _rhs;
         }
     }
-
 
     public class ConstExprNode : ExprNode
     {
@@ -740,6 +716,7 @@ namespace Origami.OIL
         ForStmt,
         ReturnStmt,
 
+        IdentExpr,
         IntConst,
         FloatConst,
         ArithmeticExpr,

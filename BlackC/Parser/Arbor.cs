@@ -644,8 +644,18 @@ namespace BlackC
         }
 
         public ForStatementNode makeForStatementNode(Block forBlock, ExprNode expr1, ExprNode expr2, ExprNode expr3, StatementNode body)
-        {           
-            ForStatementNode node = new ForStatementNode(forBlock, expr1, expr2, expr3, body);
+        {
+            List<StatementNode> bodyList = null;
+            if (body is Block)
+            {
+                bodyList = ((Block)body).stmts;
+            }
+            else
+            {
+                bodyList = new List<StatementNode>();
+                bodyList.Add(body);
+            }
+            ForStatementNode node = new ForStatementNode(forBlock.stmts, expr1, expr2, expr3, bodyList);
             return node;            
         }
 
@@ -983,6 +993,16 @@ namespace BlackC
             isRestrict = false;
             isVolatile = false;
             isInline = false;
+        }
+    }
+
+    public class Block : StatementNode
+    {
+        public List<StatementNode> stmts;
+
+        public Block()
+        {
+            stmts = new List<StatementNode>();
         }
     }
 }

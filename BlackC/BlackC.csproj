@@ -68,7 +68,6 @@
     <Compile Include="OIL\OILCan.cs" />
     <Compile Include="OIL\OILNode.cs" />
     <Compile Include="Parser\ParseDeclar.cs" />
-    <Compile Include="Parser\ParseExpr.cs" />
     <Compile Include="Lexer\Macro.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="Parser\Parser.cs" />

@@ -29,7 +29,7 @@ namespace BlackC.Lexer
         Parser parser;
         Preprocessor prep;
 
-        Queue<Fragment> frags;
+        List<Fragment> frags;
         List<Token> tokens;
         Dictionary<String, TokenType> keywords;
 
@@ -38,7 +38,7 @@ namespace BlackC.Lexer
             parser = _parser;
 
             prep = new Preprocessor(parser, filename);
-            frags = new Queue<Fragment>();
+            frags = new List<Fragment>();
             tokens = new List<Token>();
 
             //build keyword list
@@ -73,19 +73,19 @@ namespace BlackC.Lexer
             keywords.Add("while", TokenType.WHILE);            
         }
 
-        //skip tokenizing and just write preprocessor output to file
-        public void preprocessFile(String filename)
-        {
-            prep.preprocessFile(filename);
-        }
-
         //- fragment handling -------------------------------------------------
 
         public Fragment getNextFrag()
         {
+            if (tokens.Count > 0)
+            {
+            }
+
             if (frags.Count != 0)
             {
-                return frags.Dequeue();
+                Fragment f = frags[frags.Count - 1];
+                frags.RemoveAt(frags.Count - 1);
+                return f;                
             }
             Fragment frag = prep.getFrag();
             return frag;
@@ -93,7 +93,7 @@ namespace BlackC.Lexer
 
         public void putFragBack(Fragment frag)
         {
-            frags.Enqueue(frag);
+            frags.Add(frag);
         }
 
         //the number fragment we get from the scanner should be well-formed
