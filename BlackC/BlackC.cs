@@ -35,7 +35,9 @@ namespace BlackC
         {
             Options options = new Options(args);                    //parse the cmd line args
 
-            String filename = args[0];
+            //temporary debugging shortcut
+            String srcname = args[0];
+            String outname = args[1];
 
             try
             {
@@ -47,9 +49,9 @@ namespace BlackC
                 else
                 {
                     Parser parser = new Parser();                       //create a parser
-                    Module module = parser.parseFile(filename);         //parse the source file                
+                    Module module = parser.parseFile(srcname);         //parse the source file                
 
-                    OILCan oilCan = new OILCan("module.oil.txt");
+                    OILCan oilCan = new OILCan(outname);
                     oilCan.save(module);                                //and write it out to OIL file
                 }
             }
