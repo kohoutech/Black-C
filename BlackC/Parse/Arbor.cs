@@ -23,12 +23,12 @@ using System.Linq;
 using System.Text;
 using System.IO;
 
-using BlackC.Lexer;
-using Origami.OIL;
+using BlackC.Scan;
+using Kohoutech.OIL;
 
 //arbor - a place where trees are grown
 
-namespace BlackC
+namespace BlackC.Parse
 {
     public class Arbor
     {
@@ -142,6 +142,11 @@ namespace BlackC
             }
         }
 
+        internal OILNode buildTranslationUnit(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
         //- declarations --------------------------------------------------------
 
         public void makeDeclarationNode(DeclSpecNode declarspecs, DeclaratorNode declarator, InitializerNode initializer)
@@ -176,6 +181,16 @@ namespace BlackC
                 addStmtToBlock(dstmt);
                 vardecl.initializer = null;
             }
+        }
+
+        internal OILNode buildFunctionDefinition(OILNode node1, OILNode node2, List<OILNode> nodelist, OILNode node3)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildStorageClassSpecifier(Token tok)
+        {
+            throw new NotImplementedException();
         }
 
         public DeclSpecNode makeDeclSpecs(List<Token> storageClassSpecs, List<TypeDeclNode> typeDefs, List<Token> typeModifers,
@@ -262,6 +277,41 @@ namespace BlackC
             }
 
             return declspec;
+        }
+
+        internal OILNode buildInitDeclaratorList(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildDeclarationSpecifiers(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildTypeSpecifier(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildDeclaration(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildTypeQualifier(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildTypeSpecifier(OILNode node)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal Token isTypedefName(Token tok)
+        {
+            throw new NotImplementedException();
         }
 
         public TypeDeclNode GetTypeDef(Token token)
@@ -358,6 +408,11 @@ namespace BlackC
             return null;
         }
 
+        internal OILNode buildStatement(OILNode node)
+        {
+            throw new NotImplementedException();
+        }
+
         public EnumeratorNode makeEnumeratorNode(EnumConstantNode enumconst, ConstExprNode constexpr)
         {
             return null;
@@ -378,6 +433,11 @@ namespace BlackC
         public DeclaratorNode makeDirectIndexNode(int mode, TypeQualNode qualList, ExprNode assign)
         {
             return null;
+        }
+
+        internal OILNode buildLabeledStatement(Token tok, OILNode node1)
+        {
+            throw new NotImplementedException();
         }
 
         public void startParamList()
@@ -401,6 +461,16 @@ namespace BlackC
             }
             symbolTable.addSymbol(pdecl.name, pdecl);
             curParamList.paramList.Add(pdecl);
+        }
+
+        internal OILNode buildCaseStatement(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildDefaultStatement(Token tok, OILNode node1)
+        {
+            throw new NotImplementedException();
         }
 
         public void addElipsisParam()
@@ -449,13 +519,33 @@ namespace BlackC
             return null;
         }
 
+        internal OILNode buildGotoStatement(Token tok1)
+        {
+            throw new NotImplementedException();
+        }
+
         //- identifiers -------------------------------------------------------------
-        
+
         //vars
         public IdentDeclaratorNode makeIdentDeclaratorNode(string ident)
         {
             IdentDeclaratorNode node = new IdentDeclaratorNode(ident);
             return node;
+        }
+
+        internal OILNode buildContinueStatement()
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildBreakStatement()
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildReturnStatement(OILNode node1)
+        {
+            throw new NotImplementedException();
         }
 
         public IdentNode getArgIdentNode(Token token)
@@ -487,6 +577,11 @@ namespace BlackC
         public IdentNode getStructIdentNode(Token token)
         {
             return null;
+        }
+
+        internal OILNode buildeArgumentExpressionList(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
         }
 
         ////these return either declared or new ident nodes 
@@ -531,6 +626,11 @@ namespace BlackC
             //    }
             //    return node;
             return null;
+        }
+
+        internal OILNode buildExpressionStatement(OILNode node)
+        {
+            throw new NotImplementedException();
         }
 
         public EnumConstantNode getEnumerationConstant(Token token)
@@ -689,10 +789,25 @@ namespace BlackC
             return node;
         }
 
+        internal OILNode buildMultiplicativeExpression(List<OILNode> nodeList, List<Token> tokenList)
+        {
+            throw new NotImplementedException();
+        }
+
         public IntConstant makeIntegerConstantNode(int value)
         {
             IntConstant node = new IntConstant(value);
             return node;            
+        }
+
+        internal OILNode buildAdditiveExpression(List<OILNode> nodeList, List<Token> tokenList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildSizeOfExpression(OILNode node1)
+        {
+            throw new NotImplementedException();
         }
 
         public FloatConstant makeFloatConstantNode(double value)
@@ -701,9 +816,29 @@ namespace BlackC
             return node;
         }
 
+        internal OILNode buildShiftExpression(List<OILNode> nodeList, List<Token> tokenList)
+        {
+            throw new NotImplementedException();
+        }
+
         public ExprNode makeCharConstantNode(Token token)
         {
             return null;
+        }
+
+        internal OILNode buildIncDecExpression(Token tok1, OILNode node1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildCastExpression(List<OILNode> nodeList, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildAndExpression(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
         }
 
         public ExprNode makeStringConstantNode(Token token)
@@ -711,9 +846,24 @@ namespace BlackC
             return null;
         }
 
+        internal OILNode buildUnaryExpression(Token tok1, OILNode node1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildEqualityExpression(List<OILNode> nodeList, List<Token> tokenList)
+        {
+            throw new NotImplementedException();
+        }
+
         public SubExpressionNode makeSubexpressionNode(ExprNode expr)
         {
             return null;
+        }
+
+        internal OILNode buildExclusiveOrExpression(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
         }
 
         public TypeInitExprNode makeTypeInitExprNode(ExprNode node)
@@ -726,9 +876,24 @@ namespace BlackC
             return null;
         }
 
+        internal OILNode buildInclusiveOrExpression(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildRelationalExpression(List<OILNode> nodeList, List<Token> tokenList)
+        {
+            throw new NotImplementedException();
+        }
+
         public FuncCallExprNode makeFuncCallExprNode(ExprNode node, ExprNode argList)
         {
             return null;
+        }
+
+        internal OILNode buildLogicalAndExpression(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
         }
 
         public FieldExprNode makeFieldExprNode(ExprNode node, OILNode idNode)
@@ -769,6 +934,11 @@ namespace BlackC
         public UnaryCastExprNode makeCastExprNode(ExprNode uexpr, ExprNode namelist)
         {
             return null;
+        }
+
+        internal OILNode buildeLogicalOrExpression(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
         }
 
         //- arithmetic expressions ------------------------
@@ -847,6 +1017,11 @@ namespace BlackC
             return node;
         }
 
+        internal OILNode buildExpression()
+        {
+            throw new NotImplementedException();
+        }
+
         public ComparisonExprNode makeNotEqualsExprNode(ExprNode lhs, ExprNode rhs)
         {
             ComparisonExprNode node = new ComparisonExprNode(ComparisonExprNode.OPERATOR.NOTEQUAL, lhs, rhs);
@@ -863,6 +1038,11 @@ namespace BlackC
         {
             ComparisonExprNode node = new ComparisonExprNode(ComparisonExprNode.OPERATOR.GTRTHAN, lhs, rhs);
             return node;
+        }
+
+        internal OILNode buildConstantExpression()
+        {
+            throw new NotImplementedException();
         }
 
         public ComparisonExprNode makeLessEqualExprNode(ExprNode lhs, ExprNode rhs)
@@ -953,6 +1133,16 @@ namespace BlackC
         }
 
         internal TypeQualNode makeTypeQualNode(List<Token> typeQuals)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildConditionalExpression(OILNode node, OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildAssignmentExpression(List<OILNode> nodelist, List<Token> tokenList, OILNode node2)
         {
             throw new NotImplementedException();
         }

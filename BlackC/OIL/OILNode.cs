@@ -1,5 +1,5 @@
 ﻿/* ----------------------------------------------------------------------------
-LibOriOIL - a library for working with Origami Internal Language
+Kohoutech OIL (Origami Internal Language) Library
 Copyright (C) 1997-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
@@ -24,7 +24,7 @@ using System.Text;
 
 //still a lot to sort out & clean up
 
-namespace Origami.OIL
+namespace Kohoutech.OIL
 {
     //base OIL class
     public class OILNode

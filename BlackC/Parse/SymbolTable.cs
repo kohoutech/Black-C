@@ -23,9 +23,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using Origami.OIL;
+using Kohoutech.OIL;
 
-namespace BlackC
+namespace BlackC.Parse
 {
     public enum SYMTYPE { DECLAR, FIELD, STRUCT, ENUM, LABEL, TYPEDEF, UNSET };
 
