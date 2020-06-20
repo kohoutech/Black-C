@@ -22,8 +22,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using BlackC.Lexer;
-using Origami.OIL;
+using BlackC.Scan;
+using BlackC.Parse;
+using Kohoutech.OIL;
 
 //"programming a compiler is the Spastik Ink of programming projects" - Peter J Sims
 

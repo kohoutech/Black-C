@@ -23,7 +23,9 @@ using System.Linq;
 using System.Text;
 using System.IO;
 
-namespace BlackC.Lexer
+using BlackC.Parse;
+
+namespace BlackC.Scan
 {
     public class Scanner
     {

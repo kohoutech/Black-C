@@ -22,7 +22,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace BlackC.Lexer
+using BlackC.Parse;
+
+namespace BlackC.Scan
 {
     public class Tokenizer
     {

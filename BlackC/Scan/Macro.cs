@@ -22,7 +22,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace BlackC.Lexer
+namespace BlackC.Scan
 {
     public class Macro
     {
