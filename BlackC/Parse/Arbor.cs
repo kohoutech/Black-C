@@ -743,6 +743,11 @@ namespace BlackC.Parse
             return null;
         }
 
+        internal OILNode buildIdentExpression(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
         public ForStatementNode makeForStatementNode(Block forBlock, ExprNode expr1, ExprNode expr2, ExprNode expr3, StatementNode body)
         {
             List<StatementNode> bodyList = null;
@@ -757,6 +762,31 @@ namespace BlackC.Parse
             }
             ForStatementNode node = new ForStatementNode(forBlock.stmts, expr1, expr2, expr3, bodyList);
             return node;            
+        }
+
+        internal OILNode buildStringConstExpression(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildCharConstExpression(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildFloatConstExpression(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildIntConstExpression(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildSubExpression(OILNode node1)
+        {
+            throw new NotImplementedException();
         }
 
         public GotoStatementNode makeGotoStatementNode(Token ident)
@@ -787,6 +817,11 @@ namespace BlackC.Parse
             OILNode idsym = symbolTable.findSymbol(id);
             IdentExprNode node = new IdentExprNode(idsym);
             return node;
+        }
+
+        internal OILNode buildTypeNameInitializerList(OILNode node2, OILNode node3)
+        {
+            throw new NotImplementedException();
         }
 
         internal OILNode buildMultiplicativeExpression(List<OILNode> nodeList, List<Token> tokenList)
@@ -821,6 +856,11 @@ namespace BlackC.Parse
             throw new NotImplementedException();
         }
 
+        internal OILNode buildArrayIndexExpression(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
         public ExprNode makeCharConstantNode(Token token)
         {
             return null;
@@ -831,7 +871,17 @@ namespace BlackC.Parse
             throw new NotImplementedException();
         }
 
+        internal OILNode buildArgumentListExpression(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
         internal OILNode buildCastExpression(List<OILNode> nodeList, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildFieldReference(OILNode node1, Token tok3)
         {
             throw new NotImplementedException();
         }
@@ -841,9 +891,19 @@ namespace BlackC.Parse
             throw new NotImplementedException();
         }
 
+        internal OILNode buildIndirectFieldReference(OILNode node1, Token tok3)
+        {
+            throw new NotImplementedException();
+        }
+
         public ExprNode makeStringConstantNode(Token token)
         {
             return null;
+        }
+
+        internal OILNode buildPostIncDecExpression(Token tok1)
+        {
+            throw new NotImplementedException();
         }
 
         internal OILNode buildUnaryExpression(Token tok1, OILNode node1)

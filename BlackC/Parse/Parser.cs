@@ -768,14 +768,149 @@ namespace BlackC.Parse
         //  'identifier' | 'constant' | 'string-literal' | ('(' expression ')')
         public OILNode parsePrimaryExpression()
         {
+            int mark = tokenPos;
+            Token tok = getToken();
+            if (tok.type == TokenType.IDENT)
+            {
+                OILNode node = arbor.buildIdentExpression(tok);
+                return node;
+            }
+            if (tok.type == TokenType.INTCONST)
+            {
+                OILNode node = arbor.buildIntConstExpression(tok);
+                return node;
+            }
+            if (tok.type == TokenType.FLOATCONST)
+            {
+                OILNode node = arbor.buildFloatConstExpression(tok);
+                return node;
+            }
+            if (tok.type == TokenType.CHARCONST)
+            {
+                OILNode node = arbor.buildCharConstExpression(tok);
+                return node;
+            }
+            if (tok.type == TokenType.STRINGCONST)
+            {
+                OILNode node = arbor.buildStringConstExpression(tok);
+                return node;
+            }
+            if (tok.type == TokenType.LPAREN)
+            {
+                OILNode node1 = parseExpression();
+                Token tok2 = getToken();
+                if (tok2.type == TokenType.RPAREN)
+                {
+                    OILNode node = arbor.buildSubExpression(node1);
+                    return node;
+                }
+            }
+
+            rewindToken(mark);
             return null;
         }
 
         //postfix-expression:
-        //  (primary-expression | ('(' type-name ')' '{' initializer-list(',')? '}')) |
+        //  (primary-expression | ('(' type-name ')' '{' initializer-list(',')? '}')) 
         //  (('[' expression ']') | ('(' (argument-expression-list)? ')') | ('.' 'identifier') | ('->' 'identifier') | '++' | '--')*
         public OILNode parsePostfixExpression()
         {
+            int mark = tokenPos;
+            OILNode node1 = parsePrimaryExpression();
+            if (node1 == null)
+            {
+                int mark1 = tokenPos;
+                Token tok1 = getToken();
+                if (tok1.type == TokenType.LPAREN)
+                {
+                    OILNode node2 = parseTypeName();
+                    if (node2 != null)
+                    {
+                        tok1 = getToken();
+                        if (tok1.type == TokenType.RPAREN)
+                        {
+                            tok1 = getToken();
+                            if (tok1.type == TokenType.LBRACE)
+                            {
+                                OILNode node3 = parseInitializerList();
+                                tok1 = getToken();
+                                if (tok1.type == TokenType.COMMA)
+                                {
+                                    tok1 = getToken();
+                                }
+                                tok1 = getToken();
+                                if (tok1.type == TokenType.RBRACE)
+                                {
+                                    node1 = arbor.buildTypeNameInitializerList(node2, node3);
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    rewindToken(mark1);
+                }
+            }
+            if (node1 != null)
+            {
+                int mark3 = tokenPos;
+                Token tok1 = getToken();
+                while ((tok1.type == TokenType.LBRACKET) || 
+                    (tok1.type == TokenType.LPAREN) || 
+                    (tok1.type == TokenType.PERIOD) ||
+                    (tok1.type == TokenType.ARROW) ||
+                    (tok1.type == TokenType.PLUSPLUS) ||
+                    (tok1.type == TokenType.MINUSMINUS))
+                {
+                    if (tok1.type == TokenType.LBRACKET)
+                    {
+                        OILNode node2 = parseExpression();
+                        Token tok2 = getToken();
+                        if (tok2.type == TokenType.RBRACKET)
+                        {
+                            node1 = arbor.buildArrayIndexExpression(node1, node2);
+                        }
+                    }
+                    if (tok1.type == TokenType.LPAREN)
+                    {
+                        OILNode node2 = parseArgumentExpressionList();
+                        Token tok2 = getToken();
+                        if (tok2.type == TokenType.RPAREN)
+                        {
+                            node1 = arbor.buildArgumentListExpression(node1, node2);
+                        }
+                    }
+                    if (tok1.type == TokenType.PERIOD)
+                    {
+                        Token tok3 = getToken();
+                        if (tok3.type == TokenType.IDENT)
+                        {
+                            node1 = arbor.buildFieldReference(node1, tok3);
+                        }
+                    }
+                    if (tok1.type == TokenType.ARROW)
+                    {
+                        Token tok3 = getToken();
+                        if (tok3.type == TokenType.IDENT)
+                        {
+                            node1 = arbor.buildIndirectFieldReference(node1, tok3);
+                        }
+                    }
+                    if ((tok1.type == TokenType.PLUSPLUS) || (tok1.type == TokenType.MINUSMINUS))
+                    {
+                        node1 = arbor.buildPostIncDecExpression(tok1);
+                    }
+
+                    mark3 = tokenPos;
+                    tok1 = getToken();
+                }
+
+                rewindToken(mark3);
+                return node1;
+            }
+
+            rewindToken(mark);
             return null;
         }
 
@@ -1311,7 +1446,6 @@ namespace BlackC.Parse
             rewindToken(mark);
             return null;
         }
-
     }
 
     //-------------------------------------------------------------------------
