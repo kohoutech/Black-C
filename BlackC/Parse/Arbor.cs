@@ -638,6 +638,11 @@ namespace BlackC.Parse
             return null;
         }
 
+        internal OILNode buildCompoundStatement(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
         //public EnumConstantNode makeEnumConstNode(Token token)
         //{
         //    String id = token.chars;
@@ -707,6 +712,11 @@ namespace BlackC.Parse
             return null;
         }
 
+        internal OILNode buildIfStatement(OILNode node1, OILNode node2, OILNode node3)
+        {
+            throw new NotImplementedException();
+        }
+
         public DefaultStatementNode makeDefaultStatementNode(StatementNode stmt)
         {
             return null;
@@ -721,6 +731,11 @@ namespace BlackC.Parse
         public EmptyStatementNode makeEmptyStatementNode()
         {
             return null;
+        }
+
+        internal OILNode buildSwitchStatement(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
         }
 
         public IfStatementNode makeIfStatementNode(ExprNode expr, StatementNode thenstmt, StatementNode elsestmt)
@@ -764,12 +779,22 @@ namespace BlackC.Parse
             return node;            
         }
 
+        internal OILNode buildWhileStatement(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
         internal OILNode buildStringConstExpression(Token tok)
         {
             throw new NotImplementedException();
         }
 
         internal OILNode buildCharConstExpression(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildDoWhileStatement(OILNode node1, OILNode node2)
         {
             throw new NotImplementedException();
         }
@@ -808,6 +833,11 @@ namespace BlackC.Parse
         {
             ReturnStatementNode node = new ReturnStatementNode(expr);
             return node;
+        }
+
+        internal OILNode buildForStatement(OILNode node1, OILNode node2, OILNode node3, OILNode node4)
+        {
+            throw new NotImplementedException();
         }
 
         //- expressions -------------------------------------------------------------

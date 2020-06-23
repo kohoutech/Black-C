@@ -685,6 +685,32 @@ namespace BlackC.Parse
         //  '{' (declaration | statement)* '}'
         public OILNode parseCompoundStatement()
         {
+            int mark = tokenPos;
+            Token tok = getToken();
+            List<OILNode> nodeList = new List<OILNode>();
+            if (tok.type == TokenType.LBRACE)
+            {
+                int mark1 = tokenPos;
+                Token tok1 = getToken();
+                while (tok1.type != TokenType.RBRACE)
+                {
+                    rewindToken(mark1);
+                    OILNode node1 = parseDeclaration();
+                    if (node1 == null)
+                    {
+                        node1 = parseStatement();
+                    }
+                    if (node1 != null)
+                    {
+                        nodeList.Add(node1);
+                    }
+                    mark1 = tokenPos;
+                    tok1 = getToken();
+                }
+                OILNode node = arbor.buildCompoundStatement(nodeList);
+                return node;
+            }
+            rewindToken(mark);
             return null;
         }
 
@@ -693,7 +719,6 @@ namespace BlackC.Parse
         public OILNode parseExpressionStatement()
         {
             int mark = tokenPos;
-            rewindToken(mark);
             OILNode node = parseExpression();
             Token tok = getToken();
             if (tok.type == TokenType.SEMICOLON)
@@ -711,6 +736,50 @@ namespace BlackC.Parse
         //  ('SWITCH' '(' expression ')' statement)
         public OILNode parseSelectionStatement()
         {
+            int mark = tokenPos;
+            Token tok = getToken();
+            if (tok.type == TokenType.IF)
+            {
+                Token tok1 = getToken();
+                if (tok1.type == TokenType.LPAREN)
+                {
+                    OILNode node1 = parseExpression();
+                    tok1 = getToken();
+                    if (tok1.type == TokenType.RPAREN)
+                    {
+                        OILNode node2 = parseStatement();
+                        int mark1 = tokenPos;
+                        tok1 = getToken();
+                        OILNode node3 = null;
+                        if (tok1.type == TokenType.ELSE)
+                        {
+                            node3 = parseStatement();
+                        }
+                        else
+                        {
+                            rewindToken(mark1);
+                        }
+                        OILNode node = arbor.buildIfStatement(node1, node2, node3);
+                        return node;
+                    }
+                }
+            }
+            if (tok.type == TokenType.SWITCH)
+            {
+                Token tok1 = getToken();
+                if (tok1.type == TokenType.LPAREN)
+                {
+                    OILNode node1 = parseExpression();
+                    tok1 = getToken();
+                    if (tok1.type == TokenType.RPAREN)
+                    {
+                        OILNode node2 = parseStatement();
+                        OILNode node = arbor.buildSwitchStatement(node1, node2);
+                        return node;
+                    }
+                }
+            }
+            rewindToken(mark);
             return null;
         }
 
@@ -720,6 +789,78 @@ namespace BlackC.Parse
         //  ('FOR' '(' (declaration | ((expression)? ';')) (expression)? ';' (expression)? ')' statement)
         public OILNode parseIterationStatement()
         {
+            int mark = tokenPos;
+            Token tok = getToken();
+            if (tok.type == TokenType.WHILE)
+            {
+                Token tok1 = getToken();
+                if (tok1.type == TokenType.LPAREN)
+                {
+                    OILNode node1 = parseExpression();
+                    tok1 = getToken();
+                    if (tok1.type == TokenType.RPAREN)
+                    {
+                        OILNode node2 = parseStatement();
+                        OILNode node = arbor.buildWhileStatement(node1, node2);
+                        return node;
+                    }
+                }
+            }
+            if (tok.type == TokenType.DO)
+            {
+                OILNode node1 = parseStatement();
+                Token tok1 = getToken();
+                if (tok1.type == TokenType.WHILE)
+                {
+                    tok1 = getToken();
+                    if (tok1.type == TokenType.LPAREN)
+                    {
+                        OILNode node2 = parseExpression();
+                        tok1 = getToken();
+                        if (tok1.type == TokenType.RPAREN)
+                        {
+                            tok1 = getToken();
+                            if (tok1.type == TokenType.SEMICOLON)
+                            {
+                                OILNode node = arbor.buildDoWhileStatement(node1, node2);
+                                return node;
+                            }
+                        }
+                    }
+                }
+            }
+            if (tok.type == TokenType.FOR)
+            {
+                Token tok1 = getToken();
+                if (tok1.type == TokenType.LPAREN)
+                {
+                    OILNode node1 = parseDeclaration();
+                    if (node1 == null)
+                    {
+                        node1 = parseExpression();
+                        tok1 = getToken();
+                    }
+                    OILNode node2 = parseExpression();
+                    tok1 = getToken();
+                    if (tok1.type == TokenType.SEMICOLON)
+                    {
+                        OILNode node3 = parseExpression();
+                        tok1 = getToken();
+                        if (tok1.type == TokenType.SEMICOLON)
+                        {
+                            tok1 = getToken();
+                            if (tok1.type == TokenType.RPAREN)
+                            {
+                                OILNode node4 = parseStatement();
+                                OILNode node = arbor.buildForStatement(node1, node2, node3, node4);
+                                return node;
+                            }
+                        }
+                    }
+                }
+            }
+
+            rewindToken(mark);
             return null;
         }
 
