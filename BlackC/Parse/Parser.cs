@@ -409,6 +409,43 @@ namespace BlackC.Parse
         //  ('STRUCT' | 'UNION') ('identifier' | (('identifier')? '{' (struct-declaration)+ '}'))
         public OILNode parseStructOrUnionSpecifier()
         {
+            int mark = tokenPos;
+            Token tok = getToken();
+            if ((tok.type == TokenType.STRUCT) || (tok.type == TokenType.UNION))
+            {
+                bool isStruct = (tok.type == TokenType.STRUCT);
+                int mark1 = tokenPos;
+                Token tok1 = getToken();
+                Token id = null;
+                if (tok1.type == TokenType.IDENT)
+                {
+                    id = tok1;
+                }
+                else
+                {
+                    rewindToken(mark1);
+                }
+                mark1 = tokenPos;
+                tok1 = getToken();
+                List<OILNode> nodeList = new List<OILNode>();
+                if (tok1.type == TokenType.LBRACE)
+                {
+                    OILNode node1 = parseStructDeclaration();
+                    while (node1 != null)
+                    {
+                        nodeList.Add(node1);
+                        node1 = parseStructDeclaration();
+                    }
+                }
+                else
+                {
+                    rewindToken(mark1);
+                }
+                OILNode node = arbor.buildStructOrUnionSpecifier(isStruct, id, nodeList);
+                return node;
+            }
+
+            rewindToken(mark);
             return null;
         }
 
@@ -416,6 +453,19 @@ namespace BlackC.Parse
         //  specifier-qualifier-list struct-declarator-list ';'
         public OILNode parseStructDeclaration()
         {
+            int mark = tokenPos;
+            OILNode node1 = parseSpecifierQualifierList();
+            if (node1 != null)
+            {
+                OILNode node2 = parseStructDeclaratorList();
+                Token tok = getToken();
+                if (tok.type == TokenType.SEMICOLON)
+                {
+                    OILNode node = arbor.buildStructDeclaration(node1, node2);
+                    return node;
+                }
+            }
+            rewindToken(mark);
             return null;
         }
 
@@ -423,6 +473,28 @@ namespace BlackC.Parse
         //  (type-specifier | type-qualifier)+
         public OILNode parseSpecifierQualifierList()
         {
+            int mark = tokenPos;
+            OILNode node1 = parseTypeSpecifier();
+            if (node1 == null)
+            {
+                node1 = parseTypeQualifier();
+            }
+            if (node1 != null)
+            {
+                List<OILNode> nodelist = new List<OILNode>();
+                while (node1 != null)
+                {
+                    nodelist.Add(node1);
+                    node1 = parseTypeSpecifier();
+                    if (node1 == null)
+                    {
+                        node1 = parseTypeQualifier();
+                    }
+                }
+                OILNode node = arbor.buildSpecifierQualifierList(nodelist);
+                return node;
+            }
+            rewindToken(mark);
             return null;
         }
 
@@ -430,6 +502,27 @@ namespace BlackC.Parse
         //  struct-declarator(',' struct-declarator)*
         public OILNode parseStructDeclaratorList()
         {
+            int mark = tokenPos;
+            OILNode node = parseStructDeclarator();
+            List<OILNode> nodeList = new List<OILNode>();
+            if (node != null)
+            {
+                nodeList.Add(node);
+                int mark1 = tokenPos;
+                Token tok1 = getToken();
+                while (tok1.type == TokenType.COMMA)
+                {
+                    OILNode node1 = parseStructDeclarator();
+                    nodeList.Add(node1);
+                    mark1 = tokenPos;
+                    tok1 = getToken();
+                }
+                rewindToken(mark1);
+                OILNode node2 = arbor.buildStructDeclaratorList();
+                return node2;
+            }
+
+            rewindToken(mark);
             return null;
         }
 
@@ -437,6 +530,26 @@ namespace BlackC.Parse
         //  declarator | ((declarator)? ':' constant-expression)
         public OILNode parseStructDeclarator()
         {
+            int mark = tokenPos;
+            OILNode node1 = parseDeclarator();
+            int mark1 = tokenPos;
+            Token tok1 = getToken();
+            OILNode node2 = null;
+            if (tok1.type == TokenType.COLON)
+            {
+                node2 = parseConstantExpression();
+            }
+            else
+            {
+                rewindToken(mark1);
+            }
+            if (node1 != null || node2 != null)
+            {
+                OILNode node = arbor.buildStructDeclarator();
+                return node;
+            }
+
+            rewindToken(mark);
             return null;
         }
 
@@ -444,13 +557,64 @@ namespace BlackC.Parse
         //  'ENUM' ('identifier' | (('identifier')? '{' enumerator(',' enumerator)* (',')? '}'))
         public OILNode parseEnumSpecifier()
         {
+            int mark = tokenPos;
+            Token tok1 = getToken();
+            if (tok1.type == TokenType.ENUM)
+            {
+                Token id = null;
+                tok1 = getToken();
+                if (tok1.type == TokenType.IDENT)
+                {
+                    id = tok1;
+                    tok1 = getToken();
+                }
+                List<OILNode> nodelist = new List<OILNode>();
+                if (tok1.type == TokenType.LBRACE)
+                {
+                    OILNode node1 = parseEnumerator();
+                    nodelist.Add(node1);
+                    tok1 = getToken();
+                    while (tok1.type == TokenType.COMMA)
+                    {
+                        node1 = parseEnumerator();
+                        if (node1 != null)
+                        {
+                            nodelist.Add(node1);
+                        }
+                        tok1 = getToken();
+                    }
+                }
+                OILNode node = arbor.buildEnumSpecifier(id, nodelist);
+            }
+            rewindToken(mark);
             return null;
         }
 
         //enumerator:
-        //  enumeration-constant('=' constant-expression)?
+        //  enumeration-constant ('=' constant-expression)?
         public OILNode parseEnumerator()
         {
+            int mark = tokenPos;
+            Token tok = getToken();
+            Token enumc = arbor.isEnumerationConstant(tok);
+            if (enumc != null)
+            {
+                int mark1 = tokenPos;
+                Token tok1 = getToken();
+                OILNode node1 = null;
+                if (tok1.type == TokenType.EQUAL)
+                {
+                    node1 = parseConstantExpression();
+                }
+                else
+                {
+                    rewindToken(mark1);
+                }
+                OILNode node = arbor.buildEnumerator(enumc, node1);
+                return node;
+            }
+
+            rewindToken(mark);
             return null;
         }
 
@@ -494,6 +658,16 @@ namespace BlackC.Parse
         //  (pointer)? direct-declarator
         public OILNode parseDeclarator()
         {
+            int mark = tokenPos;
+            OILNode node1 = parsePointer();
+            OILNode node2 = parseDirectDeclarator();
+            if (node2 != null)
+            {
+                OILNode node = arbor.buildDeclarator(node1, node2);
+                return node;
+            }
+
+            rewindToken(mark);
             return null;
         }
 
@@ -502,6 +676,89 @@ namespace BlackC.Parse
         //  ((type-qualifier-list)? '*') | (type-qualifier-list static assignment-expression)']') | ('(' parameter-type-list | (identifier-list)? ')'))* 
         public OILNode parseDirectDeclarator()
         {
+            int mark = tokenPos;
+            Token tok = getToken();
+            Token id = null;
+            OILNode node1 = null;
+            if (tok.type == TokenType.IDENT)
+            {
+                id = tok;
+            }
+            else if (tok.type == TokenType.LPAREN)
+            {
+                node1 = parseDeclarator();
+                tok = getToken();
+            }
+            if (id != null || node1 != null)
+            {
+                OILNode node = arbor.buildBaseDirectDeclarator(id, node1);
+                int mark1 = tokenPos;
+                Token tok1 = getToken();
+
+                //List<OILNode> nodeList = new List<OILNode>();
+
+                while (tok1.type == TokenType.LBRACKET || tok1.type == TokenType.LPAREN)
+                {
+                    if (tok1.type == TokenType.LBRACKET)
+                    {
+                        int mark2 = tokenPos;
+                        tok1 = getToken();
+                        bool isStatic1 = false;
+                        if (tok1.type == TokenType.STATIC)
+                        {
+                            isStatic1 = true;
+                        }
+                        else
+                        {
+                            rewindToken(mark2);
+                        }
+                        OILNode node2 = parseTypeQualifierList();
+                        mark2 = tokenPos;
+                        tok1 = getToken();
+                        bool isStatic2 = false;
+                        if (tok1.type == TokenType.STATIC)
+                        {
+                            isStatic2 = true;
+                        }
+                        else
+                        {
+                            rewindToken(mark2);
+                        }
+                        OILNode node3 = parseAssignmentExpression();
+                        mark2 = tokenPos;
+                        tok1 = getToken();
+                        bool isPointer = false;
+                        if (tok1.type == TokenType.STAR)
+                        {
+                            isPointer = true;
+                        }
+                        else
+                        {
+                            rewindToken(mark2);
+                        }
+                        tok1 = getToken();
+                        node = arbor.buildArrayDirectDeclarator(node, isStatic1, node2, isStatic2, node3, isPointer);
+                    }
+                    else if (tok1.type == TokenType.LPAREN)
+                    {
+                        OILNode node4 = parseParameterTypeList();
+                        if (node4 == null)
+                        {
+                            node4 = parseIdentifierList();
+                        }
+                        tok1 = getToken();
+                        if (tok1.type == TokenType.RPAREN)
+                        {
+                            node = arbor.buildParamDirectDeclarator(node, node4);
+                        }
+                    }
+                    tok1 = getToken();
+                }
+                rewindToken(mark);
+                return node;
+            }
+
+            rewindToken(mark);
             return null;
         }
 
@@ -509,6 +766,24 @@ namespace BlackC.Parse
         //  ('*' (type-qualifier-list)?)+
         public OILNode parsePointer()
         {
+            int mark = tokenPos;
+            Token tok = getToken();
+            if (tok.type == TokenType.STAR)
+            {
+                OILNode node1 = parseTypeQualifierList();
+                OILNode node = arbor.buildPointer(null, node1);
+                int mark1 = tokenPos;
+                Token tok1 = getToken();
+                while (tok1.type == TokenType.STAR)
+                {
+                    node1 = parseTypeQualifierList();
+                    node = arbor.buildPointer(null, node1);
+                }
+                rewindToken(mark1);
+                return node;
+            }
+
+            rewindToken(mark);
             return null;
         }
 
@@ -516,20 +791,81 @@ namespace BlackC.Parse
         //  (type-qualifier)+
         public OILNode parseTypeQualifierList()
         {
+            int mark = tokenPos;
+            OILNode node1 = parseParameterDeclaration();
+            if (node1 != null)
+            {
+                List<OILNode> nodeList = new List<OILNode>();
+                while (node1 != null)
+                {
+                    nodeList.Add(node1);
+                    node1 = parseParameterDeclaration();
+                }
+                OILNode node = arbor.buildTypeQualifierList(nodeList);
+                return node;
+            }
+            rewindToken(mark);
             return null;
         }
 
         //parameter-type-list:
-        //  parameter-declaration(',' parameter-declaration)* (, ...)?
+        //  parameter-declaration (',' parameter-declaration)* (, ...)?
         public OILNode parseParameterTypeList()
         {
+            int mark = tokenPos;
+            OILNode node1 = parseParameterDeclaration();
+            if (node1 != null)
+            {
+                int mark1 = tokenPos;
+                Token tok1 = getToken();
+                List<OILNode> nodeList = new List<OILNode>();
+                while (tok1.type == TokenType.COMMA)
+                {
+                    OILNode node2 = parseParameterDeclaration();
+                    nodeList.Add(node2);
+                    mark1 = tokenPos;
+                    tok1 = getToken();
+                }
+                rewindToken(mark1);
+                bool hasElipsis = false;
+                mark1 = tokenPos;
+                tok1 = getToken();
+                if (tok1.type == TokenType.COMMA)
+                {
+                    tok1 = getToken();
+                    if (tok1.type == TokenType.ELLIPSIS)
+                    {
+                        hasElipsis = true;
+                    }
+                    else
+                    {
+                        rewindToken(mark1);
+                    }
+                    OILNode node = arbor.buildParameterTypeList(node1, nodeList, hasElipsis);
+                    return node;
+                }
+            }
+            rewindToken(mark);
             return null;
         }
 
         //parameter-declaration:
-        //  declaration-specifiers(declarator | (abstract-declarator)?)
+        //  declaration-specifiers (declarator | (abstract-declarator)?)
         public OILNode parseParameterDeclaration()
         {
+            int mark = tokenPos;
+            OILNode node1 = parseDeclarationSpecifiers();
+            if (node1 != null)
+            {
+                OILNode node2 = parseDeclarator();
+                if (node2 == null)
+                {
+                    node2 = parseAbstractDeclarator();
+                }
+                OILNode node = arbor.buildParameterDeclaration();
+                return node;
+            }
+            rewindToken(mark);
             return null;
         }
 
@@ -537,13 +873,43 @@ namespace BlackC.Parse
         //  'identifier' (',' 'identifier')*
         public OILNode parseIdentifierList()
         {
+            int mark = tokenPos;
+            Token tok1 = getToken();
+            List<Token> tokenList = new List<Token>();
+            if (tok1.type == TokenType.IDENT)
+            {
+                tokenList.Add(tok1);
+                int mark1 = tokenPos;
+                tok1 = getToken();
+                while (tok1.type == TokenType.COMMA)
+                {
+                    tok1 = getToken();
+                    tokenList.Add(tok1);
+                    mark1 = tokenPos;
+                    tok1 = getToken();
+                }
+                rewindToken(mark1);
+                OILNode node = arbor.buildIdentifierList(tokenList);
+                return node;
+            }
+
+            rewindToken(mark);
             return null;
         }
 
         //type-name:
-        //  specifier-qualifier-list(abstract-declarator)?
+        //  specifier-qualifier-list (abstract-declarator)?
         public OILNode parseTypeName()
         {
+            int mark = tokenPos;
+            OILNode node1 = parseSpecifierQualifierList();
+            if (node1 != null)
+            {
+                OILNode node2 = parseAbstractDeclarator();
+                OILNode node = arbor.buildTypeName(node1, node2);
+                return node;
+            }
+            rewindToken(mark);
             return null;
         }
 
@@ -551,15 +917,98 @@ namespace BlackC.Parse
         //  pointer | ((pointer)? direct-abstract-declarator)
         public OILNode parseAbstractDeclarator()
         {
+            int mark = tokenPos;
+            OILNode node1 = parsePointer();
+            OILNode node2 = parseDirectDeclarator();
+            if (node1 != null | node2 != null)
+            {
+                OILNode node = arbor.buildAbstractDeclarator(node1, node2);
+                return node;
+            }
+
+            rewindToken(mark);
             return null;
         }
 
         //direct-abstract-declarator:
         //  ('(' abstract-declarator ')') | (('(' abstract-declarator ')')? 
-        //   ('['((type-qualifier-list)?  (assignment-expression)?) | (static (type-qualifier-list)? assignment-expression) |
-        //      (type-qualifier-list static assignment-expression) | ('*')']') | ('(' (parameter-type-list)? ')'))*)
+        //   ('['((type-qualifier-list)?  (assignment-expression)?) | (STATIC (type-qualifier-list)? assignment-expression) |
+        //      (type-qualifier-list static assignment-expression) | ('*')']') | 
+        //  ('(' (parameter-type-list)? ')'))*)
         public OILNode parseDirectAbstractDeclarator()
         {
+            int mark = tokenPos;
+            Token tok = getToken();
+            OILNode node1 = null;
+            if (tok.type == TokenType.LPAREN)
+            {
+                node1 = parseAbstractDeclarator();
+                tok = getToken();
+            }
+            if (node1 != null)
+            {
+                OILNode node = arbor.buildBaseAbstractDeclarator(node1);
+                int mark1 = tokenPos;
+                Token tok1 = getToken();
+
+                while (tok1.type == TokenType.LBRACKET || tok1.type == TokenType.LPAREN)
+                {
+                    if (tok1.type == TokenType.LBRACKET)
+                    {
+                        int mark2 = tokenPos;
+                        tok1 = getToken();
+                        bool isStatic1 = false;
+                        if (tok1.type == TokenType.STATIC)
+                        {
+                            isStatic1 = true;
+                        }
+                        else
+                        {
+                            rewindToken(mark2);
+                        }
+                        OILNode node2 = parseTypeQualifierList();
+                        mark2 = tokenPos;
+                        tok1 = getToken();
+                        bool isStatic2 = false;
+                        if (tok1.type == TokenType.STATIC)
+                        {
+                            isStatic2 = true;
+                        }
+                        else
+                        {
+                            rewindToken(mark2);
+                        }
+                        OILNode node3 = parseAssignmentExpression();
+                        mark2 = tokenPos;
+                        tok1 = getToken();
+                        bool isPointer = false;
+                        if (tok1.type == TokenType.STAR)
+                        {
+                            isPointer = true;
+                        }
+                        else
+                        {
+                            rewindToken(mark2);
+                        }
+                        tok1 = getToken();
+                        node = arbor.buildArrayAbstractDeclarator(node, isStatic1, node2, isStatic2, node3, isPointer);
+                    }
+                    else if (tok1.type == TokenType.LPAREN)
+                    {
+                        OILNode node4 = parseParameterTypeList();
+                        tok1 = getToken();
+                        if (tok1.type == TokenType.RPAREN)
+                        {
+                            node = arbor.buildParamAbstractDeclarator(node, node4);
+                        }
+                    }
+                    tok1 = getToken();
+                }
+                rewindToken(mark);
+                return node;
+            }
+
+            rewindToken(mark);
             return null;
         }
 
@@ -569,13 +1018,71 @@ namespace BlackC.Parse
         //  assignment-expression | ('{' initializer-list(',')? '}')
         public OILNode parseInitializer()
         {
+            int mark = tokenPos;
+            rewindToken(mark);
+            OILNode node1 = parseAssignmentExpression();
+            OILNode node2 = null;
+            if (node1 == null)
+            {
+                int mark1 = tokenPos;
+                Token tok1 = getToken();
+                if (tok1.type == TokenType.LBRACE)
+                {
+                    node2 = parseInitializerList();
+                    int mark2 = tokenPos;
+                    Token tok2 = getToken();
+                    if (tok2.type != TokenType.COMMA)
+                    {
+                        rewindToken(mark2);
+                    }
+                    tok2 = getToken();
+                }
+            }
+            if (node1 != null | node2 != null)
+            {
+                OILNode node = arbor.buildInitializer(node1, node2);
+                return node;
+            }
+
+            rewindToken(mark);
             return null;
         }
 
         //initializer-list:
-        //  (designation)? initializer(',' (designation)? initializer)*
+        //  (designation)? initializer (',' (designation)? initializer)*
         public OILNode parseInitializerList()
         {
+            int mark = tokenPos;
+            OILNode node1 = parseDesignation();
+            OILNode node2 = parseAssignmentExpression();
+            List<OILNode> nodeList = new List<OILNode>();
+            if (node2 != null)
+            {
+                if (node1 != null)
+                {
+                    nodeList.Add(node1);
+                }
+                nodeList.Add(node2);
+                int mark1 = tokenPos;
+                Token tok1 = getToken();
+                while (tok1.type == TokenType.COMMA)
+                {
+                    node1 = parseDesignation();
+                    node2 = parseAssignmentExpression();
+                    if (node1 != null)
+                    {
+                        nodeList.Add(node1);
+                    }
+                    nodeList.Add(node1);
+                    mark1 = tokenPos;
+                    tok1 = getToken();
+                }
+                rewindToken(mark1);
+                OILNode node = arbor.buildInitializerList(nodeList);
+                return node;
+            }
+
+            rewindToken(mark);
             return null;
         }
 
@@ -583,6 +1090,40 @@ namespace BlackC.Parse
         //  (('[' constant-expression ']') | ('.' 'identifier'))+ '='
         public OILNode parseDesignation()
         {
+            int mark = tokenPos;
+            Token tok = getToken();
+            OILNode node = null;
+            while ((tok.type == TokenType.LBRACKET) || (tok.type == TokenType.PERIOD))
+            {
+                if (tok.type == TokenType.LBRACKET)
+                {
+                    OILNode node1 = parseConstantExpression();
+                    Token tok1 = getToken();
+                    if (tok.type == TokenType.RBRACKET)
+                    {
+                        node = arbor.buildArrayDesignation(node, node1);
+                        mark = tokenPos;
+                        tok = getToken();
+                    }
+                }
+                if (tok.type == TokenType.PERIOD)
+                {
+                    Token tok1 = getToken();
+                    if (tok1.type == TokenType.IDENT)
+                    {
+                        node = arbor.buildFieldDesignation(node, tok1);
+                        mark = tokenPos;
+                        tok = getToken();
+                    }
+                }
+            }
+            if (node != null)
+            {
+                node = arbor.buildArrayDesignation(node);
+                return node;
+            }
+
+            rewindToken(mark);
             return null;
         }
 
@@ -997,8 +1538,8 @@ namespace BlackC.Parse
             {
                 int mark3 = tokenPos;
                 Token tok1 = getToken();
-                while ((tok1.type == TokenType.LBRACKET) || 
-                    (tok1.type == TokenType.LPAREN) || 
+                while ((tok1.type == TokenType.LBRACKET) ||
+                    (tok1.type == TokenType.LPAREN) ||
                     (tok1.type == TokenType.PERIOD) ||
                     (tok1.type == TokenType.ARROW) ||
                     (tok1.type == TokenType.PLUSPLUS) ||

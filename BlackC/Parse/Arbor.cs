@@ -142,11 +142,6 @@ namespace BlackC.Parse
             }
         }
 
-        internal OILNode buildTranslationUnit(List<OILNode> nodeList)
-        {
-            throw new NotImplementedException();
-        }
-
         //- declarations --------------------------------------------------------
 
         public void makeDeclarationNode(DeclSpecNode declarspecs, DeclaratorNode declarator, InitializerNode initializer)
@@ -181,16 +176,6 @@ namespace BlackC.Parse
                 addStmtToBlock(dstmt);
                 vardecl.initializer = null;
             }
-        }
-
-        internal OILNode buildFunctionDefinition(OILNode node1, OILNode node2, List<OILNode> nodelist, OILNode node3)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildStorageClassSpecifier(Token tok)
-        {
-            throw new NotImplementedException();
         }
 
         public DeclSpecNode makeDeclSpecs(List<Token> storageClassSpecs, List<TypeDeclNode> typeDefs, List<Token> typeModifers,
@@ -277,41 +262,6 @@ namespace BlackC.Parse
             }
 
             return declspec;
-        }
-
-        internal OILNode buildInitDeclaratorList(List<OILNode> nodeList)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildDeclarationSpecifiers(List<OILNode> nodeList)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildTypeSpecifier(Token tok)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildDeclaration(OILNode node1, OILNode node2)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildTypeQualifier(Token tok)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildTypeSpecifier(OILNode node)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal Token isTypedefName(Token tok)
-        {
-            throw new NotImplementedException();
         }
 
         public TypeDeclNode GetTypeDef(Token token)
@@ -408,11 +358,6 @@ namespace BlackC.Parse
             return null;
         }
 
-        internal OILNode buildStatement(OILNode node)
-        {
-            throw new NotImplementedException();
-        }
-
         public EnumeratorNode makeEnumeratorNode(EnumConstantNode enumconst, ConstExprNode constexpr)
         {
             return null;
@@ -434,12 +379,7 @@ namespace BlackC.Parse
         {
             return null;
         }
-
-        internal OILNode buildLabeledStatement(Token tok, OILNode node1)
-        {
-            throw new NotImplementedException();
-        }
-
+                
         public void startParamList()
         {
             curParamList = new ParamListNode();
@@ -461,16 +401,6 @@ namespace BlackC.Parse
             }
             symbolTable.addSymbol(pdecl.name, pdecl);
             curParamList.paramList.Add(pdecl);
-        }
-
-        internal OILNode buildCaseStatement(OILNode node1, OILNode node2)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildDefaultStatement(Token tok, OILNode node1)
-        {
-            throw new NotImplementedException();
         }
 
         public void addElipsisParam()
@@ -519,11 +449,6 @@ namespace BlackC.Parse
             return null;
         }
 
-        internal OILNode buildGotoStatement(Token tok1)
-        {
-            throw new NotImplementedException();
-        }
-
         //- identifiers -------------------------------------------------------------
 
         //vars
@@ -531,21 +456,6 @@ namespace BlackC.Parse
         {
             IdentDeclaratorNode node = new IdentDeclaratorNode(ident);
             return node;
-        }
-
-        internal OILNode buildContinueStatement()
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildBreakStatement()
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildReturnStatement(OILNode node1)
-        {
-            throw new NotImplementedException();
         }
 
         public IdentNode getArgIdentNode(Token token)
@@ -577,11 +487,6 @@ namespace BlackC.Parse
         public IdentNode getStructIdentNode(Token token)
         {
             return null;
-        }
-
-        internal OILNode buildeArgumentExpressionList(List<OILNode> nodeList)
-        {
-            throw new NotImplementedException();
         }
 
         ////these return either declared or new ident nodes 
@@ -628,19 +533,9 @@ namespace BlackC.Parse
             return null;
         }
 
-        internal OILNode buildExpressionStatement(OILNode node)
-        {
-            throw new NotImplementedException();
-        }
-
         public EnumConstantNode getEnumerationConstant(Token token)
         {
             return null;
-        }
-
-        internal OILNode buildCompoundStatement(List<OILNode> nodeList)
-        {
-            throw new NotImplementedException();
         }
 
         //public EnumConstantNode makeEnumConstNode(Token token)
@@ -712,11 +607,6 @@ namespace BlackC.Parse
             return null;
         }
 
-        internal OILNode buildIfStatement(OILNode node1, OILNode node2, OILNode node3)
-        {
-            throw new NotImplementedException();
-        }
-
         public DefaultStatementNode makeDefaultStatementNode(StatementNode stmt)
         {
             return null;
@@ -731,11 +621,6 @@ namespace BlackC.Parse
         public EmptyStatementNode makeEmptyStatementNode()
         {
             return null;
-        }
-
-        internal OILNode buildSwitchStatement(OILNode node1, OILNode node2)
-        {
-            throw new NotImplementedException();
         }
 
         public IfStatementNode makeIfStatementNode(ExprNode expr, StatementNode thenstmt, StatementNode elsestmt)
@@ -758,11 +643,6 @@ namespace BlackC.Parse
             return null;
         }
 
-        internal OILNode buildIdentExpression(Token tok)
-        {
-            throw new NotImplementedException();
-        }
-
         public ForStatementNode makeForStatementNode(Block forBlock, ExprNode expr1, ExprNode expr2, ExprNode expr3, StatementNode body)
         {
             List<StatementNode> bodyList = null;
@@ -777,41 +657,6 @@ namespace BlackC.Parse
             }
             ForStatementNode node = new ForStatementNode(forBlock.stmts, expr1, expr2, expr3, bodyList);
             return node;            
-        }
-
-        internal OILNode buildWhileStatement(OILNode node1, OILNode node2)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildStringConstExpression(Token tok)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildCharConstExpression(Token tok)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildDoWhileStatement(OILNode node1, OILNode node2)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildFloatConstExpression(Token tok)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildIntConstExpression(Token tok)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildSubExpression(OILNode node1)
-        {
-            throw new NotImplementedException();
         }
 
         public GotoStatementNode makeGotoStatementNode(Token ident)
@@ -835,11 +680,6 @@ namespace BlackC.Parse
             return node;
         }
 
-        internal OILNode buildForStatement(OILNode node1, OILNode node2, OILNode node3, OILNode node4)
-        {
-            throw new NotImplementedException();
-        }
-
         //- expressions -------------------------------------------------------------
 
         public IdentExprNode getExprIdentNode(String id)
@@ -849,30 +689,10 @@ namespace BlackC.Parse
             return node;
         }
 
-        internal OILNode buildTypeNameInitializerList(OILNode node2, OILNode node3)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildMultiplicativeExpression(List<OILNode> nodeList, List<Token> tokenList)
-        {
-            throw new NotImplementedException();
-        }
-
         public IntConstant makeIntegerConstantNode(int value)
         {
             IntConstant node = new IntConstant(value);
             return node;            
-        }
-
-        internal OILNode buildAdditiveExpression(List<OILNode> nodeList, List<Token> tokenList)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildSizeOfExpression(OILNode node1)
-        {
-            throw new NotImplementedException();
         }
 
         public FloatConstant makeFloatConstantNode(double value)
@@ -881,49 +701,9 @@ namespace BlackC.Parse
             return node;
         }
 
-        internal OILNode buildShiftExpression(List<OILNode> nodeList, List<Token> tokenList)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildArrayIndexExpression(OILNode node1, OILNode node2)
-        {
-            throw new NotImplementedException();
-        }
-
         public ExprNode makeCharConstantNode(Token token)
         {
             return null;
-        }
-
-        internal OILNode buildIncDecExpression(Token tok1, OILNode node1)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildArgumentListExpression(OILNode node1, OILNode node2)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildCastExpression(List<OILNode> nodeList, OILNode node2)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildFieldReference(OILNode node1, Token tok3)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildAndExpression(List<OILNode> nodeList)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildIndirectFieldReference(OILNode node1, Token tok3)
-        {
-            throw new NotImplementedException();
         }
 
         public ExprNode makeStringConstantNode(Token token)
@@ -931,29 +711,9 @@ namespace BlackC.Parse
             return null;
         }
 
-        internal OILNode buildPostIncDecExpression(Token tok1)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildUnaryExpression(Token tok1, OILNode node1)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildEqualityExpression(List<OILNode> nodeList, List<Token> tokenList)
-        {
-            throw new NotImplementedException();
-        }
-
         public SubExpressionNode makeSubexpressionNode(ExprNode expr)
         {
             return null;
-        }
-
-        internal OILNode buildExclusiveOrExpression(List<OILNode> nodeList)
-        {
-            throw new NotImplementedException();
         }
 
         public TypeInitExprNode makeTypeInitExprNode(ExprNode node)
@@ -966,24 +726,9 @@ namespace BlackC.Parse
             return null;
         }
 
-        internal OILNode buildInclusiveOrExpression(List<OILNode> nodeList)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal OILNode buildRelationalExpression(List<OILNode> nodeList, List<Token> tokenList)
-        {
-            throw new NotImplementedException();
-        }
-
         public FuncCallExprNode makeFuncCallExprNode(ExprNode node, ExprNode argList)
         {
             return null;
-        }
-
-        internal OILNode buildLogicalAndExpression(List<OILNode> nodeList)
-        {
-            throw new NotImplementedException();
         }
 
         public FieldExprNode makeFieldExprNode(ExprNode node, OILNode idNode)
@@ -1025,12 +770,7 @@ namespace BlackC.Parse
         {
             return null;
         }
-
-        internal OILNode buildeLogicalOrExpression(List<OILNode> nodeList)
-        {
-            throw new NotImplementedException();
-        }
-
+       
         //- arithmetic expressions ------------------------
 
         public ArithmeticExprNode makeUnaryPlusExprNode(ExprNode term)
@@ -1107,11 +847,6 @@ namespace BlackC.Parse
             return node;
         }
 
-        internal OILNode buildExpression()
-        {
-            throw new NotImplementedException();
-        }
-
         public ComparisonExprNode makeNotEqualsExprNode(ExprNode lhs, ExprNode rhs)
         {
             ComparisonExprNode node = new ComparisonExprNode(ComparisonExprNode.OPERATOR.NOTEQUAL, lhs, rhs);
@@ -1128,11 +863,6 @@ namespace BlackC.Parse
         {
             ComparisonExprNode node = new ComparisonExprNode(ComparisonExprNode.OPERATOR.GTRTHAN, lhs, rhs);
             return node;
-        }
-
-        internal OILNode buildConstantExpression()
-        {
-            throw new NotImplementedException();
         }
 
         public ComparisonExprNode makeLessEqualExprNode(ExprNode lhs, ExprNode rhs)
@@ -1223,6 +953,413 @@ namespace BlackC.Parse
         }
 
         internal TypeQualNode makeTypeQualNode(List<Token> typeQuals)
+        {
+            throw new NotImplementedException();
+        }
+
+        //- build funcs -------------------------------------------------------
+
+        internal OILNode buildTranslationUnit(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildFunctionDefinition(OILNode node1, OILNode node2, List<OILNode> nodelist, OILNode node3)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildStorageClassSpecifier(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildInitDeclaratorList(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildDeclarationSpecifiers(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildTypeSpecifier(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildDeclaration(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildTypeQualifier(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildTypeSpecifier(OILNode node)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal Token isTypedefName(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildStructOrUnionSpecifier(bool isStruct, Token id, List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildStatement(OILNode node)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildStructDeclaration(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildLabeledStatement(Token tok, OILNode node1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildSpecifierQualifierList(List<OILNode> nodelist)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildEnumerator(Token enumc, OILNode node1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildDeclarator(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildCaseStatement(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildStructDeclaratorList()
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildDefaultStatement(Token tok, OILNode node1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildTypeQualifierList(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildStructDeclarator()
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildParameterDeclaration()
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildIdentifierList(List<Token> tokenList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal Token isEnumerationConstant(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildEnumSpecifier(Token id, object nodelist)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildGotoStatement(Token tok1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildParameterTypeList(OILNode node1, List<OILNode> nodeList, bool hasElipsis)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildContinueStatement()
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildBreakStatement()
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildReturnStatement(OILNode node1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildeArgumentExpressionList(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildTypeName(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildBaseDirectDeclarator(Token id, OILNode node1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildExpressionStatement(OILNode node)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildCompoundStatement(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildArrayDirectDeclarator(OILNode node, bool isStatic1, OILNode node2, bool isStatic2, OILNode node3, bool isPointer)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildParamDirectDeclarator(OILNode node, OILNode node4)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildInitializer(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildPointer(object p, OILNode node1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildIfStatement(OILNode node1, OILNode node2, OILNode node3)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildSwitchStatement(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildIdentExpression(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildWhileStatement(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildStringConstExpression(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildCharConstExpression(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildDoWhileStatement(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildFloatConstExpression(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildIntConstExpression(Token tok)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildSubExpression(OILNode node1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildForStatement(OILNode node1, OILNode node2, OILNode node3, OILNode node4)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildInitializerList(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildTypeNameInitializerList(OILNode node2, OILNode node3)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildAbstractDeclarator(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildMultiplicativeExpression(List<OILNode> nodeList, List<Token> tokenList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildArrayDesignation(OILNode node, OILNode node1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildAdditiveExpression(List<OILNode> nodeList, List<Token> tokenList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildFieldDesignation(OILNode node, Token tok1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildBaseAbstractDeclarator(OILNode node1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildArrayDesignation(OILNode node)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildSizeOfExpression(OILNode node1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildShiftExpression(List<OILNode> nodeList, List<Token> tokenList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildArrayIndexExpression(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildIncDecExpression(Token tok1, OILNode node1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildArgumentListExpression(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildCastExpression(List<OILNode> nodeList, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildFieldReference(OILNode node1, Token tok3)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildAndExpression(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildArrayAbstractDeclarator(OILNode node, bool isStatic1, OILNode node2, bool isStatic2, OILNode node3, bool isPointer)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildIndirectFieldReference(OILNode node1, Token tok3)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildParamAbstractDeclarator(OILNode node, OILNode node4)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildPostIncDecExpression(Token tok1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildUnaryExpression(Token tok1, OILNode node1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildEqualityExpression(List<OILNode> nodeList, List<Token> tokenList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildExclusiveOrExpression(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildInclusiveOrExpression(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildRelationalExpression(List<OILNode> nodeList, List<Token> tokenList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildLogicalAndExpression(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildeLogicalOrExpression(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildExpression()
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildConstantExpression()
         {
             throw new NotImplementedException();
         }
