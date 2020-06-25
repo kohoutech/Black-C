@@ -178,7 +178,7 @@ namespace BlackC.Scan
                     continue;
                 }
 
-                //check if word is keyword, typename or identifier
+                //check if word is keyword or identifier
                 if (frag.type == FragType.WORD)
                 {
                     if (keywords.ContainsKey(frag.str))

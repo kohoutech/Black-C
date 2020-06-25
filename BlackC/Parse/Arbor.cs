@@ -178,133 +178,6 @@ namespace BlackC.Parse
             }
         }
 
-        public DeclSpecNode makeDeclSpecs(List<Token> storageClassSpecs, List<TypeDeclNode> typeDefs, List<Token> typeModifers,
-            List<Token> typeQuals, List<Token> functionSpecs)
-        {
-            DeclSpecNode declspec = null;
-
-            //first, check the type modifiers
-            bool isSigned = false;
-            bool isUnsigned = false;
-            bool isShort = false;
-            bool isLong = false;
-            bool isLongLong = false;
-            foreach (Token tok in typeModifers)
-            {
-                isSigned = (tok.type == TokenType.SIGNED);
-                isUnsigned = (tok.type == TokenType.UNSIGNED);
-                isShort = (tok.type == TokenType.SHORT);
-                if (isLong)
-                {
-                    isLongLong = (tok.type == TokenType.LONG);      //if we've already seen long
-                }
-                else
-                {
-                    isLong = (tok.type == TokenType.LONG);
-                }
-            }
-
-            //then get the base type
-            TypeDeclNode typdef = null;
-            if (typeDefs.Count > 0)
-            {
-                typdef = typeDefs[0];
-            }
-            else if (isShort | isLong | isLongLong | isSigned | isUnsigned)
-            {
-                typdef = GetTypeDef("int");
-            }
-            
-            //and modifiy base type & create declspec
-            if (typdef != null)
-            {
-                if (typdef.name.Equals("int") && (isShort | isLong | isLongLong | isUnsigned)) 
-                {
-                    string typname = ((isUnsigned) ? "unsigned-" : "") + ((isShort) ? "short-" : "") + 
-                        ((isLong) ? "long-" : "") + ((isLongLong) ? "long-long-" : "") + "int";
-                    typdef = GetTypeDef(typname);
-                }
-                if (typdef.name.Equals("char") && (isSigned | isUnsigned))
-                {
-                    string typname = ((isUnsigned) ? "unsigned-" : "") + ((isSigned) ? "signed-" : "") + "char";                        
-                    typdef = GetTypeDef(typname);
-                }
-                if (typdef.name.Equals("double") && isLong)
-                {                    
-                    typdef = GetTypeDef("long-double");
-                }
-
-                declspec = new DeclSpecNode(typdef);            
-
-                //set storage class
-                foreach (Token tok in storageClassSpecs)
-                {
-                    declspec.isTypedef = (tok.type == TokenType.TYPEDEF);
-                    declspec.isExtern = (tok.type == TokenType.EXTERN);
-                    declspec.isStatic = (tok.type == TokenType.STATIC);
-                    declspec.isAuto = (tok.type == TokenType.AUTO);
-                    declspec.isRegister = (tok.type == TokenType.REGISTER);
-                }
-
-                //type qualfiers
-                foreach (Token tok in typeQuals)
-                {
-                    declspec.isConst = (tok.type == TokenType.CONST);
-                    declspec.isRestrict = (tok.type == TokenType.RESTRICT);
-                    declspec.isVolatile = (tok.type == TokenType.VOLATILE);
-                }
-
-                //and function specs
-                foreach (Token tok in functionSpecs)
-                {
-                    declspec.isInline = (tok.type == TokenType.INLINE);
-                }
-            }
-
-            return declspec;
-        }
-
-        public TypeDeclNode GetTypeDef(Token token)
-        {
-            TypeDeclNode typdef = null;
-            switch (token.type)
-            {
-                case TokenType.VOID:
-                    typdef = (TypeDeclNode)symbolTable.findSymbol("void");
-                    break;
-
-                case TokenType.CHAR:
-                    typdef = (TypeDeclNode)symbolTable.findSymbol("char");
-                    break;
-
-                case TokenType.INT:
-                    typdef = (TypeDeclNode)symbolTable.findSymbol("int");
-                    break;
-
-                case TokenType.FLOAT:
-                    typdef = (TypeDeclNode)symbolTable.findSymbol("float");
-                    break;
-
-                case TokenType.DOUBLE:
-                    typdef = (TypeDeclNode)symbolTable.findSymbol("double");
-                    break;
-
-                default:
-                    break;
-            }
-            return typdef;
-        }
-
-        public TypeDeclNode GetTypeDef(string typename)
-        {
-            OILNode obj = symbolTable.findSymbol(typename);
-            if (obj is TypeDeclNode)
-            {
-                return (TypeDeclNode)obj;
-            }
-            return null;
-        }
-
         //- struct/unions -----------------------------------------------------
 
         //public Declaration makeTypeDeclNode(DeclSpecNode declspecs)
@@ -959,425 +832,569 @@ namespace BlackC.Parse
 
         //- build funcs -------------------------------------------------------
 
-        internal OILNode buildTranslationUnit(List<OILNode> nodeList)
-        {
-            throw new NotImplementedException();
-        }
+        //- external definitions ----------------------------------------------
+
+        public OILNode buildTranslationUnit(List<OILNode> nodeList)
+        {
+            return new OILNode();
+        }
+
+        public OILNode buildFunctionDefinition(OILNode node1, OILNode node2, List<OILNode> nodelist, OILNode node3)
+        {
+            return new OILNode();
+        }
+
+        //- declarations --------------------------------------------------------
+
+        public OILNode buildDeclaration(OILNode node1, OILNode node2)
+        {
+            return new OILNode();
+        }
+
+        public DeclSpecNode buildDeclarationSpecifiers(List<OILNode> nodeList)
+        {
+            DeclSpecNode dnode = new DeclSpecNode();
+            foreach(OILNode node in nodeList)
+            {
+                DeclSpecNode node1 = (DeclSpecNode)node;
+                dnode.merge(node1);
+            }
+
+            //adjust base type if necessary
+            if (dnode.baseType == null)
+            {
+                dnode.baseType = (TypeDeclNode)symbolTable.findSymbol("int");       //default base type
+            }
+            if (dnode.baseType.name.Equals("char"))
+            {
+                if (dnode.isSigned)
+                {
+                    dnode.baseType = (TypeDeclNode)symbolTable.findSymbol("signed-char");
+                }
+                else if (dnode.isUnsigned)
+                {
+                    dnode.baseType = (TypeDeclNode)symbolTable.findSymbol("unsigned-char");
+                }
+            }
+            else if (dnode.baseType.name.Equals("int"))
+            {
+                String tname = "int";
+                if (dnode.isShort)
+                {
+                    tname = "short-" + tname;
+                }
+                else if (dnode.longCount == 1)
+                {
+                    tname = "long-" + tname;
+                }
+                else if (dnode.longCount == 2)
+                {
+                    tname = "long-long-" + tname;
+                }
+                if (dnode.isUnsigned)
+                {
+                    tname = "unsigned-" + tname;
+                }
+                dnode.baseType = (TypeDeclNode)symbolTable.findSymbol(tname);
+            }
+            else if (dnode.baseType.name.Equals("double"))
+            {
+                if (dnode.longCount == 1)
+                {
+                    dnode.baseType = (TypeDeclNode)symbolTable.findSymbol("long-double");
+                }
+            }
 
-        internal OILNode buildFunctionDefinition(OILNode node1, OILNode node2, List<OILNode> nodelist, OILNode node3)
-        {
-            throw new NotImplementedException();
+            return dnode;
         }
 
-        internal OILNode buildStorageClassSpecifier(Token tok)
+        public OILNode buildInitDeclaratorList(List<OILNode> nodeList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildInitDeclaratorList(List<OILNode> nodeList)
+        public OILNode buildInitDeclarator(OILNode node1, OILNode node2)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
-
-        internal OILNode buildDeclarationSpecifiers(List<OILNode> nodeList)
+        
+        public DeclSpecNode buildStorageClassSpecifier(Token tok)
         {
-            throw new NotImplementedException();
+            DeclSpecNode node = new DeclSpecNode();
+            node.isTypedef = (tok.type == TokenType.TYPEDEF);
+            node.isExtern = (tok.type == TokenType.EXTERN);
+            node.isStatic = (tok.type == TokenType.STATIC);
+            node.isAuto = (tok.type == TokenType.AUTO);
+            node.isRegister = (tok.type == TokenType.REGISTER);
+            return node;
         }
 
-        internal OILNode buildTypeSpecifier(Token tok)
+        public DeclSpecNode buildTypeSpecifier(Token tok)
         {
-            throw new NotImplementedException();
+            DeclSpecNode node = new DeclSpecNode();
+            switch(tok.type)
+            {
+                case TokenType.VOID:
+                    node.baseType = (TypeDeclNode)symbolTable.findSymbol("void");
+                    break;
+
+                case TokenType.CHAR:
+                    node.baseType = (TypeDeclNode)symbolTable.findSymbol("char");
+                    break;
+
+                case TokenType.INT:
+                    node.baseType = (TypeDeclNode)symbolTable.findSymbol("int");
+                    break;
+
+                case TokenType.FLOAT:
+                    node.baseType = (TypeDeclNode)symbolTable.findSymbol("float");
+                    break;
+
+                case TokenType.DOUBLE:
+                    node.baseType = (TypeDeclNode)symbolTable.findSymbol("double");
+                    break;
+
+                case TokenType.SHORT:
+                    node.isLong = true;
+                    break;
+
+                case TokenType.LONG:
+                    node.isLong = true;
+                    break;
+
+                case TokenType.SIGNED:
+                    node.isSigned = true;
+                    break;
+
+                case TokenType.UNSIGNED:
+                    node.isUnsigned = true;
+                    break;
+
+                default:
+                    break;
+            }            
+            return node;
         }
 
-        internal OILNode buildDeclaration(OILNode node1, OILNode node2)
+        public TypeDeclNode isTypedefName(Token tok)
         {
-            throw new NotImplementedException();
+            String id = "typedef-" + tok.strval;
+            TypeDeclNode node = (TypeDeclNode)symbolTable.findSymbol(id);
+            return node;
         }
 
-        internal OILNode buildTypeQualifier(Token tok)
+        public DeclSpecNode buildTypeSpecifier(OILNode typeNode)
         {
-            throw new NotImplementedException();
+            DeclSpecNode node = new DeclSpecNode();
+            node.baseType = (TypeDeclNode)typeNode;
+            return node;
         }
 
-        internal OILNode buildTypeSpecifier(OILNode node)
+        //- struct/unions -----------------------------------------------------
+
+        public OILNode buildStructOrUnionSpecifier(bool isStruct, Token id, List<OILNode> nodeList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal Token isTypedefName(Token tok)
+        public OILNode buildStructDeclaration(OILNode node1, OILNode node2)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildStructOrUnionSpecifier(bool isStruct, Token id, List<OILNode> nodeList)
+        public OILNode buildSpecifierQualifierList(List<OILNode> nodelist)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildStatement(OILNode node)
+        public OILNode buildStructDeclaratorList()
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildStructDeclaration(OILNode node1, OILNode node2)
+        public OILNode buildStructDeclarator()
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildLabeledStatement(Token tok, OILNode node1)
+        //- enums -------------------------------------------------------------
+
+        public Token isEnumerationConstant(Token tok)
         {
-            throw new NotImplementedException();
+            return tok;
         }
 
-        internal OILNode buildSpecifierQualifierList(List<OILNode> nodelist)
+        public OILNode buildEnumSpecifier(Token id, object nodelist)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildEnumerator(Token enumc, OILNode node1)
+        public OILNode buildEnumerator(Token enumc, OILNode node1)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildDeclarator(OILNode node1, OILNode node2)
+        public DeclSpecNode buildTypeQualifier(Token tok)
         {
-            throw new NotImplementedException();
+            DeclSpecNode node = new DeclSpecNode();
+            node.isConst = (tok.type == TokenType.CONST);
+            node.isRestrict = (tok.type == TokenType.RESTRICT);
+            node.isVolatile = (tok.type == TokenType.VOLATILE);
+            return node;
         }
 
-        internal OILNode buildCaseStatement(OILNode node1, OILNode node2)
+        public DeclSpecNode buildFunctionSpecifier(Token tok)
         {
-            throw new NotImplementedException();
+            DeclSpecNode node = new DeclSpecNode();
+            node.isInline = (tok.type == TokenType.INLINE);
+            return node;
         }
+
+        //- declarators -------------------------------------------------------
 
-        internal OILNode buildStructDeclaratorList()
+        public OILNode buildDeclarator(OILNode node1, OILNode node2)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildDefaultStatement(Token tok, OILNode node1)
+        public OILNode buildBaseDirectDeclarator(Token id, OILNode node1)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildTypeQualifierList(List<OILNode> nodeList)
+        public OILNode buildArrayDirectDeclarator(OILNode node, bool isStatic1, OILNode node2, bool isStatic2, OILNode node3, bool isPointer)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildStructDeclarator()
+        public OILNode buildParamDirectDeclarator(OILNode node, OILNode node4)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildParameterDeclaration()
+        public OILNode buildPointer(object p, OILNode node1)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildIdentifierList(List<Token> tokenList)
+        public OILNode buildTypeQualifierList(List<OILNode> nodeList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal Token isEnumerationConstant(Token tok)
+        public OILNode buildParameterTypeList(OILNode node1, List<OILNode> nodeList, bool hasElipsis)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildEnumSpecifier(Token id, object nodelist)
+        public OILNode buildParameterDeclaration()
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildGotoStatement(Token tok1)
+        public OILNode buildIdentifierList(List<Token> tokenList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildParameterTypeList(OILNode node1, List<OILNode> nodeList, bool hasElipsis)
+        public OILNode buildTypeName(OILNode node1, OILNode node2)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildContinueStatement()
+        public OILNode buildAbstractDeclarator(OILNode node1, OILNode node2)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildBreakStatement()
+        public OILNode buildBaseAbstractDeclarator(OILNode node1)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildReturnStatement(OILNode node1)
+        public OILNode buildArrayAbstractDeclarator(OILNode node, bool isStatic1, OILNode node2, bool isStatic2, OILNode node3, bool isPointer)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildeArgumentExpressionList(List<OILNode> nodeList)
+        public OILNode buildParamAbstractDeclarator(OILNode node, OILNode node4)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildTypeName(OILNode node1, OILNode node2)
+        //- initializers ------------------------------------------------------
+
+        public OILNode buildInitializer(OILNode node1, OILNode node2)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildBaseDirectDeclarator(Token id, OILNode node1)
+        public OILNode buildInitializerList(List<OILNode> nodeList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildExpressionStatement(OILNode node)
+        public OILNode buildArrayDesignation(OILNode node)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildCompoundStatement(List<OILNode> nodeList)
+        public OILNode buildArrayDesignation(OILNode node, OILNode node1)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildArrayDirectDeclarator(OILNode node, bool isStatic1, OILNode node2, bool isStatic2, OILNode node3, bool isPointer)
+        public OILNode buildFieldDesignation(OILNode node, Token tok1)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildParamDirectDeclarator(OILNode node, OILNode node4)
+        //- statements --------------------------------------------------------
+
+        public OILNode buildStatement(OILNode node)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildInitializer(OILNode node1, OILNode node2)
+        public OILNode buildLabeledStatement(Token tok, OILNode node1)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildPointer(object p, OILNode node1)
+        public OILNode buildCaseStatement(OILNode node1, OILNode node2)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildIfStatement(OILNode node1, OILNode node2, OILNode node3)
+        public OILNode buildDefaultStatement(Token tok, OILNode node1)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildSwitchStatement(OILNode node1, OILNode node2)
+        public OILNode buildCompoundStatement(List<OILNode> nodeList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildIdentExpression(Token tok)
+        public OILNode buildExpressionStatement(OILNode node)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildWhileStatement(OILNode node1, OILNode node2)
+        public OILNode buildIfStatement(OILNode node1, OILNode node2, OILNode node3)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildStringConstExpression(Token tok)
+        public OILNode buildSwitchStatement(OILNode node1, OILNode node2)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildCharConstExpression(Token tok)
+        public OILNode buildWhileStatement(OILNode node1, OILNode node2)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildDoWhileStatement(OILNode node1, OILNode node2)
+        public OILNode buildDoWhileStatement(OILNode node1, OILNode node2)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildFloatConstExpression(Token tok)
+        public OILNode buildForStatement(OILNode node1, OILNode node2, OILNode node3, OILNode node4)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildIntConstExpression(Token tok)
+        public OILNode buildGotoStatement(Token tok1)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildSubExpression(OILNode node1)
+        public OILNode buildContinueStatement()
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildForStatement(OILNode node1, OILNode node2, OILNode node3, OILNode node4)
+        public OILNode buildBreakStatement()
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildInitializerList(List<OILNode> nodeList)
+        public OILNode buildReturnStatement(OILNode node1)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
+
+        //- expressions -------------------------------------------------------------
 
-        internal OILNode buildTypeNameInitializerList(OILNode node2, OILNode node3)
+        public OILNode buildIdentExpression(Token tok)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildAbstractDeclarator(OILNode node1, OILNode node2)
+        public OILNode buildIntConstExpression(Token tok)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildMultiplicativeExpression(List<OILNode> nodeList, List<Token> tokenList)
+        public OILNode buildFloatConstExpression(Token tok)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildArrayDesignation(OILNode node, OILNode node1)
+        public OILNode buildCharConstExpression(Token tok)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildAdditiveExpression(List<OILNode> nodeList, List<Token> tokenList)
+        public OILNode buildStringConstExpression(Token tok)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildFieldDesignation(OILNode node, Token tok1)
+        public OILNode buildSubExpression(OILNode node1)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildBaseAbstractDeclarator(OILNode node1)
+        public OILNode buildTypeNameInitializerList(OILNode node2, OILNode node3)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildArrayDesignation(OILNode node)
+        public OILNode buildArrayIndexExpression(OILNode node1, OILNode node2)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildSizeOfExpression(OILNode node1)
+        public OILNode buildArgumentListExpression(OILNode node1, OILNode node2)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildShiftExpression(List<OILNode> nodeList, List<Token> tokenList)
+        public OILNode buildFieldReference(OILNode node1, Token tok3)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildArrayIndexExpression(OILNode node1, OILNode node2)
+        public OILNode buildIndirectFieldReference(OILNode node1, Token tok3)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildIncDecExpression(Token tok1, OILNode node1)
+        public OILNode buildPostIncDecExpression(Token tok1)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildArgumentListExpression(OILNode node1, OILNode node2)
+        public OILNode buildeArgumentExpressionList(List<OILNode> nodeList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildCastExpression(List<OILNode> nodeList, OILNode node2)
+        public OILNode buildSizeOfExpression(OILNode node1)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildFieldReference(OILNode node1, Token tok3)
+        public OILNode buildIncDecExpression(Token tok1, OILNode node1)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildAndExpression(List<OILNode> nodeList)
+        public OILNode buildUnaryExpression(Token tok1, OILNode node1)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildArrayAbstractDeclarator(OILNode node, bool isStatic1, OILNode node2, bool isStatic2, OILNode node3, bool isPointer)
+        public OILNode buildCastExpression(List<OILNode> nodeList, OILNode node2)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildIndirectFieldReference(OILNode node1, Token tok3)
+        //- arithmetic expressions ------------------------
+
+        public OILNode buildMultiplicativeExpression(List<OILNode> nodeList, List<Token> tokenList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildParamAbstractDeclarator(OILNode node, OILNode node4)
+        public OILNode buildAdditiveExpression(List<OILNode> nodeList, List<Token> tokenList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildPostIncDecExpression(Token tok1)
+        public OILNode buildShiftExpression(List<OILNode> nodeList, List<Token> tokenList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildUnaryExpression(Token tok1, OILNode node1)
+        //- comparision expressions -----------------------
+
+        public OILNode buildRelationalExpression(List<OILNode> nodeList, List<Token> tokenList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildEqualityExpression(List<OILNode> nodeList, List<Token> tokenList)
+        public OILNode buildEqualityExpression(List<OILNode> nodeList, List<Token> tokenList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
+
+        //- bitwise/logical expressions -------------------
 
-        internal OILNode buildExclusiveOrExpression(List<OILNode> nodeList)
+        public OILNode buildAndExpression(List<OILNode> nodeList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildInclusiveOrExpression(List<OILNode> nodeList)
+        public OILNode buildExclusiveOrExpression(List<OILNode> nodeList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildRelationalExpression(List<OILNode> nodeList, List<Token> tokenList)
+        public OILNode buildInclusiveOrExpression(List<OILNode> nodeList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildLogicalAndExpression(List<OILNode> nodeList)
+        public OILNode buildLogicalAndExpression(List<OILNode> nodeList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildeLogicalOrExpression(List<OILNode> nodeList)
+        public OILNode buildeLogicalOrExpression(List<OILNode> nodeList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildExpression()
+        public OILNode buildConditionalExpression(OILNode node, OILNode node1, OILNode node2)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildConstantExpression()
+        public OILNode buildAssignmentExpression(List<OILNode> nodelist, List<Token> tokenList, OILNode node2)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildConditionalExpression(OILNode node, OILNode node1, OILNode node2)
+        public OILNode buildExpression()
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
-        internal OILNode buildAssignmentExpression(List<OILNode> nodelist, List<Token> tokenList, OILNode node2)
+        public OILNode buildConstantExpression()
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
     }
 
     //-------------------------------------------------------------------------
+    //   INTERNAL OIL NODES
+    //-------------------------------------------------------------------------
 
-    public class DeclSpecNode
+    public class DeclSpecNode : OILNode
     {
         public TypeDeclNode baseType;
 
@@ -1388,6 +1405,13 @@ namespace BlackC.Parse
         public bool isAuto;
         public bool isRegister;
 
+        //type modifers
+        public bool isShort;
+        public bool isLong;
+        public bool isSigned;
+        public bool isUnsigned;
+        public int longCount;
+
         //type qualifiers
         public bool isConst;
         public bool isRestrict;
@@ -1396,9 +1420,9 @@ namespace BlackC.Parse
         //function specs
         public bool isInline;
 
-        public DeclSpecNode(TypeDeclNode _baseType)
+        public DeclSpecNode()
         {
-            baseType = _baseType;
+            baseType = null;
 
             isTypedef = false;
             isExtern = false;
@@ -1406,10 +1430,45 @@ namespace BlackC.Parse
             isAuto = false;
             isRegister = false;
 
+            isShort = false;
+            isLong = false;
+            isSigned = false;
+            isUnsigned = false;
+            longCount = 0;
+
             isConst = false;
             isRestrict = false;
             isVolatile = false;
+
             isInline = false;
+        }
+
+        public void merge(DeclSpecNode that)
+        {
+            if (baseType == null)
+            {
+                baseType = that.baseType;
+            }
+
+            isTypedef |= that.isTypedef;
+            isExtern |= that.isExtern;
+            isStatic |= that.isStatic;
+            isAuto |= that.isAuto;
+            isRegister |= that.isRegister;
+
+            isShort |= that.isShort;
+            isSigned |= that.isSigned;
+            isUnsigned |= that.isUnsigned;
+            if (that.isLong)
+            {
+                longCount++;
+            }
+
+            isConst |= that.isConst;
+            isRestrict |= that.isRestrict;
+            isVolatile |= that.isVolatile;
+
+            isInline |= that.isInline;
         }
     }
 

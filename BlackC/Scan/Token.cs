@@ -104,17 +104,6 @@ namespace BlackC.Scan
     //    }
     //}
 
-    //public class FloatConstToken : Token
-    //{
-    //    float val;
-
-    //    public FloatConstToken(TokenType _type, String _chars, SourceLocation _loc, float _val) :
-    //        base(_type, _chars, _loc)
-    //    {
-    //        val = _val;
-    //    }
-    //}
-
     //-------------------------------------------------------------------------
 
     public enum TokenType

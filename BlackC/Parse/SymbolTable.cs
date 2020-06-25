@@ -52,7 +52,7 @@ namespace BlackC.Parse
             if (symbolStack.Count > 1)          //don't remove the global symbol tbl
             {
                 symbolStack.RemoveAt(symbolStack.Count - 1);
-            }
+            }               
         }
 
         public OILNode findSymbol(String ident)
@@ -74,10 +74,12 @@ namespace BlackC.Parse
             symbolStack[symbolStack.Count - 1].addSym(ident, def);
         }
 
+        //---------------------------------------------------------------------
+
         //inner class, representing a single symbol table
         public class SymTable
         {
-            Dictionary<String, OILNode> symtbl;
+            public Dictionary<String, OILNode> symtbl;
 
             public SymTable()
             {
