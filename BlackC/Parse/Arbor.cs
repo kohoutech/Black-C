@@ -77,12 +77,13 @@ namespace BlackC.Parse
 
         //- external definitions ----------------------------------------------
 
-        public void startModule(string filename)
+        public Module startModule(string filename)
         {
-            curModule = new Module(filename);            
+            curModule = new Module(filename);
+            return curModule;
         }
 
-        public Module finishModule()
+        public Module finishModule(OILNode module)
         {
             return curModule;
         }
@@ -115,12 +116,17 @@ namespace BlackC.Parse
             enterBlock();                               //enter function "super" block
         }
 
+        internal void AddModuleDeclaration(OILNode node, OILNode node1)
+        {
+            throw new NotImplementedException();
+        }
+
         public void startoldparamlist()
-        {            
+        {
         }
 
         public void finisholdparamlist()
-        {         
+        {
         }
 
         public void addFuncParamsToBlock()
@@ -176,6 +182,36 @@ namespace BlackC.Parse
                 addStmtToBlock(dstmt);
                 vardecl.initializer = null;
             }
+        }
+
+        internal OILNode buildVarDeclaration(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildDeclarationList(List<OILNode> nodeList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode addDeclaratorInitializer(OILNode node2, OILNode node3)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode buildTypeDeclaration(OILNode node1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode startFunctionDefition(OILNode node1, OILNode node2)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode finishFunctionDefinition(OILNode node5, List<OILNode> nodelist, OILNode node7)
+        {
+            throw new NotImplementedException();
         }
 
         //- struct/unions -----------------------------------------------------
@@ -236,6 +272,11 @@ namespace BlackC.Parse
             return null;
         }
 
+        internal void startDeclSpecs()
+        {
+            //throw new NotImplementedException();
+        }
+
         //- declarators -------------------------------------------------------
 
         public DeclaratorNode makePointerNode(TypeQualNode qualList, DeclaratorNode declar)
@@ -252,7 +293,7 @@ namespace BlackC.Parse
         {
             return null;
         }
-                
+
         public void startParamList()
         {
             curParamList = new ParamListNode();
@@ -411,6 +452,21 @@ namespace BlackC.Parse
             return null;
         }
 
+        internal void addStructDeclaraction(OILNode node, OILNode node1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode finishStructSpecifier(OILNode node)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal OILNode startStructSpecifier(Token id, bool isStruct)
+        {
+            throw new NotImplementedException();
+        }
+
         //public EnumConstantNode makeEnumConstNode(Token token)
         //{
         //    String id = token.chars;
@@ -529,7 +585,7 @@ namespace BlackC.Parse
                 bodyList.Add(body);
             }
             ForStatementNode node = new ForStatementNode(forBlock.stmts, expr1, expr2, expr3, bodyList);
-            return node;            
+            return node;
         }
 
         public GotoStatementNode makeGotoStatementNode(Token ident)
@@ -565,7 +621,17 @@ namespace BlackC.Parse
         public IntConstant makeIntegerConstantNode(int value)
         {
             IntConstant node = new IntConstant(value);
-            return node;            
+            return node;
+        }
+
+        internal OILNode startEnumSpecifier(Token id)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal void AddEnumEnumator(OILNode node, OILNode node1)
+        {
+            throw new NotImplementedException();
         }
 
         public FloatConstant makeFloatConstantNode(double value)
@@ -577,6 +643,11 @@ namespace BlackC.Parse
         public ExprNode makeCharConstantNode(Token token)
         {
             return null;
+        }
+
+        internal OILNode finishEnumSpecifier(OILNode node)
+        {
+            throw new NotImplementedException();
         }
 
         public ExprNode makeStringConstantNode(Token token)
@@ -643,7 +714,7 @@ namespace BlackC.Parse
         {
             return null;
         }
-       
+
         //- arithmetic expressions ------------------------
 
         public ArithmeticExprNode makeUnaryPlusExprNode(ExprNode term)
@@ -854,7 +925,7 @@ namespace BlackC.Parse
         public DeclSpecNode buildDeclarationSpecifiers(List<OILNode> nodeList)
         {
             DeclSpecNode dnode = new DeclSpecNode();
-            foreach(OILNode node in nodeList)
+            foreach (OILNode node in nodeList)
             {
                 DeclSpecNode node1 = (DeclSpecNode)node;
                 dnode.merge(node1);
@@ -910,14 +981,20 @@ namespace BlackC.Parse
 
         public OILNode buildInitDeclaratorList(List<OILNode> nodeList)
         {
-            return new OILNode();
+            return new DeclarListNode(nodeList);
         }
 
-        public OILNode buildInitDeclarator(OILNode node1, OILNode node2)
+        public VarDeclNode buildInitDeclarator(OILNode node1, OILNode node2)
         {
-            return new OILNode();
+            if (node1 != null)
+            {
+                VarDeclNode node = (VarDeclNode)node1;
+                node.initializer = (InitializerNode)node2;
+                return node;
+            }
+            return null;
         }
-        
+
         public DeclSpecNode buildStorageClassSpecifier(Token tok)
         {
             DeclSpecNode node = new DeclSpecNode();
@@ -932,7 +1009,7 @@ namespace BlackC.Parse
         public DeclSpecNode buildTypeSpecifier(Token tok)
         {
             DeclSpecNode node = new DeclSpecNode();
-            switch(tok.type)
+            switch (tok.type)
             {
                 case TokenType.VOID:
                     node.baseType = (TypeDeclNode)symbolTable.findSymbol("void");
@@ -972,7 +1049,7 @@ namespace BlackC.Parse
 
                 default:
                     break;
-            }            
+            }
             return node;
         }
 
@@ -1054,12 +1131,26 @@ namespace BlackC.Parse
 
         public OILNode buildDeclarator(OILNode node1, OILNode node2)
         {
+            if (node1 == null)
+            {
+                return node2;
+            }
             return new OILNode();
         }
 
         public OILNode buildBaseDirectDeclarator(Token id, OILNode node1)
         {
-            return new OILNode();
+            if (id != null)
+            {
+                VarDeclNode node = new VarDeclNode();
+                node.name = id.strval;
+                return node;
+            }
+            if (node1 != null)
+            {
+                return new OILNode();
+            }
+            return null;
         }
 
         public OILNode buildArrayDirectDeclarator(OILNode node, bool isStatic1, OILNode node2, bool isStatic2, OILNode node3, bool isPointer)
@@ -1472,7 +1563,21 @@ namespace BlackC.Parse
         }
     }
 
-    public class Block : StatementNode
+    public class DeclarListNode : OILNode
+    {
+        public List<VarDeclNode> declList;
+
+        public DeclarListNode(List<OILNode> list)
+        {
+            declList = new List<VarDeclNode>();
+            foreach(OILNode node in list)
+            {
+                declList.Add((VarDeclNode)node);
+            }
+        }
+    }
+
+        public class Block : StatementNode
     {
         public List<StatementNode> stmts;
 

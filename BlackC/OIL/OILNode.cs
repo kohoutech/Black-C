@@ -41,7 +41,7 @@ namespace Kohoutech.OIL
 
     //- external defs ---------------------------------------------------------
 
-    public class Module
+    public class Module : OILNode
     {
         public String name;
         public List<TypeDeclNode> typedefs;
