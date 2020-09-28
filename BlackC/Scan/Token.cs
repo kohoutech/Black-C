@@ -28,7 +28,7 @@ namespace BlackC.Scan
     {
         public TokenType type;
         public String chars;
-        public SourceLocation loc;
+        //public SourceLocation loc;
 
         public string strval;
         public int intval;

@@ -32,7 +32,7 @@ namespace BlackC.Scan
         public Parser parser;
         public Scanner scan;
 
-        public Fragment curFrag;
+        public PPToken pptok;
         bool atLineStart;
 
         public List<Scanner> sourceStack;
@@ -44,10 +44,10 @@ namespace BlackC.Scan
             Macro.initMacros();
 
             sourceStack = new List<Scanner>();
-            scan = new Scanner(parser, filename, null);           //open main source file
+            scan = new Scanner(parser, filename);           //open main source file
             sourceStack.Add(scan);                          //and add it to bottom of include stack
 
-            curFrag = null;
+            pptok = null;
             atLineStart = true;
         }
 
@@ -58,10 +58,10 @@ namespace BlackC.Scan
             List<String> lines = new List<string>();
             StringBuilder line = new StringBuilder();
 
-            Fragment frag = getFrag();
-            while (frag.type != FragType.EOF)
+            PPToken frag = getPPToken();
+            while (frag.type != PPTokenType.EOF)
             {
-                if (frag.type == FragType.EOLN)
+                if (frag.type == PPTokenType.EOLN)
                 {
                     lines.Add(line.ToString());
                     line.Clear();
@@ -70,7 +70,7 @@ namespace BlackC.Scan
                 {
                     line.Append(frag.ToString());
                 }
-                frag = getFrag();                
+                frag = getPPToken();                
             }
             if (line.Length > 0)
             {
@@ -117,47 +117,47 @@ namespace BlackC.Scan
         //- fragment stream handling ------------------------------------------
 
         //handles macro expansion & eof in include files
-        public Fragment getFrag()
+        public PPToken getPPToken()
         {
-            Fragment frag = null;
+            PPToken tok = null;
             bool done = false;
 
-            while (!done)
-            {
-                done = true;
-                if (Macro.inMacro())
-                {
-                    frag = Macro.getfrag();
-                }
-                else
-                {
-                    frag = getScannerFrag();
-                }
+            //while (!done)
+            //{
+            //    done = true;
+            //    if (Macro.inMacro())
+            //    {
+            //        frag = Macro.getfrag();
+            //    }
+            //    else
+            //    {
+                    tok = getScannerToken();
+            //    }
 
-                //check for a macro
-                if (frag.type == FragType.WORD)
-                {
-                    Macro macro = Macro.lookupMacro(frag.str);
-                    if (macro != null)
-                    {
-                        invokeMacro(macro);                 //start macro running
-                        done = false;                       //and loop around to get first macro fragment (if not empty)
-                    }
-                }
+            //    //check for a macro
+            //    if (frag.type == PPTokenType.WORD)
+            //    {
+            //        Macro macro = Macro.lookupMacro(frag.str);
+            //        if (macro != null)
+            //        {
+            //            invokeMacro(macro);                 //start macro running
+            //            done = false;                       //and loop around to get first macro fragment (if not empty)
+            //        }
+            //    }
 
-                //check if we've hit the end of file. if this is an include file, pull it off the stack 
-                //and resume scanning at the point we stopped in the including file
-                //we return the EOF token from the main file only
-                if ((frag.type == FragType.EOF) && (sourceStack.Count > 1))
-                {
-                    Console.WriteLine("closing include file " + sourceStack[sourceStack.Count - 1].filename);
-                    sourceStack.RemoveAt(sourceStack.Count - 1);
-                    scan = sourceStack[sourceStack.Count - 1];
-                    done = false;                                           //get next token from including source if not at main file
-                }
-            }
+            //    //check if we've hit the end of file. if this is an include file, pull it off the stack 
+            //    //and resume scanning at the point we stopped in the including file
+            //    //we return the EOF token from the main file only
+            //    if ((frag.type == PPTokenType.EOF) && (sourceStack.Count > 1))
+            //    {
+            //        Console.WriteLine("closing include file " + sourceStack[sourceStack.Count - 1].filename);
+            //        sourceStack.RemoveAt(sourceStack.Count - 1);
+            //        scan = sourceStack[sourceStack.Count - 1];
+            //        done = false;                                           //get next token from including source if not at main file
+            //    }
+            //}
 
-            return frag;
+            return tok;
         }
 
         //not handling function-like macros yet
@@ -167,29 +167,29 @@ namespace BlackC.Scan
         }
 
         //handle directives in the scanner's fragment stream, will be sent to tokenizer as EOLN fragments
-        public Fragment getScannerFrag()
+        public PPToken getScannerToken()
         {
-            curFrag = scan.getFrag();
-            //Console.WriteLine("fragment = " + curFrag.ToString());
+            pptok = scan.getPPToken();
+            Console.WriteLine("fragment = " + pptok.ToString());
 
-            //check for directive as first non-space frag at start of line
-            if (atLineStart)
-            {
-                if ((curFrag.type == FragType.PUNCT) && (curFrag.str[0] == '#'))
-                {
-                    handleDirective();      //cur fragment will be left as the EOLN at end of directive line
-                }
-                else
-                {
-                    atLineStart = (curFrag.type == FragType.SPACE);
-                }
-            }
-            if ((curFrag.type == FragType.EOLN) || (curFrag.type == FragType.EOF))
-            {
-                atLineStart = true;
-            }
+            ////check for directive as first non-space frag at start of line
+            //if (atLineStart)
+            //{
+            //    if ((pptok.type == PPTokenType.PUNCT) && (pptok.str[0] == '#'))
+            //    {
+            //        handleDirective();      //cur fragment will be left as the EOLN at end of directive line
+            //    }
+            //    else
+            //    {
+            //        atLineStart = (pptok.type == PPTokenType.SPACE);
+            //    }
+            //}
+            //if ((pptok.type == PPTokenType.EOLN) || (pptok.type == PPTokenType.EOF))
+            //{
+            //    atLineStart = true;
+            //}
 
-            return curFrag;
+            return pptok;
         }
 
         //- directive handling ------------------------------------------------
@@ -199,94 +199,94 @@ namespace BlackC.Scan
         //handle directive, this will read all the fragments to the eoln in the directive line
         public void handleDirective()
         {
-            curFrag = scan.getFrag();
-            while (curFrag.type == FragType.SPACE)  //skip space(s) & get directive name
-            {
-                curFrag = scan.getFrag();
-            }
+            //pptok = scan.getPPToken();
+            //while (pptok.type == PPTokenType.SPACE)  //skip space(s) & get directive name
+            //{
+            //    pptok = scan.getPPToken();
+            //}
 
-            if (curFrag.type == FragType.EOLN)          //skip empty directives, ie "#  <eoln>"
-            {
-                return;
-            }
+            //if (pptok.type == PPTokenType.EOLN)          //skip empty directives, ie "#  <eoln>"
+            //{
+            //    return;
+            //}
 
-            if (curFrag.type == FragType.WORD)
-            {
-                switch (curFrag.str)
-                {
-                    case "include":
-                        handleIncludeDirective();
-                        break;
+            //if (pptok.type == PPTokenType.WORD)
+            //{
+            //    switch (pptok.str)
+            //    {
+            //        case "include":
+            //            handleIncludeDirective();
+            //            break;
 
-                    case "define":
-                        handleDefineDirective();
-                        break;
+            //        case "define":
+            //            handleDefineDirective();
+            //            break;
 
-                    case "undef":
-                        handleUndefDirective();
-                        break;
+            //        case "undef":
+            //            handleUndefDirective();
+            //            break;
 
-                    case "if":
-                        handleIfDirective();
-                        break;
+            //        case "if":
+            //            handleIfDirective();
+            //            break;
 
-                    case "ifdef":
-                        handleIfdefDirective();
-                        break;
+            //        case "ifdef":
+            //            handleIfdefDirective();
+            //            break;
 
-                    case "ifndef":
-                        handleIfndefDirective();
-                        break;
+            //        case "ifndef":
+            //            handleIfndefDirective();
+            //            break;
 
-                    case "elif":
-                        handleElifDirective();
-                        break;
+            //        case "elif":
+            //            handleElifDirective();
+            //            break;
 
-                    case "else":
-                        handleElseDirective();
-                        break;
+            //        case "else":
+            //            handleElseDirective();
+            //            break;
 
-                    case "endif":
-                        handleEndifDirective();
-                        break;
+            //        case "endif":
+            //            handleEndifDirective();
+            //            break;
 
-                    case "line":
-                        handleLineDirective();
-                        break;
+            //        case "line":
+            //            handleLineDirective();
+            //            break;
 
-                    case "error":
-                        handleErrorDirective();
-                        break;
+            //        case "error":
+            //            handleErrorDirective();
+            //            break;
 
-                    case "pragma":
-                        handlePragmaDirective();
-                        break;
+            //        case "pragma":
+            //            handlePragmaDirective();
+            //            break;
 
-                    default:
-                        parser.error("saw unknown directive #" + curFrag.str + " at " + curFrag.loc.ToString());
-                        readRestOfDirective(false);
-                        break;
-                }
-            }
-            else
-            {
-                parser.error("invalid directive #" + curFrag.str + " at " + curFrag.loc.ToString());
-                readRestOfDirective(false);
-            }
+            //        default:
+            //            parser.error("saw unknown directive #" + pptok.str + " at " + pptok.loc.ToString());
+            //            readRestOfDirective(false);
+            //            break;
+            //    }
+            //}
+            //else
+            //{
+            //    parser.error("invalid directive #" + pptok.str + " at " + pptok.loc.ToString());
+            //    readRestOfDirective(false);
+            //}
         }
 
-        public List<Fragment> readRestOfDirective(bool keepSpaces)
+        public List<PPToken> readRestOfDirective(bool keepSpaces)
         {
-            List<Fragment> frags = new List<Fragment>();
-            curFrag = scan.getFrag();
-            while (curFrag.type != FragType.EOLN)
-            {
-                if ((curFrag.type != FragType.SPACE) || keepSpaces)
-                {
-                    frags.Add(curFrag);
-                }
-                curFrag = scan.getFrag();
-            }
+            List<PPToken> frags = new List<PPToken>();
+            //pptok = scan.getFrag();
+            //while (pptok.type != PPTokenType.EOLN)
+            //{
+            //    if ((pptok.type != PPTokenType.SPACE) || keepSpaces)
+            //    {
+            //        frags.Add(pptok);
+            //    }
+            //    pptok = scan.getFrag();
+            //}
             return frags;
         }
 
@@ -294,32 +294,32 @@ namespace BlackC.Scan
 
         public void handleIncludeDirective()
         {
-            //Console.WriteLine("saw #include");
-            SourceLocation includeLoc = curFrag.loc;
-            List<Fragment> frags = readRestOfDirective(false);
+            ////Console.WriteLine("saw #include");
+            //SourceLocation includeLoc = pptok.loc;
+            //List<PPToken> frags = readRestOfDirective(false);
 
-            String filename = "";
-            bool quoted = false;
+            //String filename = "";
+            //bool quoted = false;
 
-            if (frags[0].type == FragType.STRING)
-            {
-                filename = frags[0].str;
-                int ofs = filename[0] == 'L' ? 2 : 1;
-                filename = filename.Substring(ofs, filename.Length - (ofs + 1));
-                quoted = true;
-            }
-            else
-            {
-                int i = 1;
-                while ((frags[i].type != FragType.PUNCT) || (frags[i].str[0] != '>'))
-                {
-                    filename += frags[i++].str;
-                }
-            }
+            //if (frags[0].type == PPTokenType.STRING)
+            //{
+            //    filename = frags[0].str;
+            //    int ofs = filename[0] == 'L' ? 2 : 1;
+            //    filename = filename.Substring(ofs, filename.Length - (ofs + 1));
+            //    quoted = true;
+            //}
+            //else
+            //{
+            //    int i = 1;
+            //    while ((frags[i].type != PPTokenType.PUNCT) || (frags[i].str[0] != '>'))
+            //    {
+            //        filename += frags[i++].str;
+            //    }
+            //}
 
-            String pathname = findSourceFile(filename, quoted);
-            scan = new Scanner(parser, pathname, includeLoc);           //open include source file & make it current scanner
-            sourceStack.Add(scan);
+            //String pathname = findSourceFile(filename, quoted);
+            //scan = new Scanner(parser, pathname, includeLoc);           //open include source file & make it current scanner
+            //sourceStack.Add(scan);
         }
 
         //this will search a list of include paths at some point
@@ -333,14 +333,14 @@ namespace BlackC.Scan
         public void handleDefineDirective()
         {
             //Console.WriteLine("saw #define");
-            List<Fragment> frags = readRestOfDirective(true);
+            List<PPToken> frags = readRestOfDirective(true);
             Macro.defineMacro(frags);
         }
 
         public void handleUndefDirective()
         {
             Console.WriteLine("saw #undef");
-            List<Fragment> frags = readRestOfDirective(false);
+            List<PPToken> frags = readRestOfDirective(false);
 
             //    Token token = scanner.scanToken();
             //    Macro.undefineMacro(token);
@@ -351,14 +351,14 @@ namespace BlackC.Scan
         public void handleIfDirective()
         {
             Console.WriteLine("saw #if");
-            List<Fragment> frags = readRestOfDirective(false);
+            List<PPToken> frags = readRestOfDirective(false);
 
         }
 
         public void handleIfdefDirective()
         {
             Console.WriteLine("saw #ifdef");
-            List<Fragment> frags = readRestOfDirective(false);
+            List<PPToken> frags = readRestOfDirective(false);
             //    Token token = scanner.scanToken();
             //    Macro macro = Macro.lookupMacro(token);
         }
@@ -366,7 +366,7 @@ namespace BlackC.Scan
         public void handleIfndefDirective()
         {
             Console.WriteLine("saw #ifndef");
-            List<Fragment> frags = readRestOfDirective(false);
+            List<PPToken> frags = readRestOfDirective(false);
 
             //    Token token = scanner.scanToken();
             //    Macro macro = Macro.lookupMacro(token);
@@ -375,19 +375,19 @@ namespace BlackC.Scan
         public void handleElifDirective()
         {
             Console.WriteLine("saw #elif");
-            List<Fragment> frags = readRestOfDirective(false);
+            List<PPToken> frags = readRestOfDirective(false);
         }
 
         public void handleElseDirective()
         {
             Console.WriteLine("saw #else");
-            List<Fragment> frags = readRestOfDirective(false);
+            List<PPToken> frags = readRestOfDirective(false);
         }
 
         public void handleEndifDirective()
         {
             Console.WriteLine("saw #endif");
-            List<Fragment> frags = readRestOfDirective(false);
+            List<PPToken> frags = readRestOfDirective(false);
         }
 
         //- miscellaneous -----------------------------------------------------
@@ -395,20 +395,30 @@ namespace BlackC.Scan
         public void handleLineDirective()
         {
             Console.WriteLine("saw #line");
-            List<Fragment> frags = readRestOfDirective(false);
+            List<PPToken> frags = readRestOfDirective(false);
         }
 
         public void handleErrorDirective()
         {
             Console.WriteLine("saw #error");
-            List<Fragment> frags = readRestOfDirective(false);
+            List<PPToken> frags = readRestOfDirective(false);
         }
 
         public void handlePragmaDirective()
         {
             //Console.WriteLine("saw #pragma");
-            List<Fragment> frags = readRestOfDirective(true);
+            List<PPToken> frags = readRestOfDirective(true);
             parser.handlePragma(frags);
+        }
+    }
+
+    //- pptoken source class --------------------------------------------------
+
+    public class PPTokenSource
+    {
+        virtual public PPToken getPPToken()
+        {
+            return null;
         }
     }
 }

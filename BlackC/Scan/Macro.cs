@@ -31,10 +31,10 @@ namespace BlackC.Scan
         public static Macro curMacro;
 
         public String name;
-        public List<Fragment> def;
+        public List<PPToken> def;
         public bool hasParams;
-        public List<Fragment> paramList;
-        public List<Fragment> invokeList;
+        public List<PPToken> paramList;
+        public List<PPToken> invokeList;
         public int curPos;
 
         public static void initMacros()
@@ -65,10 +65,10 @@ namespace BlackC.Scan
             return null;
         }
 
-        public static void defineMacro(List<Fragment> frags)
+        public static void defineMacro(List<PPToken> frags)
         {
             //delete space(s) & get macro name
-            while (frags[0].type == FragType.SPACE)  
+            while (frags[0].type == PPTokenType.SPACE)  
             {
                 frags.RemoveAt(0); 
             }
@@ -91,7 +91,7 @@ namespace BlackC.Scan
             }
         }
 
-        public static void setCurrentMacro(Macro macro, List<Fragment> args)
+        public static void setCurrentMacro(Macro macro, List<PPToken> args)
         {
             //add macro to invocation chain if not empty
             if (macro.def.Count > 0)
@@ -108,9 +108,9 @@ namespace BlackC.Scan
             return (macroList.Count > 0);
         }
 
-        public static Fragment getfrag()
+        public static PPToken getfrag()
         {
-            Fragment result = curMacro.invokeList[curMacro.curPos++];
+            PPToken result = curMacro.invokeList[curMacro.curPos++];
             if (curMacro.curPos == curMacro.invokeList.Count)
             {
                 Console.WriteLine("leaving macro " + curMacro.name);
@@ -129,7 +129,7 @@ namespace BlackC.Scan
 
         //- macro definition --------------------------------------------------
 
-        public Macro(String _name, List<Fragment> frags)
+        public Macro(String _name, List<PPToken> frags)
         {
             name = _name;
             scanMacroDefinition(frags);
@@ -137,22 +137,22 @@ namespace BlackC.Scan
             curPos = 0;
         }
 
-        public void scanMacroDefinition(List<Fragment> frags)
+        public void scanMacroDefinition(List<PPToken> frags)
         {
             def = frags;
             hasParams = false;
             paramList = null;
 
             //check if macro is parameterized, if so, build param list
-            if ((def.Count > 0) && (def[0].type == FragType.PUNCT) && (def[0].str[0] == '('))
+            if ((def.Count > 0) && (def[0].type == PPTokenType.PUNCT) && (def[0].str[0] == '('))
             {
                 hasParams = true;
-                paramList = new List<Fragment>();
+                paramList = new List<PPToken>();
                 int pos = 1;
-                while ((def[pos].type == FragType.PUNCT) && (def[pos].str[0] == ')'))
+                while ((def[pos].type == PPTokenType.PUNCT) && (def[pos].str[0] == ')'))
                 {
                     paramList.Add(def[pos++]);
-                    if ((def[pos].type == FragType.PUNCT) && (def[pos].str[0] == ','))
+                    if ((def[pos].type == PPTokenType.PUNCT) && (def[pos].str[0] == ','))
                     {
                         pos++;
                     }
@@ -161,11 +161,11 @@ namespace BlackC.Scan
             }
 
             //trim spaces off of ends of remaining macro def list
-            while ((frags.Count > 0) && (frags[0].type == FragType.SPACE))
+            while ((frags.Count > 0) && (frags[0].type == PPTokenType.SPACE))
             {
                 frags.RemoveAt(0);
             }
-            while ((frags.Count > 0) && (frags[frags.Count-1].type == FragType.SPACE))
+            while ((frags.Count > 0) && (frags[frags.Count-1].type == PPTokenType.SPACE))
             {
                 frags.RemoveAt(frags.Count-1);
             }
@@ -275,7 +275,7 @@ namespace BlackC.Scan
         //}
 
         //not handling paramaterization or stringification yet
-        public void invoke(List<Fragment> args)
+        public void invoke(List<PPToken> args)
         {
             Console.WriteLine("expanding macro " + name);
             //if parameterized, build actual token replacement list from argument tokens

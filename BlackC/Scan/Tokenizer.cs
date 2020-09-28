@@ -31,7 +31,7 @@ namespace BlackC.Scan
         Parser parser;
         Preprocessor prep;
 
-        List<Fragment> frags;
+        List<PPToken> frags;
         List<Token> tokens;
         Dictionary<String, TokenType> keywords;
 
@@ -40,7 +40,7 @@ namespace BlackC.Scan
             parser = _parser;
 
             prep = new Preprocessor(parser, filename);
-            frags = new List<Fragment>();
+            frags = new List<PPToken>();
             tokens = new List<Token>();
 
             //build keyword list
@@ -77,7 +77,7 @@ namespace BlackC.Scan
 
         //- fragment handling -------------------------------------------------
 
-        public Fragment getNextFrag()
+        public PPToken getNextFrag()
         {
             if (tokens.Count > 0)
             {
@@ -85,21 +85,56 @@ namespace BlackC.Scan
 
             if (frags.Count != 0)
             {
-                Fragment f = frags[frags.Count - 1];
+                PPToken f = frags[frags.Count - 1];
                 frags.RemoveAt(frags.Count - 1);
                 return f;                
             }
-            Fragment frag = prep.getFrag();
+            PPToken frag = prep.getPPToken();
             return frag;
         }
 
-        public void putFragBack(Fragment frag)
+        public void putFragBack(PPToken frag)
         {
             frags.Add(frag);
         }
 
         //the number fragment we get from the scanner should be well-formed
-        public Token ParseNumber(String numstr)
+        public Token ParseInteger(String numstr)
+        {
+            Token tok = null;
+            try
+            {
+                if (numstr.Contains('.'))
+                {
+                    double dval = Convert.ToDouble(numstr);
+                    tok = new Token(TokenType.FLOATCONST);
+                    tok.floatval = dval;
+                }
+                else
+                {
+                    int bass = 10;
+                    if (numstr.StartsWith("0x"))
+                    {
+                        bass = 16;
+                    }
+                    else if (numstr.StartsWith("0"))
+                    {
+                        bass = 8;
+                    }
+                    int intval = Convert.ToInt32(numstr, bass);
+                    tok = new Token(TokenType.INTCONST);
+                    tok.intval = intval;
+                }
+            }
+            catch (Exception e)
+            {
+                parser.error("error parsing number str " + numstr + " : " + e.Message);
+            }
+            return tok;
+        }
+
+        //the number fragment we get from the scanner should be well-formed
+        public Token ParseFloat(String numstr)
         {
             Token tok = null;
             try
@@ -165,21 +200,21 @@ namespace BlackC.Scan
         public Token tokenizer()
         {
             Token tok = null;
-            Fragment frag;
-            Fragment nextfrag;
+            PPToken frag;
+            PPToken nextfrag;
 
             while (true)
             {
                 frag = getNextFrag();
 
                 //ignore spaces & eolns
-                if ((frag.type == FragType.SPACE) || (frag.type == FragType.EOLN))
+                if ((frag.type == PPTokenType.SPACE) || (frag.type == PPTokenType.EOLN))
                 {
                     continue;
                 }
 
                 //check if word is keyword or identifier
-                if (frag.type == FragType.WORD)
+                if (frag.type == PPTokenType.WORD)
                 {
                     if (keywords.ContainsKey(frag.str))
                     {
@@ -194,19 +229,19 @@ namespace BlackC.Scan
                 }
 
                 //convert number / string / char str into constant value
-                if (frag.type == FragType.NUMBER)
+                if (frag.type == PPTokenType.INTEGER)
                 {
-                    tok = ParseNumber(frag.str);
+                    tok = ParseInteger(frag.str);
                     break;
                 }
 
-                if (frag.type == FragType.STRING)
+                if (frag.type == PPTokenType.STRING)
                 {
                     tok = ParseString(frag.str);
                     break;
                 }
 
-                if (frag.type == FragType.CHAR)
+                if (frag.type == PPTokenType.CHAR)
                 {
                     tok = ParseChar(frag.str);
                     break;
@@ -214,7 +249,7 @@ namespace BlackC.Scan
 
                 //convert single punctuation chars into punctuation tokens, combining as necessary
                 //need 2 lookaheads at most for '...' token
-                if (frag.type == FragType.PUNCT)
+                if (frag.type == PPTokenType.PUNCT)
                 {
                     char c = frag.str[0];
                     switch (c)
@@ -240,11 +275,11 @@ namespace BlackC.Scan
 
                         case '+':
                             nextfrag = getNextFrag();
-                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '+'))
+                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '+'))
                             {
                                 tok = new Token(TokenType.PLUSPLUS);
                             }
-                            else if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            else if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
                             {
                                 tok = new Token(TokenType.PLUSEQUAL);
                             }
@@ -256,15 +291,15 @@ namespace BlackC.Scan
                             break;
                         case '-':
                             nextfrag = getNextFrag();
-                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '-'))
+                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '-'))
                             {
                                 tok = new Token(TokenType.MINUSMINUS);
                             }
-                            else if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            else if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
                             {
                                 tok = new Token(TokenType.MINUSEQUAL);
                             }
-                            else if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '>'))
+                            else if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '>'))
                             {
                                 tok = new Token(TokenType.ARROW);
                             }
@@ -276,7 +311,7 @@ namespace BlackC.Scan
                             break;
                         case '*':
                             nextfrag = getNextFrag();
-                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
                             {
                                 tok = new Token(TokenType.MULTEQUAL);
                             }
@@ -288,7 +323,7 @@ namespace BlackC.Scan
                             break;
                         case '/':
                             nextfrag = getNextFrag();
-                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
                             {
                                 tok = new Token(TokenType.SLASHEQUAL);
                             }
@@ -300,7 +335,7 @@ namespace BlackC.Scan
                             break;
                         case '%':
                             nextfrag = getNextFrag();
-                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
                             {
                                 tok = new Token(TokenType.PERCENTEQUAL);
                             }
@@ -312,11 +347,11 @@ namespace BlackC.Scan
                             break;
                         case '&':
                             nextfrag = getNextFrag();
-                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '&'))
+                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '&'))
                             {
                                 tok = new Token(TokenType.AMPAMP);
                             }
-                            else if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            else if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
                             {
                                 tok = new Token(TokenType.AMPEQUAL);
                             }
@@ -328,11 +363,11 @@ namespace BlackC.Scan
                             break;
                         case '|':
                             nextfrag = getNextFrag();
-                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '|'))
+                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '|'))
                             {
                                 tok = new Token(TokenType.BARBAR);
                             }
-                            else if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            else if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
                             {
                                 tok = new Token(TokenType.BAREQUAL);
                             }
@@ -347,7 +382,7 @@ namespace BlackC.Scan
                             break;
                         case '^':
                             nextfrag = getNextFrag();
-                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
                             {
                                 tok = new Token(TokenType.CARETEQUAL);
                             }
@@ -361,7 +396,7 @@ namespace BlackC.Scan
 
                         case '=':
                             nextfrag = getNextFrag();
-                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
                             {
                                 tok = new Token(TokenType.EQUALEQUAL);
                             }
@@ -373,7 +408,7 @@ namespace BlackC.Scan
                             break;
                         case '!':
                             nextfrag = getNextFrag();
-                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
                             {
                                 tok = new Token(TokenType.NOTEQUAL);
                             }
@@ -385,10 +420,10 @@ namespace BlackC.Scan
                             break;
                         case '<':
                             nextfrag = getNextFrag();
-                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '<'))
+                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '<'))
                             {
-                                Fragment frag2 = getNextFrag();
-                                if ((frag2.type == FragType.PUNCT) && (frag2.str[0] == '='))
+                                PPToken frag2 = getNextFrag();
+                                if ((frag2.type == PPTokenType.PUNCT) && (frag2.str[0] == '='))
                                 {
                                     tok = new Token(TokenType.LESSLESSEQUAL);   //<<=
                                 }
@@ -398,7 +433,7 @@ namespace BlackC.Scan
                                     tok = new Token(TokenType.LESSLESS);
                                 }
                             }
-                            else if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            else if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
                             {
                                 tok = new Token(TokenType.LESSEQUAL);
                             }
@@ -410,10 +445,10 @@ namespace BlackC.Scan
                             break;
                         case '>':
                             nextfrag = getNextFrag();
-                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '>'))
+                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '>'))
                             {
-                                Fragment frag2 = getNextFrag();
-                                if ((frag2.type == FragType.PUNCT) && (frag2.str[0] == '='))
+                                PPToken frag2 = getNextFrag();
+                                if ((frag2.type == PPTokenType.PUNCT) && (frag2.str[0] == '='))
                                 {
                                     tok = new Token(TokenType.GTRGTREQUAL);   //>>=
                                 }
@@ -423,7 +458,7 @@ namespace BlackC.Scan
                                     tok = new Token(TokenType.GTRGTR);
                                 }
                             }
-                            else if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '='))
+                            else if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
                             {
                                 tok = new Token(TokenType.GTREQUAL);
                             }
@@ -440,10 +475,10 @@ namespace BlackC.Scan
                         case '.':
                             bool threedots = false;
                             nextfrag = getNextFrag();
-                            if ((nextfrag.type == FragType.PUNCT) && (nextfrag.str[0] == '.'))
+                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '.'))
                             {
-                                Fragment frag2 = getNextFrag();
-                                if ((frag2.type == FragType.PUNCT) && (frag2.str[0] == '.'))
+                                PPToken frag2 = getNextFrag();
+                                if ((frag2.type == PPTokenType.PUNCT) && (frag2.str[0] == '.'))
                                 {
                                     tok = new Token(TokenType.ELLIPSIS);        //...
                                     threedots = true;
@@ -480,7 +515,7 @@ namespace BlackC.Scan
                     break;
                 }
 
-                if (frag.type == FragType.EOF)
+                if (frag.type == PPTokenType.EOF)
                 {
                     tok = new Token(TokenType.EOF);
                     break;

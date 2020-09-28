@@ -32,6 +32,7 @@ namespace BlackC.Parse
 {
     public class Arbor
     {
+        public Options options;
         public Parser parser;
 
         public SymbolTable symbolTable;
@@ -45,6 +46,7 @@ namespace BlackC.Parse
         public Arbor(Parser _parser)
         {
             parser = _parser;
+            options = parser.options;
 
             symbolTable = new SymbolTable();
             curModule = null;
@@ -118,7 +120,7 @@ namespace BlackC.Parse
 
         internal void AddModuleDeclaration(OILNode node, OILNode node1)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
 
         public void startoldparamlist()
@@ -186,12 +188,12 @@ namespace BlackC.Parse
 
         internal OILNode buildVarDeclaration(OILNode node1, OILNode node2)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
         internal OILNode buildDeclarationList(List<OILNode> nodeList)
         {
-            throw new NotImplementedException();
+            return new OILNode();
         }
 
         internal OILNode addDeclaratorInitializer(OILNode node2, OILNode node3)
@@ -1242,9 +1244,9 @@ namespace BlackC.Parse
 
         //- statements --------------------------------------------------------
 
-        public OILNode buildStatement(OILNode node)
+        public void buildStatement()
         {
-            return new OILNode();
+            //return new OILNode();
         }
 
         public OILNode buildLabeledStatement(Token tok, OILNode node1)

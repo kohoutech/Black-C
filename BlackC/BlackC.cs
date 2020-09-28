@@ -29,8 +29,7 @@ using Kohoutech.OIL;
 //"programming a compiler is the Spastik Ink of programming projects" - Peter J Sims
 
 namespace BlackC
-{
-    class BlackC
+{    class BlackC
     {
         static void Main(string[] args)
         {
@@ -49,7 +48,7 @@ namespace BlackC
                 }
                 else
                 {
-                    Parser parser = new Parser();                       //create a parser
+                    Parser parser = new Parser(options);               //create a parser
                     Module module = parser.parseFile(srcname);         //parse the source file                
 
                     OILCan oilCan = new OILCan(outname);

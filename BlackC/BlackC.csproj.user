@@ -12,7 +12,7 @@
     <VerifyUploadedFiles>false</VerifyUploadedFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <StartArguments>test4.c  test4.oil.txt</StartArguments>
+    <StartArguments>..\..\..\proof\test4.c  ..\..\..\proof\test4.oil.txt</StartArguments>
     <StartAction>Project</StartAction>
   </PropertyGroup>
 </Project>

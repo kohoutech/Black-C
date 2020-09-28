@@ -27,107 +27,185 @@ using BlackC.Parse;
 
 namespace BlackC.Scan
 {
-    public class Scanner
+    public class Scanner : PPTokenSource
     {
         public Parser parser;
 
         public string filename;
-        public SourceLocation caller;
-        String source;
+        string[] source;
 
-        int srcpos;
-        List<SourceNote> sourceMap;
-        int sourceMapPos;
-        bool saveSpaces;
-        StringBuilder spstr;
+        int linepos;
+        int linenum;
+        bool atEof;
+        bool atEoln;
+        bool inTrigraph;
+        StringBuilder tokstr;
 
-        public Scanner(Parser _parser, String _filename, SourceLocation _caller)
+        public Scanner(Parser _parser, String _filename)
         {
             parser = _parser;
             filename = _filename;
-            caller = _caller;
 
             try
             {
-                source = File.ReadAllText(filename);        //read entire file as single string
+                source = File.ReadAllLines(filename);        //read entire file as array of strings
             }
             catch (Exception e)
             {
                 parser.fatal("error reading source file " + filename + " : " + e.Message);
             }
-            transformSource();
 
-            srcpos = 0;
-            sourceMapPos = 0;
-            saveSpaces = parser.saveSpaces;
-            spstr = new StringBuilder();
+            linenum = 0;
+            startLine();
+            tokstr = new StringBuilder();
         }
 
-        //- source transformation ---------------------------------------------
+        //- reading source chars ---------------------------------------------
 
         /*(5.1.1.2) 
             translation phase 1 : replace trigraphs with their eqivalent chars 
             translation phase 2 : splice lines ending with line continuation chars together
          */
 
-        Dictionary<char, char> trigraphs = new Dictionary<char, char>() { 
-                        { '=', '#' },  { ')', ']' }, { '!', '|' }, 
+        Dictionary<char, char> trigraphs = new Dictionary<char, char>() {
+                        { '=', '#' },  { ')', ']' }, { '!', '|' },
                         { '(', '[' },  { '\'','^' }, { '>', '}' },
                         { '/', '\\' }, { '<', '{' }, { '-', '~' }};
 
-        //translate source & build source line map
-        public void transformSource()
+        public void startLine()
         {
-            if (!source.EndsWith("\n"))
+            if (linenum > source.Length)
             {
-                source = source + '\n';                 //add eoln at end of file if not already there
+                atEof = true;
+                return;
             }
-            source = source + '\0';                     //mark end of file
-
-            StringBuilder result = new StringBuilder();
-            sourceMap = new List<SourceNote>();
-            int linenum = 1;
-            int linepos = 0;
-            sourceMap.Add(new SourceNote(1, 0, 0));
-
-            for (int i = 0; i < source.Length; i++)
+            
+            if (source[linenum].EndsWith("??/"))
             {
-                if (source[i] == '?' && (source[i + 1] == '?') && trigraphs.ContainsKey(source[i + 2]))
-                {
-                    result.Append(trigraphs[source[i + 2]]);
-                    linepos += 3;
-                    sourceMap.Add(new SourceNote(linenum, linepos, result.Length));
-                    i += 2;
-                }
-                else if ((source[i] == '\\') && (source[i + 1] == '\n'))
-                {
-                    i += 1;
-                    linenum++;
-                    linepos = 1;
-                    sourceMap.Add(new SourceNote(linenum, linepos, result.Length + 1));
-                }
-                else if ((source[i] == '\\') && ((source[i + 1] == '\r') && (source[i + 2] == '\n')))
-                {
-                    i += 2;
-                    linenum++;
-                    linepos = 1;
-                    sourceMap.Add(new SourceNote(linenum, linepos, result.Length + 1));
-                }
-                else if (source[i] == '\n')
-                {
-                    linenum++;
-                    linepos = 1;
-                    sourceMap.Add(new SourceNote(linenum, linepos, result.Length + 1));
-                    result.Append(source[i]);
-                }
-                else
-                {
-                    result.Append(source[i]);
-                    linepos++;
-                }
+                String s = source[linenum].Remove(source[linenum].Length - 3);
+                s = s + "\\";
+                source[linenum] = s;
             }
-            source = result.ToString();
+            linepos = 0;
+            atEoln = false;
+            inTrigraph = false;
         }
+
+        public char peekChar()
+        {
+            if (atEof)
+            {
+                return '\0';
+            }
+
+            if (atEoln)
+            {
+                return '\n';
+            }
+
+            if ((linepos < source[linenum].Length - 2) && (source[linenum][linepos] == '?') && (source[linenum][linepos+1] == '?'))
+                
+            {
+                char tc = source[linenum][linepos + 2];
+                if (trigraphs.ContainsKey(tc))
+                {
+                    inTrigraph = true;
+                    return trigraphs[tc];
+                }
+            }
+            
+            return source[linenum][linepos];
+        }
+
+        public void nextChar()
+        {
+            if (atEof)      //don't read past eof
+            {
+                return;
+            }
+
+            if (atEoln)
+            {
+                linenum++;
+                startLine();
+            }
+
+            linepos += inTrigraph ? 3 : 1;
+
+            //handle line countinuations
+            while (!atEof && (linepos == source[linenum].Length - 1) && (source[linenum][linepos] == '\\'))
+            {
+                linenum++;
+                startLine();
+            }
+
+            //check for eoln
+            if (!atEof && (linepos >= source[linenum].Length))
+            {
+                atEoln = true;
+            }
+        }
+
+        public char getChar()
+        {
+            char ch = peekChar();
+            nextChar();
+            return ch;
+        }
+
+        //translate source & build source line map
+        //public void transformSource()
+        //{
+        //    if (!source.EndsWith("\n"))
+        //    {
+        //        source = source + '\n';                 //add eoln at end of file if not already there
+        //    }
+        //    source = source + '\0';                     //mark end of file
+
+        //    StringBuilder result = new StringBuilder();
+        //    sourceMap = new List<SourceNote>();
+        //    int linenum = 1;
+        //    int linepos = 0;
+        //    sourceMap.Add(new SourceNote(1, 0, 0));
+
+        //    for (int i = 0; i < source.Length; i++)
+        //    {
+        //        if (source[i] == '?' && (source[i + 1] == '?') && trigraphs.ContainsKey(source[i + 2]))
+        //        {
+        //            result.Append(trigraphs[source[i + 2]]);
+        //            linepos += 3;
+        //            sourceMap.Add(new SourceNote(linenum, linepos, result.Length));
+        //            i += 2;
+        //        }
+        //        else if ((source[i] == '\\') && (source[i + 1] == '\n'))
+        //        {
+        //            i += 1;
+        //            linenum++;
+        //            linepos = 1;
+        //            sourceMap.Add(new SourceNote(linenum, linepos, result.Length + 1));
+        //        }
+        //        else if ((source[i] == '\\') && ((source[i + 1] == '\r') && (source[i + 2] == '\n')))
+        //        {
+        //            i += 2;
+        //            linenum++;
+        //            linepos = 1;
+        //            sourceMap.Add(new SourceNote(linenum, linepos, result.Length + 1));
+        //        }
+        //        else if (source[i] == '\n')
+        //        {
+        //            linenum++;
+        //            linepos = 1;
+        //            sourceMap.Add(new SourceNote(linenum, linepos, result.Length + 1));
+        //            result.Append(source[i]);
+        //        }
+        //        else
+        //        {
+        //            result.Append(source[i]);
+        //            linepos++;
+        //        }
+        //    }
+        //    source = result.ToString();
+        //}
 
         //- skipping whitespace & comments  -----------------------------------
 
@@ -138,79 +216,51 @@ namespace BlackC.Scan
 
         public void skipWhitespace()
         {
-            bool done = false;
-            char ch = source[srcpos];
-            while (!done)
+            char ch = peekChar();
+            while (isSpace(ch))
             {
-                //skip any whitespace
-                if ((ch == ' ') || (ch == '\t') || (ch == '\f') || (ch == '\v') || (ch == '\r'))
-                {
-                    if ((ch == ' ') || (ch == '\t'))        //keep tabs on spaces
-                    {
-                        spstr.Append(ch);
-                    }
-                    ch = source[++srcpos];
-                    continue;
-                }
-
-                //skip any following comments, if we found a comment, then we're not done yet
-                if ((ch == '/') && (source[srcpos + 1] == '/'))
-                {
-                    skipLineComment();
-                    ch = source[++srcpos];
-                    continue;
-                }
-
-                if ((ch == '/') && (source[srcpos + 1] == '*'))
-                {
-                    skipBlockComment();
-                    ch = source[++srcpos];
-                    continue;
-                }
-
-                //if we've gotten to here, then we not at a space, eoln or comment & we're done
-                done = true;
-            };
+                nextChar();
+                ch = peekChar();
+                continue;
+            }
         }
 
         //skip remainder of current line up to (but not including) the eoln char
         //since nothing follows this but the eoln, don't include this spaces in the preprocessor's fragment
         public void skipLineComment()
         {
-            srcpos += 2;
-            char ch = source[srcpos];
-            while (ch != '\n' && ch != '\0')
+            nextChar();                     //skip 2nd / char
+            char ch = peekChar();
+            while (ch != '\n' && !atEof)
             {
-                ch = source[++srcpos];
+                nextChar();
+                ch = peekChar();
             }
         }
 
         //skip source characters until reach next '*/' or eof
         public void skipBlockComment()
         {
-            srcpos += 2;
-            int mark = spstr.Length;
-            spstr.Append("  ");
-            char ch = source[srcpos];
-            while (!((ch == '\0') || ((ch == '*') && (source[srcpos + 1] == '/'))))
+            bool done = false;
+            do
             {
-                if (ch == '\n')
+                nextChar();
+                char ch = peekChar();
+                if (atEof)
                 {
-                    spstr = spstr.Remove(mark,spstr.Length - mark);       //discard all the comment chars in this line
-                    spstr.Append('\n');
-                    mark++;
+                    done = true;
                 }
-                else
+                else if (ch == '*')
                 {
-                    spstr.Append(' ');
+                    nextChar();
+                    if (peekChar() == '/')
+                    {
+                        nextChar();
+                        done = true;
+                    }
                 }
-                ch = source[++srcpos];
-            }
-            if (ch != '\0')         //if we haven't reached eof, then skip '*/' chars
-            {
-                srcpos += 2;
-                spstr.Append("  ");
-            }
+
+            } while (!done);
         }
 
         //- source scanning ------------------------------------------------
@@ -218,6 +268,11 @@ namespace BlackC.Scan
         public bool isAlpha(char ch)
         {
             return ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch == '_');
+        }
+
+        public bool isDigit(char ch)
+        {
+            return (ch >= '0' && ch <= '9');
         }
 
         public bool isAlphaNum(char ch)
@@ -245,21 +300,18 @@ namespace BlackC.Scan
          digit: one of
             0 ... 9
          */
-        public string scanIdentifier()
+        public string scanIdentifier(char ch)
         {
-            String idstr = "";
-            char ch = source[srcpos];
+            tokstr.Clear();
+            tokstr.Append(ch);
+            ch = peekChar();
             while (isAlphaNum(ch))
             {
-                idstr = idstr + ch;
-                ch = source[++srcpos];
+                tokstr.Append(ch);
+                nextChar();
+                ch = peekChar();
             }
-            return idstr;
-        }
-
-        public bool isDigit(char ch)
-        {
-            return (ch >= '0' && ch <= '9');
+            return tokstr.ToString();
         }
 
         /*
@@ -295,51 +347,56 @@ namespace BlackC.Scan
          floating-suffix: one of
             f l F L
         */
-        public string scanFloatConst(String fstr)
+
+        //token string either ends with a '.' or a 'E' on entry
+        public string scanFloatConst()
         {
-            if (fstr.EndsWith("."))      //get optional decimal part
+            if (tokstr.ToString().EndsWith("."))      //get optional decimal part
             {
-                char c1 = source[srcpos];
+                char c1 = peekChar();
                 while (c1 >= '0' && c1 <= '9')
                 {
-                    fstr = fstr + c1;
-                    c1 = source[++srcpos];
+                    tokstr.Append(c1);
+                    nextChar();
+                    c1 = peekChar();
                 }
-                if (fstr.EndsWith("."))      //if we didn't have a decimal part above, we add one anyway (123. --> 123.0)
+                if (tokstr.ToString().EndsWith("."))      //if we didn't have a decimal part above, we add one anyway (123. --> 123.0)
                 {
-                    fstr = fstr + '0';
+                    tokstr.Append('0');
                 }
                 if ((c1 == 'e') || (c1 == 'E'))     //then check for exponent part
                 {
-                    fstr = fstr + 'E';
-                    srcpos++;
+                    tokstr.Append('E');
+                    nextChar();
                 }
             }
 
-            if (fstr.EndsWith("E"))      //get optional exponent part
+            if (tokstr.ToString().EndsWith("E"))      //get optional exponent part
             {
-                char s1 = source[srcpos];
+                char s1 = peekChar();
                 if ((s1 == '+') || (s1 == '-'))     //exponent sign is optional
                 {
-                    fstr = fstr + s1;
-                    s1 = source[++srcpos];
+                    tokstr.Append(s1);
+                    nextChar();
+                    s1 = peekChar();
                 }
                 while (s1 >= '0' && s1 <= '9')
                 {
-                    fstr = fstr + s1;
-                    s1 = source[++srcpos];
+                    tokstr.Append(s1);
+                    nextChar();
+                    s1 = peekChar();
                 }
             }
 
             //check for float const suffixes
-            char f1 = source[srcpos];
+            char f1 = peekChar();
             if ((f1 == 'f') || (f1 == 'F') || (f1 == 'l') || (f1 == 'L'))
             {
-                fstr = fstr + Char.ToUpper(f1);
-                srcpos++;
+                tokstr.Append(Char.ToUpper(f1));
+                nextChar();
             }
 
-            return fstr;
+            return tokstr.ToString();
         }
 
         /*(6.4.4.1) 
@@ -400,83 +457,89 @@ namespace BlackC.Scan
          long-long-suffix: one of
             ll LL
         */
-        public string scanNumber()     //either int or float const
+        public string scanNumber(char ch, out bool isInt)     //either int or float const
         {
+            isInt = true;       //assume int
             int bass = 10;      //default number base
-            char ch = source[srcpos];
-            String numstr = "" + ch;
+            tokstr.Clear();
+            tokstr.Append(ch);
 
             if (ch != '.')       //get mantissa
             {
                 if (ch == '0')             //set base
                 {
-                    if ((source[srcpos + 1] == 'X' || source[srcpos + 1] == 'x'))
+                    char ch2 = peekChar();
+                    if (ch2 == 'X' || ch2 == 'x')
                     {
                         bass = 16;
-                        numstr += source[++srcpos];
-                        srcpos++;
+                        tokstr.Append(ch2);
+                        nextChar();
                     }
                     else
                     {
                         bass = 8;
                     }
                 }
-                ch = source[++srcpos];
+                ch = peekChar();
                 while (((bass == 10) && (ch >= '0' && ch <= '9')) ||
                         ((bass == 8) && (ch >= '0' && ch <= '7')) ||
                         ((bass == 16) && ((ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'F') || (ch >= 'a' && ch <= 'f'))))
                 {
-                    numstr = numstr + ch;
-                    ch = source[++srcpos];
+                    tokstr.Append(ch);
+                    nextChar();
+                    ch = peekChar();
                 }
             }
             else
             {
-                numstr = "0.";                         //add the leading 0 to a float const str '.1234'
-                return scanFloatConst(numstr);         //get floating point constant string
+                tokstr.Insert(0, '0');               //add the leading 0 to a float const str '.1234'
+                isInt = false;                       //not an int
+                return scanFloatConst();             //get floating point constant string
             }
 
             //got the mantissa, if the next char is decimal point or exponent, then it's a float const
             if ((ch == '.') || (ch == 'E') || (ch == 'e'))
             {
-                srcpos++;                         //skip '.' or 'E' or 'e'
+                nextChar();                         //skip '.' or 'E' or 'e'
 
                 if (ch == 'E' || ch == 'e')
                 {
-                    numstr = numstr + ".0";            //add decimal part if missing (123E10 --> 123.0E10)
+                    tokstr.Append(".0");            //add decimal part if missing (123E10 --> 123.0E10)
                 }
-                numstr = numstr + Char.ToUpper(ch);
-                return scanFloatConst(numstr);         //get floating point constant token
+                tokstr.Append(Char.ToUpper(ch));
+                isInt = false;                      //not an int
+                return scanFloatConst();            //get floating point constant token
             }
 
             //not a float, check for int const suffixes, can be in any order
             bool usuffix = false;
-            int lsuffix = 0;
-            string intstr = numstr;
+            bool lsuffix = false;
             for (int i = 0; i < 2; i++)     //check for int const suffixes
             {
                 if ((!usuffix) && ((ch == 'u') || (ch == 'U')))
                 {
                     usuffix = true;
-                    numstr = numstr + "U";
-                    ch = source[++srcpos];
+                    tokstr.Append("U");
+                    nextChar();
+                    ch = peekChar();
                 }
 
-                if ((lsuffix == 0) && ((ch == 'l') || (ch == 'L')))
+                if ((!lsuffix) && ((ch == 'l') || (ch == 'L')))
                 {
-                    lsuffix++;
-                    numstr = numstr + "L";
-                    ch = source[++srcpos];
-                    if ((ch == 'l') || (ch == 'L'))
+                    lsuffix = true;
+                    tokstr.Append("L");
+                    nextChar();
+                    ch = peekChar();
+                    if ((ch == 'l') || (ch == 'L'))     //check for LL or ll
                     {
-                        lsuffix++;
-                        numstr = numstr + "L";
-                        ch = source[++srcpos];
+                        tokstr.Append("L");
+                        nextChar();
+                        ch = peekChar();
                     }
                 }
             }
 
-            return numstr;
+            return tokstr.ToString();
         }
 
         /*(6.4.4.4) 
@@ -517,27 +580,30 @@ namespace BlackC.Scan
           */
         public string scanCharLiteral(bool isLong)
         {
-            string cstr = (isLong) ? "L\'" : "\'";
-            char ch = source[++srcpos];
-            while ((ch != '\'') && (ch != '\n') && (ch != '\0'))
+            tokstr.Append(isLong ? "L\'" : "\'");
+
+            char ch = peekChar();
+            while ((ch != '\'') && (ch != '\n') && !atEof)
             {
-                if ((ch == '\\') && (source[srcpos + 1] == '\''))
+                nextChar();
+                if ((ch == '\\') && (peekChar() == '\''))
                 {
-                    cstr = cstr + "\\\'";
-                    srcpos++;                    //skip over escaped single quotes
+                    tokstr.Append("\\\'");
+                    nextChar();                    //skip over escaped single quotes
                 }
                 else
                 {
-                    cstr = cstr + ch;
+                    tokstr.Append(ch);
                 }
-                ch = source[++srcpos];
+                ch = peekChar();
             }
+
             if (ch == '\'')         //add the closing quote if not at eoln or eof
             {
-                cstr = cstr + '\'';
-                srcpos++;
+                tokstr.Append('\'');
+                nextChar();
             }
-            return cstr;
+            return tokstr.ToString();
         }
 
         /*(6.4.5) 
@@ -557,94 +623,111 @@ namespace BlackC.Scan
          */
         public string scanString(bool isLong)
         {
-            string sstr = (isLong) ? "L\"" : "\"";
-            char ch = source[++srcpos];
+            tokstr.Append(isLong ? "L\"" : "\"");
+
+            char ch = peekChar();
             while ((ch != '\"') && (ch != '\n') && (ch != '\0'))
             {
-                if ((ch == '\\') && (source[srcpos + 1] == '\"'))
+                nextChar();
+                if ((ch == '\\') && (peekChar() == '\"'))
                 {
-                    sstr = sstr + "\\\"";
-                    srcpos++;                    //skip over escaped double quotes
+                    tokstr.Append("\\\"");
+                    nextChar();                    //skip over escaped double quotes
                 }
                 else
                 {
-                    sstr = sstr + ch;
+                    tokstr.Append(ch);
                 }
-                ch = source[++srcpos];
+                ch = peekChar();
             }
             if (ch == '\"')                     //skip the closing quote if not at eoln or eof
             {
-                sstr = sstr + '\"';
-                srcpos++;
+                tokstr.Append('\"');
+                nextChar();
             }
-            return sstr;
+            return tokstr.ToString();
         }
 
         //- main scanning method ----------------------------------------------
 
-        public char TranslateDiagraphs()
+        public char TranslateDiagraphs(char ch1)
         {
-            char ch = source[srcpos];
-            if (ch == '<' && (source[srcpos + 1] == ':'))
+            char ch2 = peekChar();
+            if (ch1 == '<' && ch2 == ':')
             {
-                ch = '[';
-                srcpos++;
+                ch1 = '[';
+                nextChar();
             }
-            if (ch == ':' && (source[srcpos + 1] == '>'))
+            if (ch1 == ':' && ch2 == '>')
             {
-                ch = ']';
-                srcpos++;
+                ch1 = ']';
+                nextChar();
             }
-            if (ch == '<' && (source[srcpos + 1] == '%'))
+            if (ch1 == '<' && ch2 == '%')
             {
-                ch = '{';
-                srcpos++;
+                ch1 = '{';
+                nextChar();
             }
-            if (ch == '%' && (source[srcpos + 1] == '>'))
+            if (ch1 == '%' && ch2 == '>')
             {
-                ch = '}';
-                srcpos++;
+                ch1 = '}';
+                nextChar();
             }
-            if (ch == '%' && (source[srcpos + 1] == ':'))
+            if (ch1 == '%' && ch2 == ':')
             {
-                ch = '#';
-                srcpos++;
+                ch1 = '#';
+                nextChar();
             }
             //we handle '%:%:' --> '##' when we handle '#' the 2nd time
 
-            return ch;
+            return ch1;
         }
 
-        public SourceLocation getFragLocation()
-        {
-            while ((sourceMapPos < sourceMap.Count - 1) && (srcpos >= sourceMap[sourceMapPos + 1].newpos))
-            {
-                sourceMapPos++;
-            }
-            int linenum = sourceMap[sourceMapPos].linenum;
-            int linepos = (srcpos - sourceMap[sourceMapPos].newpos) + sourceMap[sourceMapPos].linepos;
-            return new SourceLocation(filename, linenum, linepos, caller);
-        }
+        //public SourceLocation getFragLocation()
+        //{
+        //    while ((sourceMapPos < sourceMap.Count - 1) && (srcpos >= sourceMap[sourceMapPos + 1].newpos))
+        //    {
+        //        sourceMapPos++;
+        //    }
+        //    int linenum = sourceMap[sourceMapPos].linenum;
+        //    int linepos = (srcpos - sourceMap[sourceMapPos].newpos) + sourceMap[sourceMapPos].linepos;
+        //    return new SourceLocation(filename, linenum, linepos, caller);
+        //}
 
         //(5.1.1.2) translation phase 3 : scan source line into preprocessing tokens
-        public Fragment getFrag()
+        override public PPToken getPPToken()
         {
-            Fragment frag = null;
-            SourceLocation loc = getFragLocation();
-            spstr.Clear();
+            PPToken tok = null;
+            int tokpos = linepos;
+            int tokline = linenum;
+            tokstr.Clear();
 
-            char ch = source[srcpos];
+            char ch = getChar();
             while (true)
             {
+                //end of file
+                if (atEof)
+                {
+                    tok = new PPToken(PPTokenType.EOF, "<eof>");
+                    break;
+                }
+
+                //end of line - does not include eolns in block comments or spliced lines
+                if (ch == '\n')
+                {
+                    tok = new PPToken(PPTokenType.EOLN, "<eoln>");
+                    break;
+                }
+
                 if (isSpace(ch))
                 {
                     skipWhitespace();
-                    frag = new Fragment(FragType.SPACE, (saveSpaces ? spstr.ToString() : " "));
+                    tok = new PPToken(PPTokenType.SPACE, " ");
                     break;
                 }
 
                 //line comment
-                if (ch == '/' && (source[srcpos + 1] == '/'))
+                if (ch == '/' && (peekChar() == '/'))
                 {
                     skipLineComment();
                     ch = ' ';                   //replace comment with single space
@@ -652,7 +735,7 @@ namespace BlackC.Scan
                 }
 
                 //block comment
-                if (ch == '/' && (source[srcpos + 1] == '*'))
+                if (ch == '/' && (peekChar() == '*'))
                 {
                     skipBlockComment();
                     ch = ' ';                   //replace comment with single space
@@ -662,35 +745,36 @@ namespace BlackC.Scan
                 //L is a special case since it can start long char constants or long string constants, as well as identifiers
                 if (ch == 'L')
                 {
-                    srcpos++;                     //skip initial 'L'
-                    if ((source[srcpos + 1]) == '\'')
+                    if (peekChar() == '\'')
                     {
                         string chstr = scanCharLiteral(true);
-                        frag = new Fragment(FragType.CHAR, chstr);
+                        tok = new PPToken(PPTokenType.CHAR, chstr);
                         break;
                     }
-                    else if ((source[srcpos + 1]) == '"')
+                    else if (peekChar() == '"')
                     {
                         string sstr = scanString(true);
-                        frag = new Fragment(FragType.STRING, sstr);
+                        tok = new PPToken(PPTokenType.STRING, sstr);
                         break;
                     }
                 }
 
+                //if L doesn't start a string or char constant, it falls through to here
                 //identifier
                 if (isAlpha(ch))
                 {
-                    string idstr = scanIdentifier();
-                    frag = new Fragment(FragType.WORD, idstr);
+                    string idstr = scanIdentifier(ch);
+                    tok = new PPToken(PPTokenType.WORD, idstr);
                     break;
                 }
 
                 //numeric constant
                 //'.' can start a float const
-                if ((isDigit(ch)) || (ch == '.' && isDigit(source[srcpos + 1])))
+                if (isDigit(ch) || (ch == '.' && isDigit(peekChar())))
                 {
-                    string numstr = scanNumber();
-                    frag = new Fragment(FragType.NUMBER, numstr);
+                    bool isInt;
+                    string numstr = scanNumber(ch, out isInt);
+                    tok = new PPToken(isInt ? PPTokenType.INTEGER : PPTokenType.REAL, numstr);
                     break;
                 }
 
@@ -698,7 +782,7 @@ namespace BlackC.Scan
                 if (ch == '\'')
                 {
                     string chstr = scanCharLiteral(false);
-                    frag = new Fragment(FragType.CHAR, chstr);
+                    tok = new PPToken(PPTokenType.CHAR, chstr);
                     break;
                 }
 
@@ -706,68 +790,53 @@ namespace BlackC.Scan
                 if (ch == '"')
                 {
                     string sstr = scanString(false);
-                    frag = new Fragment(FragType.STRING, sstr);
-                    break;
-                }
-
-                //end of line - does not include eolns in block comments or spliced lines
-                if (ch == '\n')
-                {
-                    frag = new Fragment(FragType.EOLN, "<eoln>");
-                    srcpos++;
-                    break;
-                }
-
-                //end of file - check if this isn't a stray 0x0 char in file, if so pass it on as punctuation
-                if ((ch == '\0') && (srcpos == (source.Length - 1)))
-                {
-                    frag = new Fragment(FragType.EOF, "<eof>");
+                    tok = new PPToken(PPTokenType.STRING, sstr);
                     break;
                 }
 
                 //translate chars before handling punctuation
-                ch = TranslateDiagraphs();
+                ch = TranslateDiagraphs(ch);
 
                 //anything else is punctuation
-                frag = new Fragment(FragType.PUNCT, "" + ch);
-                srcpos++;
+                tok = new PPToken(PPTokenType.PUNCT, "" + ch);
                 break;
             }
 
-            frag.loc = loc;
-            return frag;
+            tok.pos = linepos;
+            tok.line = linenum;
+            return tok;
         }
     }
 
-    //- fragment class ----------------------------------------------
+    //- pptoken class ----------------------------------------------
 
-    public enum FragType
+    public enum PPTokenType
     {
         WORD,
-        NUMBER,
+        INTEGER,
+        REAL,
         STRING,
         CHAR,
         PUNCT,
         SPACE,
+        COMMENT,
         EOLN,
         EOF
     }
 
-    public class Fragment
+    public class PPToken
     {
+        public PPTokenType type;
         public String str;
-        public FragType type;
-        public SourceLocation loc;
-        public int spCount;
-        public int spLines;
+        public int pos;
+        public int line;
 
-        public Fragment(FragType _type, String _str)
+        public PPToken(PPTokenType _type, String _str)
         {
-            str = _str;
             type = _type;
-            loc = null;
-            spCount = 0;
-            spLines = 0;
+            str = _str;
+            pos = 0;
+            line = 0;
         }
 
         public override string ToString()
@@ -779,46 +848,46 @@ namespace BlackC.Scan
 
     //- source file position tracking -----------------------------------------
 
-    public class SourceNote
-    {
-        public int linenum;
-        public int linepos;
-        public int newpos;
+    //public class SourceNote
+    //{
+    //    public int linenum;
+    //    public int linepos;
+    //    public int newpos;
 
-        public SourceNote(int _linenum, int _linepos, int _newpos)
-        {
-            linenum = _linenum;
-            linepos = _linepos;
-            newpos = _newpos;
-        }
-    }
+    //    public SourceNote(int _linenum, int _linepos, int _newpos)
+    //    {
+    //        linenum = _linenum;
+    //        linepos = _linepos;
+    //        newpos = _newpos;
+    //    }
+    //}
 
-    public class SourceLocation
-    {
-        public string filename;
-        public int linenum;
-        public int linepos;
-        public SourceLocation caller;
+    //public class SourceLocation
+    //{
+    //    public string filename;
+    //    public int linenum;
+    //    public int linepos;
+    //    public SourceLocation caller;
 
-        public SourceLocation(string fname, int lnum, int lpos, SourceLocation _caller)
-        {
-            filename = fname;
-            linenum = lnum;
-            linepos = lpos;
-            caller = _caller;
-        }
+    //    public SourceLocation(string fname, int lnum, int lpos, SourceLocation _caller)
+    //    {
+    //        filename = fname;
+    //        linenum = lnum;
+    //        linepos = lpos;
+    //        caller = _caller;
+    //    }
 
-        public override string ToString()
-        {
-            string result = filename + '(' + linenum + ':' + linepos + ')';
-            if (caller != null)
-            {
-                result += (" included from " + caller.ToString());
-            }
+    //    public override string ToString()
+    //    {
+    //        string result = filename + '(' + linenum + ':' + linepos + ')';
+    //        if (caller != null)
+    //        {
+    //            result += (" included from " + caller.ToString());
+    //        }
 
-            return result;
-        }
-    }
+    //        return result;
+    //    }
+    //}
 }
 
 //Console.WriteLine("There's no sun in the shadow of the wizard");
