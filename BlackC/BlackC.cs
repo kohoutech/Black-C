@@ -38,17 +38,18 @@ namespace BlackC
             //temporary debugging shortcut
             String srcname = args[0];
             String outname = args[1];
+            options.preProcessOnly = true;
 
             try
             {
+                Parser parser = new Parser(options);               //create a parser
+
                 if (options.preProcessOnly)
                 {
-                    //Preprocessor prep = new Preprocessor(this, filename);
-                    //prep.preprocessFile(options.preProcessFilename);
+                    parser.preprocessFile(srcname);
                 }
                 else
                 {
-                    Parser parser = new Parser(options);               //create a parser
                     Module module = parser.parseFile(srcname);         //parse the source file                
 
                     OILCan oilCan = new OILCan(outname);

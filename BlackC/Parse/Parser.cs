@@ -68,6 +68,19 @@ namespace BlackC.Parse
         {
         }
 
+        public void preprocessFile(String _filename)
+        {
+            filename = _filename;
+            Preprocessor pp = new Preprocessor(this, filename);
+            PPToken tok = pp.getPPToken();
+            while (tok.type != PPTokenType.EOF)
+            {
+                Console.WriteLine(tok.ToString());
+                tok = pp.getPPToken();
+            }
+            Console.WriteLine(tok.ToString());
+        }
+
         public Module parseFile(String _filename)
         {
             filename = _filename;

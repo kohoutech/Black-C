@@ -170,7 +170,7 @@ namespace BlackC.Scan
         public PPToken getScannerToken()
         {
             pptok = scan.getPPToken();
-            Console.WriteLine("fragment = " + pptok.ToString());
+            //Console.WriteLine("fragment = " + pptok.ToString());
 
             ////check for directive as first non-space frag at start of line
             //if (atLineStart)
