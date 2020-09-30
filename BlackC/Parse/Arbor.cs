@@ -1057,9 +1057,10 @@ namespace BlackC.Parse
 
         public TypeDeclNode isTypedefName(Token tok)
         {
-            String id = "typedef-" + tok.strval;
-            TypeDeclNode node = (TypeDeclNode)symbolTable.findSymbol(id);
-            return node;
+            //String id = "typedef-" + tok.strval;
+            //TypeDeclNode node = (TypeDeclNode)symbolTable.findSymbol(id);
+            //return node;
+            return null;
         }
 
         public DeclSpecNode buildTypeSpecifier(OILNode typeNode)
@@ -1145,7 +1146,7 @@ namespace BlackC.Parse
             if (id != null)
             {
                 VarDeclNode node = new VarDeclNode();
-                node.name = id.strval;
+                //node.name = id.strval;
                 return node;
             }
             if (node1 != null)

@@ -27,19 +27,17 @@ namespace BlackC.Scan
     public class Token
     {
         public TokenType type;
-        public String chars;
-        //public SourceLocation loc;
+        public int pos;
+        public int line;
 
-        public string strval;
         public int intval;
         public double floatval;
 
         public Token(TokenType _type)
         {
-            type = _type;
-            strval = "";
-            intval = 0;
-            floatval = 0.0;
+            type = _type;            
+            pos = 0;
+            line = 0;
         }
 
         //these must be int he same order as the TokenType enum
@@ -54,55 +52,65 @@ namespace BlackC.Scan
 
         public override string ToString()
         {
-            String spell = spelling[(int)type];
-            switch (type) {
-
-                case TokenType.IDENT:
-                case TokenType.STRINGCONST:            
-                spell = spell + " (" + strval + ")";
-                    break;
-
-                case TokenType.INTCONST:
-                    spell = spell + " (" + intval + ")";
-                    break;
-
-                case TokenType.FLOATCONST:
-                    spell = spell + " (" + floatval + ")";
-                    break;
-
-                case TokenType.CHARCONST:
-                    spell = spell + " (" + (char)intval + ")";
-                    break;
-
-                default:
-                    break;
-            }
-            return spell;
+            return spelling[(int)type];
         }
     }
 
-    //public class IntConstToken : Token
-    //{
-    //    bool unsigned;
-    //    bool islong;
-    //    ulong uval;
-    //    long lval;
+    public class IdentToken : Token
+    {
+        public String idstr;
 
-    //    public IntConstToken(TokenType _type, String _chars, SourceLocation _loc, String intstr, bool _unsigned, int _long) :
-    //        base(_type, _chars, _loc)
-    //    {
-    //        unsigned = _unsigned;
-    //        islong = (_long > 1);
-    //        if (unsigned)
-    //        {
-    //            uval = Convert.ToUInt64(intstr);
-    //        }
-    //        else
-    //        {
-    //            lval = Convert.ToInt64(intstr);
-    //        }
-    //    }
+        public IdentToken(String _idstr) :
+            base(TokenType.IDENT)
+        {
+            idstr = _idstr;
+        }
+
+        public override string ToString()
+        {
+            return "ident (" + idstr + ")";
+        }
+    }
+
+    public class IntConstToken : Token
+    {
+        bool unsigned;
+        bool islong;
+        ulong val;
+
+        public IntConstToken(ulong _val, bool _unsigned, bool _islong) :
+            base(TokenType.INTCONST)
+        {
+            val = _val;
+            unsigned = _unsigned;
+            islong = _islong;
+        }
+
+        public override string ToString()
+        {
+            return "int const (" + intval.ToString() + ")";
+        }
+    }
+
+    //switch (type) {
+
+    //    case TokenType.IDENT:
+    //    case TokenType.STRINGCONST:            
+    //    spell = spell + " (" + strval + ")";
+    //        break;
+
+    //    case TokenType.FLOATCONST:
+    //        spell = spell + " (" + floatval + ")";
+    //        break;
+
+    //    case TokenType.CHARCONST:
+    //        spell = spell + " (" + (char)intval + ")";
+    //        break;
+
+    //    default:
+    //        break;
     //}
+
 
     //-------------------------------------------------------------------------
 

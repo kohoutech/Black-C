@@ -53,37 +53,44 @@ namespace BlackC.Scan
 
         //- preprocessing only ------------------------------------------------
 
-        public void preprocessFile(String filename)
+        public void preprocessFile(String outname)
         {
             List<String> lines = new List<string>();
             StringBuilder line = new StringBuilder();
 
-            PPToken frag = getPPToken();
-            while (frag.type != PPTokenType.EOF)
+            PPToken tok = getPPToken();
+            while (tok.type != PPTokenType.EOF)
             {
-                if (frag.type == PPTokenType.EOLN)
-                {
-                    lines.Add(line.ToString());
-                    line.Clear();
-                }
-                else
-                {
-                    line.Append(frag.ToString());
-                }
-                frag = getPPToken();                
+                Console.WriteLine(tok.ToString());
+                tok = getPPToken();
             }
-            if (line.Length > 0)
-            {
-                lines.Add(line.ToString());
-            }
+            Console.WriteLine(tok.ToString());
+
+            //while (frag.type != PPTokenType.EOF)
+            //{
+            //    if (frag.type == PPTokenType.EOLN)
+            //    {
+            //        lines.Add(line.ToString());
+            //        line.Clear();
+            //    }
+            //    else
+            //    {
+            //        line.Append(frag.ToString());
+            //    }
+            //    frag = getPPToken();                
+            //}
+            //if (line.Length > 0)
+            //{
+            //    lines.Add(line.ToString());
+            //}
 
             //if not saving spaces in output, compress multiple blank lines into one blank line
-            if (!parser.saveSpaces)
-            {
-                lines = removeBlankLines(lines);
-            }
+            //if (!parser.saveSpaces)
+            //{
+            //    lines = removeBlankLines(lines);
+            //}
 
-            File.WriteAllLines(filename, lines);
+            //File.WriteAllLines(outname, lines);
         }
 
         public List<string> removeBlankLines(List<string> lines)
@@ -114,7 +121,7 @@ namespace BlackC.Scan
             return true;
         }
 
-        //- fragment stream handling ------------------------------------------
+        //- pp token stream handling ------------------------------------------
 
         //handles macro expansion & eof in include files
         public PPToken getPPToken()

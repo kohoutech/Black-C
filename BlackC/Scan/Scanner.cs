@@ -74,12 +74,13 @@ namespace BlackC.Scan
 
         public void startLine()
         {
-            if (linenum > source.Length)
+            if (linenum >= source.Length)
             {
                 atEof = true;
                 return;
             }
-            
+
+            //check for a trigraph (??/) at the end of the line which would become a continuation char
             if (source[linenum].EndsWith("??/"))
             {
                 String s = source[linenum].Remove(source[linenum].Length - 3);
@@ -87,11 +88,11 @@ namespace BlackC.Scan
                 source[linenum] = s;
             }
             linepos = 0;
-            atEoln = false;
+            atEoln = source[linenum].Length == 0;
             inTrigraph = false;
         }
 
-        public char peekChar()
+        public char getChar()
         {
             if (atEof)
             {
@@ -103,8 +104,8 @@ namespace BlackC.Scan
                 return '\n';
             }
 
-            if ((linepos < source[linenum].Length - 2) && (source[linenum][linepos] == '?') && (source[linenum][linepos+1] == '?'))
-                
+            if ((linepos < source[linenum].Length - 2) && (source[linenum][linepos] == '?') && (source[linenum][linepos + 1] == '?'))
+
             {
                 char tc = source[linenum][linepos + 2];
                 if (trigraphs.ContainsKey(tc))
@@ -113,7 +114,7 @@ namespace BlackC.Scan
                     return trigraphs[tc];
                 }
             }
-            
+
             return source[linenum][linepos];
         }
 
@@ -128,84 +129,26 @@ namespace BlackC.Scan
             {
                 linenum++;
                 startLine();
+                return;
             }
 
+            //still on the current line
             linepos += inTrigraph ? 3 : 1;
+            inTrigraph = false;
 
             //handle line countinuations
-            while (!atEof && (linepos == source[linenum].Length - 1) && (source[linenum][linepos] == '\\'))
+            while ((linepos == source[linenum].Length - 1) && (source[linenum][linepos] == '\\'))
             {
                 linenum++;
-                startLine();
+                startLine();                
             }
 
-            //check for eoln
+            //check for eoln on current line
             if (!atEof && (linepos >= source[linenum].Length))
             {
                 atEoln = true;
             }
         }
-
-        public char getChar()
-        {
-            char ch = peekChar();
-            nextChar();
-            return ch;
-        }
-
-        //translate source & build source line map
-        //public void transformSource()
-        //{
-        //    if (!source.EndsWith("\n"))
-        //    {
-        //        source = source + '\n';                 //add eoln at end of file if not already there
-        //    }
-        //    source = source + '\0';                     //mark end of file
-
-        //    StringBuilder result = new StringBuilder();
-        //    sourceMap = new List<SourceNote>();
-        //    int linenum = 1;
-        //    int linepos = 0;
-        //    sourceMap.Add(new SourceNote(1, 0, 0));
-
-        //    for (int i = 0; i < source.Length; i++)
-        //    {
-        //        if (source[i] == '?' && (source[i + 1] == '?') && trigraphs.ContainsKey(source[i + 2]))
-        //        {
-        //            result.Append(trigraphs[source[i + 2]]);
-        //            linepos += 3;
-        //            sourceMap.Add(new SourceNote(linenum, linepos, result.Length));
-        //            i += 2;
-        //        }
-        //        else if ((source[i] == '\\') && (source[i + 1] == '\n'))
-        //        {
-        //            i += 1;
-        //            linenum++;
-        //            linepos = 1;
-        //            sourceMap.Add(new SourceNote(linenum, linepos, result.Length + 1));
-        //        }
-        //        else if ((source[i] == '\\') && ((source[i + 1] == '\r') && (source[i + 2] == '\n')))
-        //        {
-        //            i += 2;
-        //            linenum++;
-        //            linepos = 1;
-        //            sourceMap.Add(new SourceNote(linenum, linepos, result.Length + 1));
-        //        }
-        //        else if (source[i] == '\n')
-        //        {
-        //            linenum++;
-        //            linepos = 1;
-        //            sourceMap.Add(new SourceNote(linenum, linepos, result.Length + 1));
-        //            result.Append(source[i]);
-        //        }
-        //        else
-        //        {
-        //            result.Append(source[i]);
-        //            linepos++;
-        //        }
-        //    }
-        //    source = result.ToString();
-        //}
 
         //- skipping whitespace & comments  -----------------------------------
 
@@ -216,11 +159,11 @@ namespace BlackC.Scan
 
         public void skipWhitespace()
         {
-            char ch = peekChar();
+            char ch = getChar();
             while (isSpace(ch))
             {
                 nextChar();
-                ch = peekChar();
+                ch = getChar();
                 continue;
             }
         }
@@ -230,11 +173,11 @@ namespace BlackC.Scan
         public void skipLineComment()
         {
             nextChar();                     //skip 2nd / char
-            char ch = peekChar();
+            char ch = getChar();
             while (ch != '\n' && !atEof)
             {
                 nextChar();
-                ch = peekChar();
+                ch = getChar();
             }
         }
 
@@ -245,7 +188,7 @@ namespace BlackC.Scan
             do
             {
                 nextChar();
-                char ch = peekChar();
+                char ch = getChar();
                 if (atEof)
                 {
                     done = true;
@@ -253,7 +196,7 @@ namespace BlackC.Scan
                 else if (ch == '*')
                 {
                     nextChar();
-                    if (peekChar() == '/')
+                    if (getChar() == '/')
                     {
                         nextChar();
                         done = true;
@@ -304,12 +247,12 @@ namespace BlackC.Scan
         {
             tokstr.Clear();
             tokstr.Append(ch);
-            ch = peekChar();
+            ch = getChar();
             while (isAlphaNum(ch))
             {
                 tokstr.Append(ch);
                 nextChar();
-                ch = peekChar();
+                ch = getChar();
             }
             return tokstr.ToString();
         }
@@ -353,12 +296,12 @@ namespace BlackC.Scan
         {
             if (tokstr.ToString().EndsWith("."))      //get optional decimal part
             {
-                char c1 = peekChar();
+                char c1 = getChar();
                 while (c1 >= '0' && c1 <= '9')
                 {
                     tokstr.Append(c1);
                     nextChar();
-                    c1 = peekChar();
+                    c1 = getChar();
                 }
                 if (tokstr.ToString().EndsWith("."))      //if we didn't have a decimal part above, we add one anyway (123. --> 123.0)
                 {
@@ -373,23 +316,23 @@ namespace BlackC.Scan
 
             if (tokstr.ToString().EndsWith("E"))      //get optional exponent part
             {
-                char s1 = peekChar();
+                char s1 = getChar();
                 if ((s1 == '+') || (s1 == '-'))     //exponent sign is optional
                 {
                     tokstr.Append(s1);
                     nextChar();
-                    s1 = peekChar();
+                    s1 = getChar();
                 }
                 while (s1 >= '0' && s1 <= '9')
                 {
                     tokstr.Append(s1);
                     nextChar();
-                    s1 = peekChar();
+                    s1 = getChar();
                 }
             }
 
             //check for float const suffixes
-            char f1 = peekChar();
+            char f1 = getChar();
             if ((f1 == 'f') || (f1 == 'F') || (f1 == 'l') || (f1 == 'L'))
             {
                 tokstr.Append(Char.ToUpper(f1));
@@ -468,7 +411,7 @@ namespace BlackC.Scan
             {
                 if (ch == '0')             //set base
                 {
-                    char ch2 = peekChar();
+                    char ch2 = getChar();
                     if (ch2 == 'X' || ch2 == 'x')
                     {
                         bass = 16;
@@ -480,14 +423,14 @@ namespace BlackC.Scan
                         bass = 8;
                     }
                 }
-                ch = peekChar();
+                ch = getChar();
                 while (((bass == 10) && (ch >= '0' && ch <= '9')) ||
                         ((bass == 8) && (ch >= '0' && ch <= '7')) ||
                         ((bass == 16) && ((ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'F') || (ch >= 'a' && ch <= 'f'))))
                 {
                     tokstr.Append(ch);
                     nextChar();
-                    ch = peekChar();
+                    ch = getChar();
                 }
             }
             else
@@ -521,7 +464,7 @@ namespace BlackC.Scan
                     usuffix = true;
                     tokstr.Append("U");
                     nextChar();
-                    ch = peekChar();
+                    ch = getChar();
                 }
 
                 if ((!lsuffix) && ((ch == 'l') || (ch == 'L')))
@@ -529,12 +472,12 @@ namespace BlackC.Scan
                     lsuffix = true;
                     tokstr.Append("L");
                     nextChar();
-                    ch = peekChar();
+                    ch = getChar();
                     if ((ch == 'l') || (ch == 'L'))     //check for LL or ll
                     {
                         tokstr.Append("L");
                         nextChar();
-                        ch = peekChar();
+                        ch = getChar();
                     }
                 }
             }
@@ -582,11 +525,11 @@ namespace BlackC.Scan
         {
             tokstr.Append(isLong ? "L\'" : "\'");
 
-            char ch = peekChar();
+            char ch = getChar();
             while ((ch != '\'') && (ch != '\n') && !atEof)
             {
                 nextChar();
-                if ((ch == '\\') && (peekChar() == '\''))
+                if ((ch == '\\') && (getChar() == '\''))
                 {
                     tokstr.Append("\\\'");
                     nextChar();                    //skip over escaped single quotes
@@ -595,7 +538,7 @@ namespace BlackC.Scan
                 {
                     tokstr.Append(ch);
                 }
-                ch = peekChar();
+                ch = getChar();
             }
 
             if (ch == '\'')         //add the closing quote if not at eoln or eof
@@ -625,11 +568,11 @@ namespace BlackC.Scan
         {
             tokstr.Append(isLong ? "L\"" : "\"");
 
-            char ch = peekChar();
+            char ch = getChar();
             while ((ch != '\"') && (ch != '\n') && (ch != '\0'))
             {
                 nextChar();
-                if ((ch == '\\') && (peekChar() == '\"'))
+                if ((ch == '\\') && (getChar() == '\"'))
                 {
                     tokstr.Append("\\\"");
                     nextChar();                    //skip over escaped double quotes
@@ -638,7 +581,7 @@ namespace BlackC.Scan
                 {
                     tokstr.Append(ch);
                 }
-                ch = peekChar();
+                ch = getChar();
             }
             if (ch == '\"')                     //skip the closing quote if not at eoln or eof
             {
@@ -652,7 +595,7 @@ namespace BlackC.Scan
 
         public char TranslateDiagraphs(char ch1)
         {
-            char ch2 = peekChar();
+            char ch2 = getChar();
             if (ch1 == '<' && ch2 == ':')
             {
                 ch1 = '[';
@@ -683,17 +626,6 @@ namespace BlackC.Scan
             return ch1;
         }
 
-        //public SourceLocation getFragLocation()
-        //{
-        //    while ((sourceMapPos < sourceMap.Count - 1) && (srcpos >= sourceMap[sourceMapPos + 1].newpos))
-        //    {
-        //        sourceMapPos++;
-        //    }
-        //    int linenum = sourceMap[sourceMapPos].linenum;
-        //    int linepos = (srcpos - sourceMap[sourceMapPos].newpos) + sourceMap[sourceMapPos].linepos;
-        //    return new SourceLocation(filename, linenum, linepos, caller);
-        //}
-
         //(5.1.1.2) translation phase 3 : scan source line into preprocessing tokens
         override public PPToken getPPToken()
         {
@@ -703,10 +635,11 @@ namespace BlackC.Scan
             tokstr.Clear();
 
             char ch = getChar();
+            nextChar();
             while (true)
             {
-                //end of file
-                if (atEof)
+                //end of file - check if this isn't a stray 0x0 char in file, if so pass it on as punctuation
+                if (ch == '\0' && atEof)
                 {
                     tok = new PPToken(PPTokenType.EOF, "<eof>");
                     break;
@@ -727,7 +660,7 @@ namespace BlackC.Scan
                 }
 
                 //line comment
-                if (ch == '/' && (peekChar() == '/'))
+                if (ch == '/' && (getChar() == '/'))
                 {
                     skipLineComment();
                     ch = ' ';                   //replace comment with single space
@@ -735,7 +668,7 @@ namespace BlackC.Scan
                 }
 
                 //block comment
-                if (ch == '/' && (peekChar() == '*'))
+                if (ch == '/' && (getChar() == '*'))
                 {
                     skipBlockComment();
                     ch = ' ';                   //replace comment with single space
@@ -745,13 +678,13 @@ namespace BlackC.Scan
                 //L is a special case since it can start long char constants or long string constants, as well as identifiers
                 if (ch == 'L')
                 {
-                    if (peekChar() == '\'')
+                    if (getChar() == '\'')
                     {
                         string chstr = scanCharLiteral(true);
                         tok = new PPToken(PPTokenType.CHAR, chstr);
                         break;
                     }
-                    else if (peekChar() == '"')
+                    else if (getChar() == '"')
                     {
                         string sstr = scanString(true);
                         tok = new PPToken(PPTokenType.STRING, sstr);
@@ -770,11 +703,11 @@ namespace BlackC.Scan
 
                 //numeric constant
                 //'.' can start a float const
-                if (isDigit(ch) || (ch == '.' && isDigit(peekChar())))
+                if (isDigit(ch) || (ch == '.' && isDigit(getChar())))
                 {
                     bool isInt;
                     string numstr = scanNumber(ch, out isInt);
-                    tok = new PPToken(isInt ? PPTokenType.INTEGER : PPTokenType.REAL, numstr);
+                    tok = new PPToken(isInt ? PPTokenType.INTEGER : PPTokenType.FLOAT, numstr);
                     break;
                 }
 
@@ -802,8 +735,8 @@ namespace BlackC.Scan
                 break;
             }
 
-            tok.pos = linepos;
-            tok.line = linenum;
+            tok.pos = tokpos;
+            tok.line = tokline;
             return tok;
         }
     }
@@ -814,7 +747,7 @@ namespace BlackC.Scan
     {
         WORD,
         INTEGER,
-        REAL,
+        FLOAT,
         STRING,
         CHAR,
         PUNCT,
@@ -839,55 +772,13 @@ namespace BlackC.Scan
             line = 0;
         }
 
+        String[] typeNames = { "WORD", "INT", "REAL", "STRING", "CHAR", "PUNCT", "SPACE", "COMMENT", "EOLN", "EOF" };
+
         public override string ToString()
         {
-            //return str + " at " + loc.ToString();
-            return str;
+            return typeNames[(int)type] + "(" + str + ")";
         }
     }
-
-    //- source file position tracking -----------------------------------------
-
-    //public class SourceNote
-    //{
-    //    public int linenum;
-    //    public int linepos;
-    //    public int newpos;
-
-    //    public SourceNote(int _linenum, int _linepos, int _newpos)
-    //    {
-    //        linenum = _linenum;
-    //        linepos = _linepos;
-    //        newpos = _newpos;
-    //    }
-    //}
-
-    //public class SourceLocation
-    //{
-    //    public string filename;
-    //    public int linenum;
-    //    public int linepos;
-    //    public SourceLocation caller;
-
-    //    public SourceLocation(string fname, int lnum, int lpos, SourceLocation _caller)
-    //    {
-    //        filename = fname;
-    //        linenum = lnum;
-    //        linepos = lpos;
-    //        caller = _caller;
-    //    }
-
-    //    public override string ToString()
-    //    {
-    //        string result = filename + '(' + linenum + ':' + linepos + ')';
-    //        if (caller != null)
-    //        {
-    //            result += (" included from " + caller.ToString());
-    //        }
-
-    //        return result;
-    //    }
-    //}
 }
 
 //Console.WriteLine("There's no sun in the shadow of the wizard");

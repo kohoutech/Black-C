@@ -68,17 +68,14 @@ namespace BlackC.Parse
         {
         }
 
+        //- entry points ------------------------------------------------------
+
+        //we route this through the parser because the preprocessor reports any errors to it
         public void preprocessFile(String _filename)
         {
             filename = _filename;
             Preprocessor pp = new Preprocessor(this, filename);
-            PPToken tok = pp.getPPToken();
-            while (tok.type != PPTokenType.EOF)
-            {
-                Console.WriteLine(tok.ToString());
-                tok = pp.getPPToken();
-            }
-            Console.WriteLine(tok.ToString());
+            pp.preprocessFile(options.preProcessFilename);
         }
 
         public Module parseFile(String _filename)
@@ -118,7 +115,7 @@ namespace BlackC.Parse
         public Token getToken()
         {
             Token tok = prep.getToken();
-            if (tok.type == TokenType.IDENT && typedefIds.Contains(tok.chars))
+            if (tok.type == TokenType.IDENT && typedefIds.Contains(((IdentToken)tok).idstr))
             {
                 tok.type = TokenType.TYPEDEF;
             }
@@ -145,7 +142,7 @@ namespace BlackC.Parse
 
         public void returnToken(Token tok)
         {
-            prep.putTokenBack(tok);
+            //prep.putTokenBack(tok);
         }
 
         //- External definitions ----------------------------------------------

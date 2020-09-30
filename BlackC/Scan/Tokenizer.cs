@@ -26,22 +26,28 @@ using BlackC.Parse;
 
 namespace BlackC.Scan
 {
+    //handles translation phases 6 & 7
+
+    /*(5.1.1.2) 
+        translation phase 6 : Adjacent string literal tokens are concatenated
+        translation phase 7 : Whitespace is no longer significant
+                              Each preprocessing token is converted into a (C) token
+    */
+
     public class Tokenizer
     {
         Parser parser;
-        Preprocessor prep;
+        Preprocessor pp;
 
-        List<PPToken> frags;
-        List<Token> tokens;
+        List<PPToken> ppTokens;
         Dictionary<String, TokenType> keywords;
 
         public Tokenizer(Parser _parser, String filename)
         {
             parser = _parser;
 
-            prep = new Preprocessor(parser, filename);
-            frags = new List<PPToken>();
-            tokens = new List<Token>();
+            pp = new Preprocessor(parser, filename);
+            ppTokens = new List<PPToken>();
 
             //build keyword list
             keywords = new Dictionary<string, TokenType>();
@@ -75,30 +81,367 @@ namespace BlackC.Scan
             keywords.Add("while", TokenType.WHILE);            
         }
 
-        //- fragment handling -------------------------------------------------
+        //- token handling ----------------------------------------------------
 
-        public PPToken getNextFrag()
+        public PPToken getPPToken()
         {
-            if (tokens.Count > 0)
+            PPToken ppTok = null;
+            if (ppTokens.Count != 0)
             {
+                ppTok = ppTokens[ppTokens.Count - 1];
+                ppTokens.RemoveAt(ppTokens.Count - 1);
             }
-
-            if (frags.Count != 0)
+            else
             {
-                PPToken f = frags[frags.Count - 1];
-                frags.RemoveAt(frags.Count - 1);
-                return f;                
+                ppTok = pp.getPPToken();
             }
-            PPToken frag = prep.getPPToken();
-            return frag;
+            return ppTok;
         }
 
-        public void putFragBack(PPToken frag)
+        public void replacePPToken(PPToken ppTok)
         {
-            frags.Add(frag);
+            ppTokens.Add(ppTok);
         }
 
-        //the number fragment we get from the scanner should be well-formed
+        //convert preprocessor tokens (strings) into c tokens as input for the parser
+
+        public Token getToken()
+        {
+            Token tok = null;
+            PPToken ppTok;
+            PPToken nextppTok;
+
+            while (true)
+            {
+                ppTok = getPPToken();
+
+                //ignore spaces, comments & eolns
+                if ((ppTok.type == PPTokenType.SPACE) || (ppTok.type == PPTokenType.COMMENT) || (ppTok.type == PPTokenType.EOLN))
+                {
+                    continue;
+                }
+
+                //check if word is keyword or identifier
+                if (ppTok.type == PPTokenType.WORD)
+                {
+                    if (keywords.ContainsKey(ppTok.str))
+                    {
+                        tok = new Token(keywords[ppTok.str]);
+                    }
+                    else
+                    {
+                        tok = new IdentToken(ppTok.str);
+                    }
+                    break;
+                }
+
+                //convert int / float / string / char str into constant value
+                if (ppTok.type == PPTokenType.INTEGER)
+                {
+                    tok = ParseInteger(ppTok.str);
+                    break;
+                }
+
+                if (ppTok.type == PPTokenType.FLOAT)
+                {
+                    tok = ParseFloat(ppTok.str);
+                    break;
+                }
+
+                if (ppTok.type == PPTokenType.STRING)
+                {
+                    tok = ParseString(ppTok.str);
+                    break;
+                }
+
+                if (ppTok.type == PPTokenType.CHAR)
+                {
+                    tok = ParseChar(ppTok.str);
+                    break;
+                }
+
+                //convert single punctuation chars into punctuation tokens, combining as necessary
+                //need 2 lookaheads at most for '...' token
+                if (ppTok.type == PPTokenType.PUNCT)
+                {
+                    char c = ppTok.str[0];
+                    switch (c)
+                    {
+                        case '[':
+                            tok = new Token(TokenType.LBRACKET);
+                            break;
+                        case ']':
+                            tok = new Token(TokenType.RBRACKET);
+                            break;
+                        case '(':
+                            tok = new Token(TokenType.LPAREN);
+                            break;
+                        case ')':
+                            tok = new Token(TokenType.RPAREN);
+                            break;
+                        case '{':
+                            tok = new Token(TokenType.LBRACE);
+                            break;
+                        case '}':
+                            tok = new Token(TokenType.RBRACE);
+                            break;
+
+                        case '+':
+                            nextppTok = getPPToken();
+                            if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '+'))
+                            {
+                                tok = new Token(TokenType.PLUSPLUS);
+                            }
+                            else if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.PLUSEQUAL);
+                            }
+                            else
+                            {
+                                replacePPToken(nextppTok);
+                                tok = new Token(TokenType.PLUS);
+                            }
+                            break;
+                        case '-':
+                            nextppTok = getPPToken();
+                            if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '-'))
+                            {
+                                tok = new Token(TokenType.MINUSMINUS);
+                            }
+                            else if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.MINUSEQUAL);
+                            }
+                            else if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '>'))
+                            {
+                                tok = new Token(TokenType.ARROW);
+                            }
+                            else
+                            {
+                                replacePPToken(nextppTok);
+                                tok = new Token(TokenType.MINUS);
+                            }
+                            break;
+                        case '*':
+                            nextppTok = getPPToken();
+                            if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.MULTEQUAL);
+                            }
+                            else
+                            {
+                                replacePPToken(nextppTok);
+                                tok = new Token(TokenType.STAR);
+                            }
+                            break;
+                        case '/':
+                            nextppTok = getPPToken();
+                            if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.SLASHEQUAL);
+                            }
+                            else
+                            {
+                                replacePPToken(nextppTok);
+                                tok = new Token(TokenType.SLASH);
+                            }
+                            break;
+                        case '%':
+                            nextppTok = getPPToken();
+                            if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.PERCENTEQUAL);
+                            }
+                            else
+                            {
+                                replacePPToken(nextppTok);
+                                tok = new Token(TokenType.PERCENT);
+                            }
+                            break;
+                        case '&':
+                            nextppTok = getPPToken();
+                            if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '&'))
+                            {
+                                tok = new Token(TokenType.AMPAMP);
+                            }
+                            else if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.AMPEQUAL);
+                            }
+                            else
+                            {
+                                replacePPToken(nextppTok);
+                                tok = new Token(TokenType.AMPERSAND);
+                            }
+                            break;
+                        case '|':
+                            nextppTok = getPPToken();
+                            if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '|'))
+                            {
+                                tok = new Token(TokenType.BARBAR);
+                            }
+                            else if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.BAREQUAL);
+                            }
+                            else
+                            {
+                                replacePPToken(nextppTok);
+                                tok = new Token(TokenType.BAR);
+                            }
+                            break;
+                        case '~':
+                            tok = new Token(TokenType.TILDE);
+                            break;
+                        case '^':
+                            nextppTok = getPPToken();
+                            if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.CARETEQUAL);
+                            }
+                            else
+                            {
+                                replacePPToken(nextppTok);
+                                tok = new Token(TokenType.CARET);
+                            }
+                            break;
+
+
+                        case '=':
+                            nextppTok = getPPToken();
+                            if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.EQUALEQUAL);
+                            }
+                            else
+                            {
+                                replacePPToken(nextppTok);
+                                tok = new Token(TokenType.EQUAL);
+                            }
+                            break;
+                        case '!':
+                            nextppTok = getPPToken();
+                            if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.NOTEQUAL);
+                            }
+                            else
+                            {
+                                replacePPToken(nextppTok);
+                                tok = new Token(TokenType.EXCLAIM);
+                            }
+                            break;
+                        case '<':
+                            nextppTok = getPPToken();
+                            if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '<'))
+                            {
+                                PPToken tok2 = getPPToken();
+                                if ((tok2.type == PPTokenType.PUNCT) && (tok2.str[0] == '='))
+                                {
+                                    tok = new Token(TokenType.LESSLESSEQUAL);   //<<=
+                                }
+                                else
+                                {
+                                    replacePPToken(tok2);
+                                    tok = new Token(TokenType.LESSLESS);
+                                }
+                            }
+                            else if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.LESSEQUAL);
+                            }
+                            else
+                            {
+                                replacePPToken(nextppTok);
+                                tok = new Token(TokenType.LESSTHAN);
+                            }
+                            break;
+                        case '>':
+                            nextppTok = getPPToken();
+                            if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '>'))
+                            {
+                                PPToken tok2 = getPPToken();
+                                if ((tok2.type == PPTokenType.PUNCT) && (tok2.str[0] == '='))
+                                {
+                                    tok = new Token(TokenType.GTRGTREQUAL);   //>>=
+                                }
+                                else
+                                {
+                                    replacePPToken(tok2);
+                                    tok = new Token(TokenType.GTRGTR);
+                                }
+                            }
+                            else if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '='))
+                            {
+                                tok = new Token(TokenType.GTREQUAL);
+                            }
+                            else
+                            {
+                                replacePPToken(nextppTok);
+                                tok = new Token(TokenType.GTRTHAN);
+                            }
+                            break;
+
+                        case ',':
+                            tok = new Token(TokenType.COMMA);
+                            break;
+                        case '.':
+                            bool threedots = false;
+                            nextppTok = getPPToken();
+                            if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '.'))
+                            {
+                                PPToken tok2 = getPPToken();
+                                if ((tok2.type == PPTokenType.PUNCT) && (tok2.str[0] == '.'))
+                                {
+                                    tok = new Token(TokenType.ELLIPSIS);        //...
+                                    threedots = true;
+                                }
+                                else
+                                {
+                                    replacePPToken(nextppTok);
+                                    replacePPToken(tok2);
+                                }
+                            }
+                            else
+                            {
+                                replacePPToken(nextppTok);
+                            }
+                            if (!threedots)
+                            {
+                                tok = new Token(TokenType.PERIOD);
+                            }
+                            break;
+                        case '?':
+                            tok = new Token(TokenType.QUESTION);
+                            break;
+                        case ':':
+                            tok = new Token(TokenType.COLON);
+                            break;
+                        case ';':
+                            tok = new Token(TokenType.SEMICOLON);
+                            break;
+
+                        default:
+                            tok = new Token(TokenType.ERROR);
+                            break;
+                    }
+                    break;
+                }
+
+                //last but not least - end of file
+                if (ppTok.type == PPTokenType.EOF)
+                {
+                    tok = new Token(TokenType.EOF);
+                    break;
+                }
+            }
+
+            return tok;
+        }
+
+        //- token conversion ---------------------------------------
+
+        //the integer token we get from the scanner should be well-formed
         public Token ParseInteger(String numstr)
         {
             Token tok = null;
@@ -176,353 +519,6 @@ namespace BlackC.Scan
         public Token ParseChar(string p)
         {
             return new Token(TokenType.CHARCONST);
-        }
-
-        //- token handling ----------------------------------------------------
-
-        public Token getToken()
-        {
-            if (tokens.Count > 0)
-            {
-                Token t = tokens[tokens.Count - 1];
-                tokens.RemoveAt(tokens.Count - 1);
-                return t;
-            }
-            Token token = tokenizer();
-            return token;
-        }
-
-        public void putTokenBack(Token tok)
-        {
-            tokens.Add(tok);
-        }
-
-        public Token tokenizer()
-        {
-            Token tok = null;
-            PPToken frag;
-            PPToken nextfrag;
-
-            while (true)
-            {
-                frag = getNextFrag();
-
-                //ignore spaces & eolns
-                if ((frag.type == PPTokenType.SPACE) || (frag.type == PPTokenType.EOLN))
-                {
-                    continue;
-                }
-
-                //check if word is keyword or identifier
-                if (frag.type == PPTokenType.WORD)
-                {
-                    if (keywords.ContainsKey(frag.str))
-                    {
-                        tok = new Token(keywords[frag.str]);
-                    }
-                    else
-                    {
-                        tok = new Token(TokenType.IDENT);
-                        tok.strval = frag.str;
-                    }
-                    break;
-                }
-
-                //convert number / string / char str into constant value
-                if (frag.type == PPTokenType.INTEGER)
-                {
-                    tok = ParseInteger(frag.str);
-                    break;
-                }
-
-                if (frag.type == PPTokenType.STRING)
-                {
-                    tok = ParseString(frag.str);
-                    break;
-                }
-
-                if (frag.type == PPTokenType.CHAR)
-                {
-                    tok = ParseChar(frag.str);
-                    break;
-                }
-
-                //convert single punctuation chars into punctuation tokens, combining as necessary
-                //need 2 lookaheads at most for '...' token
-                if (frag.type == PPTokenType.PUNCT)
-                {
-                    char c = frag.str[0];
-                    switch (c)
-                    {
-                        case '[':
-                            tok = new Token(TokenType.LBRACKET);
-                            break;
-                        case ']':
-                            tok = new Token(TokenType.RBRACKET);
-                            break;
-                        case '(':
-                            tok = new Token(TokenType.LPAREN);
-                            break;
-                        case ')':
-                            tok = new Token(TokenType.RPAREN);
-                            break;
-                        case '{':
-                            tok = new Token(TokenType.LBRACE);
-                            break;
-                        case '}':
-                            tok = new Token(TokenType.RBRACE);
-                            break;
-
-                        case '+':
-                            nextfrag = getNextFrag();
-                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '+'))
-                            {
-                                tok = new Token(TokenType.PLUSPLUS);
-                            }
-                            else if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
-                            {
-                                tok = new Token(TokenType.PLUSEQUAL);
-                            }
-                            else
-                            {
-                                putFragBack(nextfrag);
-                                tok = new Token(TokenType.PLUS);
-                            }
-                            break;
-                        case '-':
-                            nextfrag = getNextFrag();
-                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '-'))
-                            {
-                                tok = new Token(TokenType.MINUSMINUS);
-                            }
-                            else if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
-                            {
-                                tok = new Token(TokenType.MINUSEQUAL);
-                            }
-                            else if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '>'))
-                            {
-                                tok = new Token(TokenType.ARROW);
-                            }
-                            else
-                            {
-                                putFragBack(nextfrag);
-                                tok = new Token(TokenType.MINUS);
-                            }
-                            break;
-                        case '*':
-                            nextfrag = getNextFrag();
-                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
-                            {
-                                tok = new Token(TokenType.MULTEQUAL);
-                            }
-                            else
-                            {
-                                putFragBack(nextfrag);
-                                tok = new Token(TokenType.STAR);
-                            }
-                            break;
-                        case '/':
-                            nextfrag = getNextFrag();
-                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
-                            {
-                                tok = new Token(TokenType.SLASHEQUAL);
-                            }
-                            else
-                            {
-                                putFragBack(nextfrag);
-                                tok = new Token(TokenType.SLASH);
-                            }
-                            break;
-                        case '%':
-                            nextfrag = getNextFrag();
-                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
-                            {
-                                tok = new Token(TokenType.PERCENTEQUAL);
-                            }
-                            else
-                            {
-                                putFragBack(nextfrag);
-                                tok = new Token(TokenType.PERCENT);
-                            }
-                            break;
-                        case '&':
-                            nextfrag = getNextFrag();
-                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '&'))
-                            {
-                                tok = new Token(TokenType.AMPAMP);
-                            }
-                            else if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
-                            {
-                                tok = new Token(TokenType.AMPEQUAL);
-                            }
-                            else
-                            {
-                                putFragBack(nextfrag);
-                                tok = new Token(TokenType.AMPERSAND);
-                            }
-                            break;
-                        case '|':
-                            nextfrag = getNextFrag();
-                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '|'))
-                            {
-                                tok = new Token(TokenType.BARBAR);
-                            }
-                            else if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
-                            {
-                                tok = new Token(TokenType.BAREQUAL);
-                            }
-                            else
-                            {
-                                putFragBack(nextfrag);
-                                tok = new Token(TokenType.BAR);
-                            }
-                            break;
-                        case '~':
-                            tok = new Token(TokenType.TILDE);
-                            break;
-                        case '^':
-                            nextfrag = getNextFrag();
-                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
-                            {
-                                tok = new Token(TokenType.CARETEQUAL);
-                            }
-                            else
-                            {
-                                putFragBack(nextfrag);
-                                tok = new Token(TokenType.CARET);
-                            }
-                            break;
-
-
-                        case '=':
-                            nextfrag = getNextFrag();
-                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
-                            {
-                                tok = new Token(TokenType.EQUALEQUAL);
-                            }
-                            else
-                            {
-                                putFragBack(nextfrag);
-                                tok = new Token(TokenType.EQUAL);
-                            }
-                            break;
-                        case '!':
-                            nextfrag = getNextFrag();
-                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
-                            {
-                                tok = new Token(TokenType.NOTEQUAL);
-                            }
-                            else
-                            {
-                                putFragBack(nextfrag);
-                                tok = new Token(TokenType.EXCLAIM);
-                            }
-                            break;
-                        case '<':
-                            nextfrag = getNextFrag();
-                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '<'))
-                            {
-                                PPToken frag2 = getNextFrag();
-                                if ((frag2.type == PPTokenType.PUNCT) && (frag2.str[0] == '='))
-                                {
-                                    tok = new Token(TokenType.LESSLESSEQUAL);   //<<=
-                                }
-                                else
-                                {
-                                    putFragBack(frag2);
-                                    tok = new Token(TokenType.LESSLESS);
-                                }
-                            }
-                            else if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
-                            {
-                                tok = new Token(TokenType.LESSEQUAL);
-                            }
-                            else
-                            {
-                                putFragBack(nextfrag);
-                                tok = new Token(TokenType.LESSTHAN);
-                            }
-                            break;
-                        case '>':
-                            nextfrag = getNextFrag();
-                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '>'))
-                            {
-                                PPToken frag2 = getNextFrag();
-                                if ((frag2.type == PPTokenType.PUNCT) && (frag2.str[0] == '='))
-                                {
-                                    tok = new Token(TokenType.GTRGTREQUAL);   //>>=
-                                }
-                                else
-                                {
-                                    putFragBack(frag2);
-                                    tok = new Token(TokenType.GTRGTR);
-                                }
-                            }
-                            else if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '='))
-                            {
-                                tok = new Token(TokenType.GTREQUAL);
-                            }
-                            else
-                            {
-                                putFragBack(nextfrag);
-                                tok = new Token(TokenType.GTRTHAN);
-                            }
-                            break;
-
-                        case ',':
-                            tok = new Token(TokenType.COMMA);
-                            break;
-                        case '.':
-                            bool threedots = false;
-                            nextfrag = getNextFrag();
-                            if ((nextfrag.type == PPTokenType.PUNCT) && (nextfrag.str[0] == '.'))
-                            {
-                                PPToken frag2 = getNextFrag();
-                                if ((frag2.type == PPTokenType.PUNCT) && (frag2.str[0] == '.'))
-                                {
-                                    tok = new Token(TokenType.ELLIPSIS);        //...
-                                    threedots = true;
-                                }
-                                else
-                                {
-                                    putFragBack(nextfrag);
-                                    putFragBack(frag2);
-                                }
-                            }
-                            else
-                            {
-                                putFragBack(nextfrag);
-                            }
-                            if (!threedots)
-                            {
-                                tok = new Token(TokenType.PERIOD);
-                            }
-                            break;
-                        case '?':
-                            tok = new Token(TokenType.QUESTION);
-                            break;
-                        case ':':
-                            tok = new Token(TokenType.COLON);
-                            break;
-                        case ';':
-                            tok = new Token(TokenType.SEMICOLON);
-                            break;
-
-                        default:
-                            tok = new Token(TokenType.ERROR);
-                            break;
-                    }
-                    break;
-                }
-
-                if (frag.type == PPTokenType.EOF)
-                {
-                    tok = new Token(TokenType.EOF);
-                    break;
-                }
-            }
-
-            return tok;
         }
     }
 }
