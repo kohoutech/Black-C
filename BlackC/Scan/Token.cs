@@ -74,23 +74,42 @@ namespace BlackC.Scan
 
     public class IntConstToken : Token
     {
-        bool unsigned;
-        bool islong;
         ulong val;
+        bool unsigned;
+        int width;         //0 = not long, 1 = long, 2 = long long
 
-        public IntConstToken(ulong _val, bool _unsigned, bool _islong) :
+        public IntConstToken(ulong _val, bool _unsigned, int _width) :
             base(TokenType.INTCONST)
         {
             val = _val;
             unsigned = _unsigned;
-            islong = _islong;
+            width = _width;
         }
 
         public override string ToString()
         {
-            return "int const (" + intval.ToString() + ")";
+            return "int const (" + val.ToString() + ")";
         }
     }
+
+    public class FloatConstToken : Token
+    {
+        double val;
+        int width;         //0 = float, 1 = double, 2 = long double
+
+        public FloatConstToken(double _val, int _width) :
+            base(TokenType.FLOATCONST)
+        {
+            val = _val;
+            width = _width;
+        }
+
+        public override string ToString()
+        {
+            return "float const (" + val.ToString() + ")";
+        }
+    }
+
 
     //switch (type) {
 
@@ -99,18 +118,9 @@ namespace BlackC.Scan
     //    spell = spell + " (" + strval + ")";
     //        break;
 
-    //    case TokenType.FLOATCONST:
-    //        spell = spell + " (" + floatval + ")";
-    //        break;
-
     //    case TokenType.CHARCONST:
     //        spell = spell + " (" + (char)intval + ")";
     //        break;
-
-    //    default:
-    //        break;
-    //}
-
 
     //-------------------------------------------------------------------------
 

@@ -445,68 +445,80 @@ namespace BlackC.Scan
         public Token ParseInteger(String numstr)
         {
             Token tok = null;
+            ulong val = 0;
+            bool unsigned = false;
+            int width = 0;
+
+            //first handle any suffixes (U, L or LL)
+            for (int i = 0; i < 2; i++)
+            {
+                if (numstr.EndsWith("U"))
+                {
+                    unsigned = true;
+                    numstr = numstr.Remove(numstr.Length - 1);
+                }
+                if (numstr.EndsWith("LL"))
+                {
+                    width = 2;
+                    numstr = numstr.Remove(numstr.Length - 2);
+                }
+                if (numstr.EndsWith("L"))
+                {
+                    width = 1;
+                    numstr = numstr.Remove(numstr.Length - 1);
+                }
+            }
+
+            //get base
+            int bass = 10;
+            if (numstr.StartsWith("0x"))
+            {
+                bass = 16;
+            }
+            else if (numstr.StartsWith("0"))
+            {
+                bass = 8;
+            }
+
             try
             {
-                if (numstr.Contains('.'))
-                {
-                    double dval = Convert.ToDouble(numstr);
-                    tok = new Token(TokenType.FLOATCONST);
-                    tok.floatval = dval;
-                }
-                else
-                {
-                    int bass = 10;
-                    if (numstr.StartsWith("0x"))
-                    {
-                        bass = 16;
-                    }
-                    else if (numstr.StartsWith("0"))
-                    {
-                        bass = 8;
-                    }
-                    int intval = Convert.ToInt32(numstr, bass);
-                    tok = new Token(TokenType.INTCONST);
-                    tok.intval = intval;
-                }
+                ulong intval = Convert.ToUInt64(numstr, bass);
+                tok = new IntConstToken(intval, unsigned, width);
             }
             catch (Exception e)
             {
-                parser.error("error parsing number str " + numstr + " : " + e.Message);
+                parser.error("error parsing intger constant str " + numstr + " : " + e.Message);
             }
             return tok;
         }
 
-        //the number fragment we get from the scanner should be well-formed
+        //the float token we get from the scanner should be well-formed
         public Token ParseFloat(String numstr)
         {
             Token tok = null;
+            double val = 0;
+            int width = 1;          //default width is double
+
+            //first handle any suffix (F or L)
+            if (numstr.EndsWith("F"))
+            {
+                width = 0;
+                numstr = numstr.Remove(numstr.Length - 1);
+            }
+            if (numstr.EndsWith("L"))
+            {
+                width = 2;
+                numstr = numstr.Remove(numstr.Length - 1);
+            }
+
             try
             {
-                if (numstr.Contains('.'))
-                {
-                    double dval = Convert.ToDouble(numstr);
-                    tok = new Token(TokenType.FLOATCONST);
-                    tok.floatval = dval;
-                }
-                else
-                {
-                    int bass = 10;
-                    if (numstr.StartsWith("0x"))
-                    {
-                        bass = 16;
-                    }
-                    else if (numstr.StartsWith("0"))
-                    {
-                        bass = 8;
-                    }
-                    int intval = Convert.ToInt32(numstr, bass);
-                    tok = new Token(TokenType.INTCONST);
-                    tok.intval = intval;
-                }
+                double floatval = Convert.ToDouble(numstr);
+                tok = new FloatConstToken(floatval, width);
             }
             catch (Exception e)
             {
-                parser.error("error parsing number str " + numstr + " : " + e.Message);
+                parser.error("error parsing floating point const str " + numstr + " : " + e.Message);
             }
             return tok;
         }
