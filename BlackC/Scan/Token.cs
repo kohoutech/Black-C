@@ -30,9 +30,6 @@ namespace BlackC.Scan
         public int pos;
         public int line;
 
-        public int intval;
-        public double floatval;
-
         public Token(TokenType _type)
         {
             type = _type;            
@@ -74,9 +71,9 @@ namespace BlackC.Scan
 
     public class IntConstToken : Token
     {
-        ulong val;
-        bool unsigned;
-        int width;         //0 = not long, 1 = long, 2 = long long
+        public ulong val;
+        public bool unsigned;
+        public int width;         //0 = not long, 1 = long, 2 = long long
 
         public IntConstToken(ulong _val, bool _unsigned, int _width) :
             base(TokenType.INTCONST)
@@ -94,8 +91,8 @@ namespace BlackC.Scan
 
     public class FloatConstToken : Token
     {
-        double val;
-        int width;         //0 = float, 1 = double, 2 = long double
+        public double val;
+        public int width;         //0 = float, 1 = double, 2 = long double
 
         public FloatConstToken(double _val, int _width) :
             base(TokenType.FLOATCONST)
@@ -111,16 +108,41 @@ namespace BlackC.Scan
     }
 
 
-    //switch (type) {
+    public class StringConstToken : Token
+    {
+        public String val;
+        public bool isWide;
 
-    //    case TokenType.IDENT:
-    //    case TokenType.STRINGCONST:            
-    //    spell = spell + " (" + strval + ")";
-    //        break;
+        public StringConstToken(String _val, bool _isWide) :
+            base(TokenType.STRINGCONST)
+        {
+            val = _val;
+            isWide = _isWide;
+        }
 
-    //    case TokenType.CHARCONST:
-    //        spell = spell + " (" + (char)intval + ")";
-    //        break;
+        public override string ToString()
+        {
+            return "string const (" + val + ")";
+        }
+    }
+
+    public class CharConstToken : Token
+    {
+        public String val;
+        public bool isWide;
+
+        public CharConstToken(String _val, bool _isWide) :
+            base(TokenType.CHARCONST)
+        {
+            val = _val;
+            isWide = _isWide;
+        }
+
+        public override string ToString()
+        {
+            return "char const (" + val + ")";
+        }
+    }
 
     //-------------------------------------------------------------------------
 

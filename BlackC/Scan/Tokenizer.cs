@@ -78,7 +78,7 @@ namespace BlackC.Scan
             keywords.Add("union", TokenType.UNION);
             keywords.Add("unsigned", TokenType.UNSIGNED);
             keywords.Add("void", TokenType.VOID);
-            keywords.Add("while", TokenType.WHILE);            
+            keywords.Add("while", TokenType.WHILE);
         }
 
         //- token handling ----------------------------------------------------
@@ -151,6 +151,21 @@ namespace BlackC.Scan
                 if (ppTok.type == PPTokenType.STRING)
                 {
                     tok = ParseString(ppTok.str);
+                    StringConstToken stok1 = (StringConstToken)tok;
+
+                    //convert any subsequent pp strings into string tokens & merge them together
+                    PPToken pptok2 = getPPToken();
+                    while (pptok2.type == PPTokenType.STRING)
+                    {
+                        StringConstToken stok2 = ParseString(pptok2.str);
+                        stok1.val = stok1.val + stok2.val;
+                        if (!stok1.isWide)
+                        {
+                            stok1.isWide = stok2.isWide;
+                        }
+                        pptok2 = getPPToken();
+                    }
+                    replacePPToken(pptok2);
                     break;
                 }
 
@@ -306,7 +321,6 @@ namespace BlackC.Scan
                             }
                             break;
 
-
                         case '=':
                             nextppTok = getPPToken();
                             if ((nextppTok.type == PPTokenType.PUNCT) && (nextppTok.str[0] == '='))
@@ -442,9 +456,9 @@ namespace BlackC.Scan
         //- token conversion ---------------------------------------
 
         //the integer token we get from the scanner should be well-formed
-        public Token ParseInteger(String numstr)
+        public IntConstToken ParseInteger(String numstr)
         {
-            Token tok = null;
+            IntConstToken tok = null;
             ulong val = 0;
             bool unsigned = false;
             int width = 0;
@@ -493,9 +507,9 @@ namespace BlackC.Scan
         }
 
         //the float token we get from the scanner should be well-formed
-        public Token ParseFloat(String numstr)
+        public FloatConstToken ParseFloat(String numstr)
         {
-            Token tok = null;
+            FloatConstToken tok = null;
             double val = 0;
             int width = 1;          //default width is double
 
@@ -523,14 +537,105 @@ namespace BlackC.Scan
             return tok;
         }
 
-        public Token ParseString(string p)
+        //https://en.wikipedia.org/wiki/Escape_sequences_in_C
+
+        Dictionary<Char, Char> escapeChars = new Dictionary<char, char>() {
+                        { '\'', '\'' },  { '\"', '\"' }, { '?', '?' }, { '\\', '\\' },
+                        { 'a','\x07' }, { 'b', '\x08' }, { 'f', '\x0c' }, { 'n', '\x0a' }, { 'r', '\x0d' }, { 't', '\x09' }, { 'v', '\x0b' }};
+
+        private string convertEscapes(string sin)
         {
-            return new Token(TokenType.STRINGCONST);
+            StringBuilder sout = new StringBuilder();
+
+            for (int i = 0; i < sin.Length -1; i++)
+            {
+                if (sin[i] == '\\')
+                {
+                    i++;        //skip backslash
+
+                    if (escapeChars.ContainsKey(sin[i]))
+                    {
+                        sout.Append(escapeChars[sin[i]]);
+                    }
+                    else if (sin[i] == 'x')
+                    {
+                        i++;
+                        StringBuilder hexstr = new StringBuilder();
+                        while ((sin[i] >= '0' && sin[i] <= '9') || (sin[i] >= 'a' && sin[i] <= 'f') || (sin[i] >= 'A' && sin[i] <= 'F'))
+                        {
+                            hexstr.Append(sin[i++]);
+                        }
+                        String s = hexstr.ToString();
+                        if (s.Length > 4)
+                        {
+                            s = s.Substring(s.Length - 4);      //only use the last four hex digits
+                        }
+                        ushort hexval = Convert.ToUInt16(s, 16);
+                        sout.Append(hexval);
+                    }
+                    else if (sin[i] >= '0' && sin[i] <= '7')
+                    {
+                        StringBuilder octstr = new StringBuilder(sin[i++]);
+                        if (sin[i] >= '0' && sin[i] <= '7')
+                        {
+                            octstr.Append(sin[i++]);
+                        }
+                        if (sin[i] >= '0' && sin[i] <= '7')     //octal esc sequences is max three digits long
+                        {
+                            octstr.Append(sin[i++]);
+                        }
+                        String s = octstr.ToString();
+                        ushort octval = Convert.ToUInt16(s, 8);
+                        sout.Append(octval);
+                    }
+                }
+                else
+                {
+                    sout.Append(sin[i]);
+                }
+            }
+
+            return sout.ToString();
         }
 
-        public Token ParseChar(string p)
+        public StringConstToken ParseString(string s)
         {
-            return new Token(TokenType.CHARCONST);
+            bool isWide = false;
+
+            //first handle any suffix (F or L)
+            if (s.StartsWith("L"))
+            {
+                isWide = true;
+                s = s.Substring(1);
+            }
+
+            //now remove " from front end - leave the ending one as a delimiter
+            //it will be removed by convertEScapes()
+            s = s.Substring(1);
+
+            s = convertEscapes(s);
+
+            return new StringConstToken(s, isWide);
+        }
+
+        public Token ParseChar(string s)
+        {
+            bool isWide = false;
+
+            //first handle any suffix (F or L)
+            if (s.StartsWith("L"))
+            {
+                isWide = true;
+                s = s.Substring(1);
+            }
+
+            //now remove ' from front end - leave the ending one as a delimiter
+            //it will be removed by convertEScapes()
+            s = s.Substring(1);
+
+            s = convertEscapes(s);
+
+            return new CharConstToken(s, isWide);
         }
     }
 }
