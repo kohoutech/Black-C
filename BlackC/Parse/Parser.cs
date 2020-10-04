@@ -82,10 +82,17 @@ namespace BlackC.Parse
         {
             filename = _filename;
             prep = new Tokenizer(this, filename);
+            Token tok = prep.getToken();
+            Console.WriteLine(tok.ToString());
+            while (tok.type != TokenType.EOF)
+            {
+                tok = prep.getToken();
+                Console.WriteLine(tok.ToString());
+            }
             //tokenList.Clear();
             //tokenPos = 0;
 
-//            OILNode root = parseTranslationUnit();
+            //            OILNode root = parseTranslationUnit();
             Module module = null;
 
             Console.WriteLine("parsed " + filename);

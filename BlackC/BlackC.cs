@@ -38,7 +38,7 @@ namespace BlackC
             //temporary debugging shortcut
             String srcname = args[0];
             String outname = args[1];
-            options.preProcessOnly = true;
+            //options.preProcessOnly = true;
 
             try
             {
@@ -52,14 +52,15 @@ namespace BlackC
                 {
                     Module module = parser.parseFile(srcname);         //parse the source file                
 
-                    OILCan oilCan = new OILCan(outname);
-                    oilCan.save(module);                                //and write it out to OIL file
+                    //OILCan oilCan = new OILCan(outname);
+                    //oilCan.save(module);                                //and write it out to OIL file
                 }
             }
             catch (ParserException e)
             {
                 Console.WriteLine("had fatal exception: " + e.Message);
             }
+            Console.WriteLine("done.");
         }
     }
 }
