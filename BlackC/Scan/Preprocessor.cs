@@ -32,11 +32,17 @@ namespace BlackC.Scan
         public Parser parser;
         public PPTokenSource source;
 
-        bool atLineStart;
-        int skipLevel;
-
         public List<PPTokenSource> sourceStack;
         public List<PPTokenSource> macroStack;
+
+        bool atLineStart;
+        bool skippingTokens;
+
+        // 1 = this tested true, not skipping group
+        //-1 = this tested false, skipping group
+        //-2 = prev seen true, not testing further, skipping group
+        //-3 = in a containing group that's being skipped
+        public List<int> ifStack;   
 
         public Preprocessor(Parser _parser, string filename)
         {
@@ -51,7 +57,8 @@ namespace BlackC.Scan
             macroStack = new List<PPTokenSource>();
 
             atLineStart = true;
-            skipLevel = 0;
+            skippingTokens = false;
+            ifStack = new List<int>();
         }
 
         //- preprocessing only ------------------------------------------------
@@ -156,12 +163,12 @@ namespace BlackC.Scan
                 }
 
                 //check for a macro if not skipping tokens
-                if (tok.type == PPTokenType.WORD && skipLevel == 0)
+                if (tok.type == PPTokenType.WORD && !skippingTokens)
                 {
                         Macro macro = Macro.lookupMacro(tok.str);
                         if (macro != null)
                         {
-//                          invokeMacro(macro);                 //start macro running
+                            //invokeMacro(macro);                 //start macro running
                             continue;                           //and loop around to get first macro token (if not empty)
                         }
                 }
@@ -194,7 +201,7 @@ namespace BlackC.Scan
                     continue;                                           //get next token from including source if not at main file
                 }
 
-                if (skipLevel == 0)
+                if (!skippingTokens)
                 {
                     break;
                 }
@@ -206,9 +213,8 @@ namespace BlackC.Scan
         //not handling function-like macros yet
         public void invokeMacro(Macro macro)
         {
-            Macro.setCurrentMacro(macro, null);
+            //Macro.setCurrentMacro(macro, null);
         }
-
 
         //- directive handling ------------------------------------------------
 
@@ -233,15 +239,24 @@ namespace BlackC.Scan
                 switch (tok.str)
                 {
                     case "include":
-                        handleIncludeDirective();
+                        if (!skippingTokens)
+                        {
+                            handleIncludeDirective();
+                        }
                         break;
 
                     case "define":
-                        handleDefineDirective();
+                        if (!skippingTokens)
+                        {
+                            handleDefineDirective();
+                        }
                         break;
 
                     case "undef":
-                        handleUndefDirective();
+                        if (!skippingTokens)
+                        {
+                            handleUndefDirective();
+                        }
                         break;
 
                     case "if":
@@ -257,11 +272,14 @@ namespace BlackC.Scan
                         break;
 
                     case "elif":
-                        handleElifDirective();
+                        if (!skippingTokens)
+                        {
+                            handleElifDirective();
+                        }
                         break;
 
                     case "else":
-                        handleElseDirective();
+                            handleElseDirective();
                         break;
 
                     case "endif":
@@ -269,15 +287,24 @@ namespace BlackC.Scan
                         break;
 
                     case "line":
-                        handleLineDirective();
+                        if (!skippingTokens)
+                        {
+                            handleLineDirective();
+                        }
                         break;
 
                     case "error":
-                        handleErrorDirective();
+                        if (!skippingTokens)
+                        {
+                            handleErrorDirective();
+                        }
                         break;
 
                     case "pragma":
-                        handlePragmaDirective();
+                        if (!skippingTokens)
+                        {
+                            handlePragmaDirective();
+                        }
                         break;
 
                     default:
@@ -351,8 +378,8 @@ namespace BlackC.Scan
         public void handleDefineDirective()
         {
             Console.WriteLine("saw #define");
-            List<PPToken> frags = readRestOfDirective(true);
-            Macro.defineMacro(frags);
+            List<PPToken> tokens = readRestOfDirective(true);
+            Macro.defineMacro(tokens);
         }
 
         public void handleUndefDirective()
@@ -370,41 +397,100 @@ namespace BlackC.Scan
         {
             Console.WriteLine("saw #if");
             List<PPToken> tokens = readRestOfDirective(false);
+
+            if (skippingTokens)
+            {
+                ifStack.Add(-3);
+            }
+            else
+            {
+                bool result = evalControlExpr(tokens);
+                int skip = result ? 1 : -1;
+                ifStack.Add(skip);
+            }
+            skippingTokens = (ifStack[ifStack.Count - 1] < 0);
         }
 
         public void handleIfdefDirective()
         {
             Console.WriteLine("saw #ifdef");
             List<PPToken> tokens = readRestOfDirective(false);
-            //    Token token = scanner.scanToken();
-            //    Macro macro = Macro.lookupMacro(token);
-        }
+
+            if (skippingTokens)
+            {
+               ifStack.Add(-3);
+            }
+            else
+            {
+                PPToken token = tokens[0];
+                Macro macro = Macro.lookupMacro(token.str);
+                int skip = (macro != null) ? 1 : -1;
+                ifStack.Add(skip);
+            }
+            skippingTokens = (ifStack[ifStack.Count - 1] < 0);
+        }    
 
         public void handleIfndefDirective()
         {
             Console.WriteLine("saw #ifndef");
             List<PPToken> tokens = readRestOfDirective(false);
 
-            //    Token token = scanner.scanToken();
-            //    Macro macro = Macro.lookupMacro(token);
+            if (skippingTokens)
+            {
+                ifStack.Add(-3);
+            }
+            else
+            {
+                PPToken token = tokens[0];
+                Macro macro = Macro.lookupMacro(token.str);
+                int skip = (macro == null) ? 1 : -1;
+                ifStack.Add(skip);
+            }
+            skippingTokens = ((ifStack[ifStack.Count - 1]) < 0);
         }
 
         public void handleElifDirective()
         {
             Console.WriteLine("saw #elif");
-            List<PPToken> frags = readRestOfDirective(false);
+            List<PPToken> tokens = readRestOfDirective(false);
+
+            int curstate = ifStack[ifStack.Count - 1];
+            if (curstate != -3)
+            {
+                int skip = curstate == -1 ? (evalControlExpr(tokens) ? 1 : -1) : -2;
+                ifStack[ifStack.Count - 1] = skip;
+            }
+            skippingTokens = ((ifStack[ifStack.Count - 1]) < 0);
         }
 
         public void handleElseDirective()
         {
             Console.WriteLine("saw #else");
             List<PPToken> frags = readRestOfDirective(false);
+
+            int curstate = ifStack[ifStack.Count - 1];
+            if (curstate != -3)
+            {
+                int skip = curstate == -1 ? 1 : -2;
+                ifStack[ifStack.Count - 1] = skip;
+            }
+            skippingTokens = ((ifStack[ifStack.Count - 1]) < 0);
         }
 
         public void handleEndifDirective()
         {
             Console.WriteLine("saw #endif");
             List<PPToken> frags = readRestOfDirective(false);
+
+            ifStack.RemoveAt(ifStack.Count - 1);
+            if (ifStack.Count > 0)
+            {
+                skippingTokens = (ifStack[ifStack.Count - 1] < 0);
+            }
+            else
+            {
+                skippingTokens = false;
+            }
         }
 
         //- miscellaneous -----------------------------------------------------
@@ -426,6 +512,13 @@ namespace BlackC.Scan
             //Console.WriteLine("saw #pragma");
             List<PPToken> frags = readRestOfDirective(true);
             parser.handlePragma(frags);
+        }
+
+        //- directive expressions -------------------------------------------------
+
+        private bool evalControlExpr(List<PPToken> tokens)
+        {
+            return false;   //dummy val for now
         }
     }
 
